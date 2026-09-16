@@ -51,6 +51,7 @@ export class LabyrinthusEngine {
   }
   
   initControls() {
+    if (!this.controlsContainer || typeof document === 'undefined') return;
     this.controlsContainer.innerHTML = '';
     
     const wrapper = document.createElement('div');
