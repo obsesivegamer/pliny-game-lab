@@ -1,33 +1,1434 @@
-// Vesuvius: Thermodynamic Cellular Automata & Volcanology Simulation
-// Grounded in Pliny the Younger's eyewitness account of the 79 AD eruption
+/**
+ * ============================================================================
+ * PLINY GAME LAB — MONUMENTAL SIMULATION ENGINE
+ * DEMO: VESUVIUS (Volcanology & Thermodynamic Cellular Automata)
+ * PAVILION I: IGNIS & TERRA (Earth & Fire)
+ * ============================================================================
+ *
+ * "Petis ut tibi avunculi mei exitum scribam, quo verius tradere posteris possis...
+ *  Erat Miseni classemque imperio praesens regebat. Nonum kal. Septembres hora fere
+ *  septima mater mea indicat ei apparere nubem inusitata et magnitudine et specie.
+ *  Nubes oriebatur, cuius similitudinem et formam non alia magis arbor quam pinus expresserit.
+ *  Nam longissimo velut trunco elata in altum quibusdam ramis diffundebatur, credo quia
+ *  recenti spiritu evecta, deinde senescente eo destituta aut etiam pondere suo victa
+ *  in latitudinem vanescebat, candida interdum, interdum sordida et maculosa, prout terram
+ *  cineremve sustulerat."
+ *  — C. Plinius Caecilius Secundus (Pliny the Younger), Epistulae VI.16 (Ad Tacitum)
+ *
+ * "Iam navibus cinis incidebat, calidior et densior, quo propius accederent;
+ *  iam pumices etiam nigrique et ambusti et fracti igne lapides; iam vadum subitum
+ *  ruinaque montis litora obstantia. Cunctatus paulum an retro flecteret, mox
+ *  gubernatori ut ita faceret monenti 'Fortes' inquit 'fortuna iuvat: Pomponianum pete!'
+ *  Stabiis erat diremptus sinu medio... Ibi decretum in litore perstare et mare ex proximo
+ *  aspicere, ecquid iam admitteret; quod adhuc vastum et adversum permanebat.
+ *  Ibi super abiectum linteum recubans semel atque iterum frigidam aquam poposcit hausitque.
+ *  Deinde flammae flammarumque praenuntius odor sulfuris alios in fugam vertunt, excitant illum."
+ *  — C. Plinius Caecilius Secundus, Epistulae VI.16
+ *
+ * "Respicio: tergo caligo densa imminebat, quae nos torrentis modo infusa terrae sequebatur...
+ *  Vix consideramus, et nox — non qualis illunis aut nubila, sed qualis in locis clausis lumine
+ *  extincto. Audires ululatus feminarum, infantum quiritatus, clamores virorum; alii parentes,
+ *  alii liberos, alii coniuges vocibus requirebant, vocibus noscitabant; hi suum casum, illi
+ *  suorum miserabantur; erant qui metu mortis mortem precarentur; multi ad deos manus tollere,
+ *  plures nusquam iam deos ullos aeternamque illam et novissimam noctem mundo interpretabantur."
+ *  — C. Plinius Caecilius Secundus, Epistulae VI.20
+ *
+ * ============================================================================
+ * ARCHITECTURAL SPECIFICATION & SCIENTIFIC PRINCIPLES:
+ *
+ * 1. DUAL-LAYER MULTIPHYSICS ARCHITECTURE:
+ *    - Layer A: Thermodynamic Cellular Automata (CA) Grid:
+ *      * 280 x 180 fine-grained physical lattice (50,400 active cells).
+ *      * 13 elemental states: EMPTY, STONE, BASALT, SAND, PUMICE, LAVA,
+ *        MAGMA_CORE, WATER, STEAM, FIRE, SMOKE, ASH, SULFUR_GAS.
+ *      * Discrete Fourier heat diffusion: dT/dt = alpha * laplacian(T).
+ *      * Phreatomagmatic explosions: instantaneous phase transition of water to steam
+ *        with 1600x volume expansion upon contact with molten lava (T > 100°C).
+ *      * Granular physics with angle of repose, viscous liquid dynamics, and
+ *        buoyant gas convection.
+ *      * Porous Pumice physics: pumice density (~620 kg/m³) is less than water (~1000 kg/m³),
+ *        causing vast floating pumice rafts in the Bay of Naples as recorded by Pliny.
+ *
+ *    - Layer B: High-Precision Kinematic & Particle Physics:
+ *      * Volcanic Bombs (Tephra): Ballistic projectiles with quadratic aerodynamic drag:
+ *        F_drag = 0.5 * Cd * rho_air * A * v^2, incandescent thermal cooling,
+ *        rotational spin, and explosive impact cratering.
+ *      * Pyroclastic Density Currents (PDCs / Nuées Ardentes): Ground-hugging fluidized
+ *        avalanches following mountain slope elevation vectors, reaching supersonic speeds,
+ *        incinerating settlements, and depositing ignimbrite ash layers.
+ *      * Convective Plinian Plume: 3-stage atmospheric eruption column:
+ *        1) Momentum gas jet, 2) Convective thermal buoyancy rise (up to 33 km),
+ *        3) Lateral stratospheric spreading into the iconic Umbrella Pine (Pinus pinea) canopy.
+ *      * Volcanic Lightning (Triboelectric discharge): Stochastic fractal branching arcs
+ *        between electrostatic ash clouds with full-screen atmospheric corona illumination.
+ *      * Acoustic Shockwaves: Spherical Mach shockfronts displacing ash, particles, and air.
+ *      * Roman Naval Evacuation Fleet: Authentic Classis Misenensis quadriremes and liburnians
+ *        commanded by Pliny the Elder, with animated rowing sweeps, deck pumice clearing,
+ *        historical Latin speech quotes, and citizen rescue mechanics.
+ *
+ * 2. VOLCANOLOGICAL ERUPTION PHASES (VEI 0 TO VEI 5+):
+ *    - Phase 0: DORMANT (Mild geothermal fumaroles, peaceful Bay of Naples, olive groves).
+ *    - Phase 1: SEISMIC TREMOR (Ground fissures open, harmonic tremors, sulfur venting).
+ *    - Phase 2: PHREATOMAGMATIC (Groundwater aquifer breach, violent steam-ash blasts).
+ *    - Phase 3: SUB-PLINIAN COLUMN (Continuous eruptive column reaching 15 km troposphere).
+ *    - Phase 4: ULTRA-PLINIAN CLIMAX (Umbrella Pine spreading to 30+ km, massive pumice fall).
+ *    - Phase 5: COLUMN COLLAPSE & PDCs (Fatal collapse of convective column, superheated surges).
+ *    - Phase 6: CALDERA COLLAPSE (Catastrophic structural failure of Mount Somma rim).
+ *
+ * 3. REAL-TIME TELEMETRY & SEISMOLOGY:
+ *    - Rolling seismograph with P-wave, S-wave, and harmonic tremor recording.
+ *    - VEI index meter, plume height gauge, mass eruption rate (kg/s), and magma pressure.
+ *    - Eyewitness Latin text scrolls with English translations from Pliny's letters.
+ *
+ * 4. PURE ES MODULE — ZERO EXTERNAL DEPENDENCIES — STRICT BROWSER & HEADLESS SAFETY.
+ * ============================================================================
+ */
+
+// ============================================================================
+// SECTION 1: SIMULATION CONSTANTS, ELEMENT TAXONOMY & THERMODYNAMICS
+// ============================================================================
 
 export const ELEMENT = {
   EMPTY: 0,
   STONE: 1,
-  SAND: 2,
-  LAVA: 3,
-  WATER: 4,
-  STEAM: 5,
-  FIRE: 6,
-  SMOKE: 7,
-  ASH: 8,
-  MAGMA_CORE: 9,
-  OIL: 10
+  BASALT: 2,
+  SAND: 3,
+  PUMICE: 4,
+  LAVA: 5,
+  MAGMA_CORE: 6,
+  WATER: 7,
+  STEAM: 8,
+  FIRE: 9,
+  SMOKE: 10,
+  ASH: 11,
+  SULFUR_GAS: 12
 };
 
-const PALETTE = {
-  [ELEMENT.EMPTY]: [10, 11, 14, 255],
-  [ELEMENT.STONE]: [82, 85, 96, 255],
-  [ELEMENT.SAND]: [212, 185, 110, 255],
-  [ELEMENT.LAVA]: [255, 90, 10, 255],
-  [ELEMENT.WATER]: [45, 135, 235, 220],
-  [ELEMENT.STEAM]: [200, 215, 235, 120],
-  [ELEMENT.FIRE]: [255, 210, 40, 240],
-  [ELEMENT.SMOKE]: [50, 48, 55, 180],
-  [ELEMENT.ASH]: [140, 138, 142, 230],
-  [ELEMENT.MAGMA_CORE]: [255, 40, 0, 255],
-  [ELEMENT.OIL]: [70, 50, 40, 255]
+export const ELEMENT_NAMES = [
+  'Empty (Atmosphere)',
+  'Stone (Country Rock)',
+  'Basalt (Cooled Lava)',
+  'Sand (Granular Sediment)',
+  'Pumice (Poriferous Tephra)',
+  'Lava (Molten Silicate)',
+  'Magma Core (Plutonic Reservoir)',
+  'Water (Bay & Aquifers)',
+  'Steam (Superheated Vapor)',
+  'Fire (Thermal Combustion)',
+  'Smoke (Volcanic Aerosol)',
+  'Ash (Fine Silicate Tephra)',
+  'Sulfur Gas (SO₂ / H₂S Fumarole)'
+];
+
+/**
+ * Elemental physical properties table:
+ * density: kg/m^3 (used for buoyancy, sedimentation, and floating)
+ * thermalDiff: thermal diffusivity alpha in m^2/s
+ * baseTemp: standard ambient equilibrium temperature in °C
+ * viscosity: fluid internal resistance to shear flow (higher = more sluggish)
+ * solid: boolean flag for rigid / granular solids
+ * albedo: reflectivity coefficient for light scattering
+ */
+export const ELEMENT_PROPS = {
+  [ELEMENT.EMPTY]: {
+    density: 1.225,
+    thermalDiff: 0.05,
+    baseTemp: 20,
+    viscosity: 0,
+    solid: false,
+    albedo: 0.02
+  },
+  [ELEMENT.STONE]: {
+    density: 2650,
+    thermalDiff: 0.08,
+    baseTemp: 22,
+    viscosity: 1000,
+    solid: true,
+    albedo: 0.25
+  },
+  [ELEMENT.BASALT]: {
+    density: 2900,
+    thermalDiff: 0.12,
+    baseTemp: 35,
+    viscosity: 1000,
+    solid: true,
+    albedo: 0.12
+  },
+  [ELEMENT.SAND]: {
+    density: 1600,
+    thermalDiff: 0.06,
+    baseTemp: 22,
+    viscosity: 80,
+    solid: true,
+    albedo: 0.40
+  },
+  [ELEMENT.PUMICE]: {
+    density: 620, // Critically: less than water (1000 kg/m3) -> floats on water!
+    thermalDiff: 0.04,
+    baseTemp: 180,
+    viscosity: 40,
+    solid: true,
+    albedo: 0.55
+  },
+  [ELEMENT.LAVA]: {
+    density: 2450,
+    thermalDiff: 0.28,
+    baseTemp: 1050,
+    viscosity: 12,
+    solid: false,
+    albedo: 0.85
+  },
+  [ELEMENT.MAGMA_CORE]: {
+    density: 2800,
+    thermalDiff: 0.45,
+    baseTemp: 1350,
+    viscosity: 5,
+    solid: true,
+    albedo: 0.95
+  },
+  [ELEMENT.WATER]: {
+    density: 1000,
+    thermalDiff: 0.14,
+    baseTemp: 18,
+    viscosity: 1,
+    solid: false,
+    albedo: 0.08
+  },
+  [ELEMENT.STEAM]: {
+    density: 0.59,
+    thermalDiff: 0.22,
+    baseTemp: 140,
+    viscosity: 0.5,
+    solid: false,
+    albedo: 0.70
+  },
+  [ELEMENT.FIRE]: {
+    density: 0.25,
+    thermalDiff: 0.60,
+    baseTemp: 1100,
+    viscosity: 0.1,
+    solid: false,
+    albedo: 1.00
+  },
+  [ELEMENT.SMOKE]: {
+    density: 0.85,
+    thermalDiff: 0.10,
+    baseTemp: 75,
+    viscosity: 0.8,
+    solid: false,
+    albedo: 0.20
+  },
+  [ELEMENT.ASH]: {
+    density: 1150,
+    thermalDiff: 0.07,
+    baseTemp: 60,
+    viscosity: 50,
+    solid: true,
+    albedo: 0.30
+  },
+  [ELEMENT.SULFUR_GAS]: {
+    density: 1.88, // Heavier than air at STP -> sinks into low valleys unless superheated
+    thermalDiff: 0.15,
+    baseTemp: 90,
+    viscosity: 0.9,
+    solid: false,
+    albedo: 0.45
+  }
 };
+
+/**
+ * 8-bit RGBA color palette for cellular automata rendering
+ */
+export const PALETTE = {
+  [ELEMENT.EMPTY]: [12, 14, 22, 255],
+  [ELEMENT.STONE]: [75, 78, 88, 255],
+  [ELEMENT.BASALT]: [42, 44, 52, 255],
+  [ELEMENT.SAND]: [198, 172, 108, 255],
+  [ELEMENT.PUMICE]: [214, 204, 182, 255],
+  [ELEMENT.LAVA]: [255, 76, 12, 255],
+  [ELEMENT.MAGMA_CORE]: [255, 28, 0, 255],
+  [ELEMENT.WATER]: [34, 118, 210, 220],
+  [ELEMENT.STEAM]: [212, 226, 245, 140],
+  [ELEMENT.FIRE]: [255, 204, 32, 245],
+  [ELEMENT.SMOKE]: [44, 42, 48, 200],
+  [ELEMENT.ASH]: [130, 126, 132, 230],
+  [ELEMENT.SULFUR_GAS]: [186, 205, 52, 170]
+};
+
+// ============================================================================
+// SECTION 2: ERUPTION PHASES & HISTORICAL EYEWITNESS CHRONICLES
+// ============================================================================
+
+export const PHASE = {
+  DORMANT: 0,
+  SEISMIC_TREMOR: 1,
+  PHREATOMAGMATIC: 2,
+  SUB_PLINIAN: 3,
+  ULTRA_PLINIAN: 4,
+  COLUMN_COLLAPSE: 5,
+  CALDERA_COLLAPSE: 6
+};
+
+export const PHASE_CONFIG = [
+  {
+    id: PHASE.DORMANT,
+    name: 'Dormant (Quiet Geothermal)',
+    latin: 'Mons Vesuvius Tacitus',
+    vei: 0,
+    plumeTargetKm: 0.5,
+    massRateKgS: 0,
+    seismicTremor: 0.05,
+    lightningRate: 0,
+    bombRate: 0,
+    pdcActive: false,
+    skyDarkness: 0.0,
+    excerpt: 'Antecedebat per multos dies tremor terrae, minus formidolosus quia Campaniae solitus.'
+  },
+  {
+    id: PHASE.SEISMIC_TREMOR,
+    name: 'Seismic Precursor Tremors',
+    latin: 'Terrae Motus Campanus',
+    vei: 1,
+    plumeTargetKm: 2.0,
+    massRateKgS: 5e4,
+    seismicTremor: 0.38,
+    lightningRate: 0,
+    bombRate: 0.2,
+    pdcActive: false,
+    skyDarkness: 0.15,
+    excerpt: 'Illa vero nocte ita invaluit, ut non moveri omnia sed verti crederentur.'
+  },
+  {
+    id: PHASE.PHREATOMAGMATIC,
+    name: 'Phreatomagmatic Explosion',
+    latin: 'Eruptio Phreatomagmatica',
+    vei: 3,
+    plumeTargetKm: 9.0,
+    massRateKgS: 2e6,
+    seismicTremor: 0.65,
+    lightningRate: 0.15,
+    bombRate: 1.5,
+    pdcActive: false,
+    skyDarkness: 0.40,
+    excerpt: 'Nubes oriebatur, cuius similitudinem et formam non alia magis arbor quam pinus expresserit.'
+  },
+  {
+    id: PHASE.SUB_PLINIAN,
+    name: 'Sub-Plinian Ash Column',
+    latin: 'Columna Sub-Pliniana',
+    vei: 4,
+    plumeTargetKm: 18.0,
+    massRateKgS: 1.5e7,
+    seismicTremor: 0.78,
+    lightningRate: 0.45,
+    bombRate: 3.5,
+    pdcActive: false,
+    skyDarkness: 0.65,
+    excerpt: 'Iam navibus cinis incidebat, calidior et densior; iam pumices etiam nigrique et ambusti lapides.'
+  },
+  {
+    id: PHASE.ULTRA_PLINIAN,
+    name: 'Ultra-Plinian Climax (Umbrella Pine)',
+    latin: 'Plinianus Pinus Pinea Summus',
+    vei: 5,
+    plumeTargetKm: 32.0,
+    massRateKgS: 8.5e7,
+    seismicTremor: 0.95,
+    lightningRate: 0.85,
+    bombRate: 7.0,
+    pdcActive: false,
+    skyDarkness: 0.88,
+    excerpt: 'Fortes fortuna iuvat: Pomponianum pete! Latissimae flammae altaque incendia relucebant.'
+  },
+  {
+    id: PHASE.COLUMN_COLLAPSE,
+    name: 'Column Collapse & Pyroclastic Surges',
+    latin: 'Ruina Columnae & Flumina Ignita',
+    vei: 5,
+    plumeTargetKm: 22.0,
+    massRateKgS: 1.2e8,
+    seismicTremor: 0.98,
+    lightningRate: 0.95,
+    bombRate: 9.0,
+    pdcActive: true,
+    skyDarkness: 0.96,
+    excerpt: 'Respicio: tergo caligo densa imminebat, quae nos torrentis modo infusa terrae sequebatur.'
+  },
+  {
+    id: PHASE.CALDERA_COLLAPSE,
+    name: 'Caldera Collapse & Aftermath',
+    latin: 'Crateris Fractura & Caligo Perpetua',
+    vei: 5,
+    plumeTargetKm: 12.0,
+    massRateKgS: 3e6,
+    seismicTremor: 0.50,
+    lightningRate: 0.20,
+    bombRate: 1.0,
+    pdcActive: false,
+    skyDarkness: 0.85,
+    excerpt: 'Dies alibi, illic nox omnibus noctibus nigrior densiorque, quam tamen faces multae solvebant.'
+  }
+];
+
+export const PLINIAN_HISTORICAL_LOGS = [
+  {
+    tag: 'HORA SEPTIMA (~1:00 PM)',
+    latin: 'Mater mea indicat ei apparere nubem inusitata et magnitudine et specie.',
+    eng: 'My mother drew his attention to a cloud of unusual size and appearance.'
+  },
+  {
+    tag: 'PINUS PINEA',
+    latin: 'Similitudinem et formam non alia magis arbor quam pinus expresserit.',
+    eng: 'No other tree could give you a more exact description of its form than an umbrella pine.'
+  },
+  {
+    tag: 'CLASSIS MISENENSIS',
+    latin: 'Deducit quadriremes, ascendit ipse non Rectinae modo sed multis laturus auxilium.',
+    eng: 'He ordered the quadriremes launched, steering himself to rescue not only Rectina but many.'
+  },
+  {
+    tag: 'PUMICES INCIDENTES',
+    latin: 'Iam navibus cinis incidebat, calidior et densior... iam pumices fractique igne lapides.',
+    eng: 'Ashes were falling on the ships, hotter and denser; then pumice stones shattered by flame.'
+  },
+  {
+    tag: 'FORTES FORTUNA IUVAT',
+    latin: "'Fortes' inquit 'fortuna iuvat: Pomponianum pete!'",
+    eng: "'Fortune favors the brave,' he cried: 'steer for Pomponianus!'"
+  },
+  {
+    tag: 'FULGURA VOLCANICA',
+    latin: 'Ab altero latere nubes atra et horrenda, ignei spiritus tortis vibratisque discursibus rupta.',
+    eng: 'From the other side, a terrifying black cloud, rent by zigzag flashes of fiery gas.'
+  },
+  {
+    tag: 'NOX PERPETUA',
+    latin: 'Nox omnibus noctibus nigrior densiorque, quam tamen faces multae solvebant.',
+    eng: 'A night blacker and denser than any night, though relieved by countless torches.'
+  }
+];
+// ============================================================================
+// SECTION 3: PROCEDURAL AUDIO SYNTHESIZER (WEB AUDIO API SAFEGUARD)
+// ============================================================================
+
+export class VesuviusAudioSynthesizer {
+  constructor() {
+    this.ctx = null;
+    this.isMuted = false;
+    this.masterGain = null;
+    this.rumbleOsc = null;
+    this.rumbleGain = null;
+    this.rumbleFilter = null;
+    this.isInitialized = false;
+  }
+
+  init() {
+    if (this.isInitialized || typeof window === 'undefined') return;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      this.ctx = new AudioCtx();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+      this.masterGain.connect(this.ctx.destination);
+
+      // Continuous subterranean low-frequency volcanic rumble
+      this.rumbleOsc = this.ctx.createOscillator();
+      this.rumbleGain = this.ctx.createGain();
+      this.rumbleFilter = this.ctx.createBiquadFilter();
+
+      this.rumbleOsc.type = 'sawtooth';
+      this.rumbleOsc.frequency.setValueAtTime(36, this.ctx.currentTime);
+
+      this.rumbleFilter.type = 'lowpass';
+      this.rumbleFilter.frequency.setValueAtTime(75, this.ctx.currentTime);
+      this.rumbleFilter.Q.setValueAtTime(4.0, this.ctx.currentTime);
+
+      this.rumbleGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+
+      this.rumbleOsc.connect(this.rumbleFilter);
+      this.rumbleFilter.connect(this.rumbleGain);
+      this.rumbleGain.connect(this.masterGain);
+
+      this.rumbleOsc.start();
+      this.isInitialized = true;
+    } catch {
+      this.ctx = null;
+    }
+  }
+
+  ensureContext() {
+    if (!this.isInitialized) this.init();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
+  setRumbleIntensity(intensity) {
+    if (!this.ctx || !this.rumbleGain || this.isMuted) return;
+    const clamped = Math.max(0, Math.min(1, intensity));
+    const targetGain = clamped * 0.28;
+    const t = this.ctx.currentTime;
+    this.rumbleGain.gain.setTargetAtTime(targetGain, t, 0.2);
+    if (this.rumbleOsc) {
+      this.rumbleOsc.frequency.setTargetAtTime(32 + clamped * 30, t, 0.3);
+    }
+    if (this.rumbleFilter) {
+      this.rumbleFilter.frequency.setTargetAtTime(70 + clamped * 120, t, 0.3);
+    }
+  }
+
+  playExplosion(magnitude = 1.0) {
+    this.ensureContext();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const dur = 1.2 + Math.min(2.5, magnitude * 0.8);
+
+      // Noise buffer for blast
+      const bufferSize = Math.floor(this.ctx.sampleRate * dur);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(380 * Math.max(0.5, magnitude), t);
+      filter.frequency.exponentialRampToValueAtTime(40, t + dur);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.85 * Math.min(1, magnitude), t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      noise.start(t);
+      noise.stop(t + dur);
+    } catch {
+      // Audio fallback guard
+    }
+  }
+
+  playLightningCrack() {
+    this.ensureContext();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(950, t);
+      osc.frequency.exponentialRampToValueAtTime(65, t + 0.35);
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, t);
+      filter.Q.setValueAtTime(2.0, t);
+
+      gain.gain.setValueAtTime(0.65, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(t);
+      osc.stop(t + 0.45);
+    } catch {
+      // Safe guard
+    }
+  }
+
+  playSteamHiss() {
+    this.ensureContext();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const dur = 0.55;
+      const bufferSize = Math.floor(this.ctx.sampleRate * dur);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(2200, t);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.28, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      noise.start(t);
+      noise.stop(t + dur);
+    } catch {
+      // Safe guard
+    }
+  }
+
+  playOarStroke() {
+    this.ensureContext();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(130, t);
+      osc.frequency.exponentialRampToValueAtTime(45, t + 0.32);
+
+      gain.gain.setValueAtTime(0.22, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(t);
+      osc.stop(t + 0.32);
+    } catch {
+      // Safe guard
+    }
+  }
+
+  playBell() {
+    this.ensureContext();
+    if (!this.ctx || this.isMuted) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, t); // D5
+      osc.frequency.exponentialRampToValueAtTime(580, t + 1.2);
+
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(t);
+      osc.stop(t + 1.2);
+    } catch {
+      // Safe guard
+    }
+  }
+
+  mute() {
+    this.isMuted = true;
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  unmute() {
+    this.isMuted = false;
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setTargetAtTime(0.35, this.ctx.currentTime, 0.05);
+    }
+  }
+}
+
+// ============================================================================
+// SECTION 4: KINEMATIC ENTITY CLASSES & SIMULATION MODELS
+// ============================================================================
+
+/**
+ * Secondary fragment debris spawned during volcanic bomb impact shattering
+ */
+export class BombFragment {
+  constructor(x, y, vx, vy, radius = 1.5, temp = 900) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.radius = Math.max(0.8, radius);
+    this.temp = temp;
+    this.life = 0;
+    this.maxLife = 1.2 + Math.random() * 1.5;
+    this.alive = true;
+  }
+
+  update(dt, simWidth, simHeight, elevationMap) {
+    if (!this.alive) return;
+    this.life += dt;
+    if (this.life >= this.maxLife) {
+      this.alive = false;
+      return;
+    }
+
+    this.vy += 9.81 * 2.2 * dt;
+    this.vx *= 0.96;
+    this.x += this.vx * dt * 25;
+    this.y += this.vy * dt * 25;
+    this.temp = Math.max(30, this.temp - dt * 250);
+
+    const gx = Math.floor(this.x);
+    if (gx >= 0 && gx < simWidth) {
+      const surfaceY = elevationMap[gx];
+      if (this.y >= surfaceY) {
+        this.y = surfaceY;
+        this.vx *= 0.4;
+        this.vy *= -0.3;
+        if (Math.abs(this.vy) < 0.5) this.alive = false;
+      }
+    }
+  }
+
+  render(ctx, scaleX, scaleY) {
+    if (!this.alive) return;
+    const progress = this.life / this.maxLife;
+    const alpha = (1 - progress);
+    const r = Math.max(0.5, this.radius * scaleX);
+
+    ctx.save();
+    ctx.fillStyle = this.temp > 500 ? `rgba(255, 160, 40, ${alpha})` : `rgba(160, 150, 140, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(this.x * scaleX, this.y * scaleY, Math.max(0, r), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/**
+ * Volcanic Bomb (Tephra Ballistics):
+ * Incandescent projectile ejected from crater vent with drag, smoke trails,
+ * rotation, and explosive impact cratering.
+ */
+export class VolcanicBomb {
+  constructor(x, y, vx, vy, radius = 3, temp = 1050) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.radius = Math.max(1, radius);
+    this.temp = temp;
+    this.rotation = Math.random() * Math.PI * 2;
+    this.rotSpeed = (Math.random() - 0.5) * 8;
+    this.trail = [];
+    this.alive = true;
+    this.impacted = false;
+    this.isPumice = Math.random() < 0.38;
+    this.mass = this.isPumice ? 0.9 : 4.8;
+  }
+
+  update(dt, simWidth, simHeight, windSpeed, elevationMap) {
+    if (!this.alive) return;
+
+    // Atmospheric aerodynamic drag: F_drag = 0.5 * Cd * rho * v^2
+    const speed = Math.hypot(this.vx, this.vy);
+    const cd = 0.47; // Spherical projectile drag coefficient
+    const rhoAir = 1.2;
+    const area = Math.PI * (this.radius * 0.05) ** 2;
+    const dragForce = 0.5 * cd * rhoAir * area * speed * speed;
+    const dragAcc = speed > 0.001 ? dragForce / this.mass : 0;
+
+    const ax = -(this.vx / (speed || 1)) * dragAcc + windSpeed * 0.18;
+    const ay = 9.81 * 1.8 - (this.vy / (speed || 1)) * dragAcc; // Scaled gravity
+
+    this.vx += ax * dt;
+    this.vy += ay * dt;
+    this.x += this.vx * dt * 28;
+    this.y += this.vy * dt * 28;
+    this.rotation += this.rotSpeed * dt;
+
+    // Incandescent thermal radiation and cooling
+    this.temp = Math.max(40, this.temp - dt * 35);
+
+    // Record trail history
+    if (this.trail.length > 9) this.trail.shift();
+    this.trail.push({ x: this.x, y: this.y, temp: this.temp });
+
+    // Boundary check
+    if (this.x < 0 || this.x >= simWidth || this.y >= simHeight) {
+      this.alive = false;
+      return;
+    }
+
+    // Ground elevation collision check
+    const gx = Math.floor(this.x);
+    if (gx >= 0 && gx < simWidth) {
+      const surfaceY = elevationMap[gx];
+      if (this.y >= surfaceY - 1) {
+        this.alive = false;
+        this.impacted = true;
+      }
+    }
+  }
+
+  createFragments() {
+    const frags = [];
+    const count = 4 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = 3 + Math.random() * 8;
+      const fvx = Math.cos(angle) * spd + this.vx * 0.2;
+      const fvy = Math.sin(angle) * spd - 3;
+      frags.push(new BombFragment(this.x, this.y, fvx, fvy, this.radius * 0.45, this.temp));
+    }
+    return frags;
+  }
+
+  render(ctx, scaleX, scaleY) {
+    if (!this.alive && !this.impacted) return;
+
+    // Render incandescent trail sparks
+    for (let i = 0; i < this.trail.length; i++) {
+      const pt = this.trail[i];
+      const alpha = ((i + 1) / this.trail.length) * 0.65;
+      ctx.fillStyle = `rgba(255, 140, 20, ${alpha})`;
+      ctx.beginPath();
+      const trR = Math.max(0.5, this.radius * scaleX * 0.5 * (i / this.trail.length));
+      ctx.arc(pt.x * scaleX, pt.y * scaleY, Math.max(0, trR), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Render bomb core
+    ctx.save();
+    ctx.translate(this.x * scaleX, this.y * scaleY);
+    ctx.rotate(this.rotation);
+
+    const r = Math.max(1, this.radius * scaleX);
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    if (this.temp > 600) {
+      grad.addColorStop(0, '#FFFFFF');
+      grad.addColorStop(0.35, '#FFA500');
+      grad.addColorStop(1, '#8B1000');
+    } else {
+      grad.addColorStop(0, '#756858');
+      grad.addColorStop(0.7, '#423c34');
+      grad.addColorStop(1, '#1e1c18');
+    }
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    // Irregular jagged polygon contour for rugged volcanic bomb
+    const sides = 7;
+    for (let s = 0; s < sides; s++) {
+      const angle = (s / sides) * Math.PI * 2;
+      const radOffset = (s % 2 === 0 ? 1 : 0.84) * r;
+      const px = Math.cos(angle) * radOffset;
+      const py = Math.sin(angle) * radOffset;
+      if (s === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Fiery glow halo
+    if (this.temp > 400) {
+      ctx.strokeStyle = `rgba(255, 200, 50, ${Math.min(1, (this.temp - 400) / 600)})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+}
+/**
+ * Pyroclastic Density Current (PDC / Nuée Ardente):
+ * Superheated, fluidized density avalanche hugging the mountain topography,
+ * sweeping down toward Herculaneum and Pompeii at hurricane velocities.
+ */
+export class PyroclasticCurrent {
+  constructor(x, y, vx, vy, side = 'west') {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.side = side;
+    this.temp = 750; // °C
+    this.density = 2.4; // Ratio to ambient air
+    this.radius = 4;
+    this.maxRadius = 20;
+    this.life = 0;
+    this.maxLife = 5.8 + Math.random() * 2.8; // seconds
+    this.alive = true;
+    this.billowOffset = (Math.random() - 0.5) * 4;
+    this.turbulence = Math.random() * Math.PI * 2;
+    this.subBillows = [];
+  }
+
+  update(dt, elevationMap, simWidth) {
+    if (!this.alive) return;
+    this.life += dt;
+    if (this.life >= this.maxLife) {
+      this.alive = false;
+      return;
+    }
+
+    this.turbulence += dt * 4.2;
+    const progress = this.life / this.maxLife;
+
+    // Radius expansion as fluidized gas billows outwards
+    this.radius = 4 + progress * (this.maxRadius - 4);
+    this.temp = Math.max(120, this.temp - dt * 85);
+
+    // Gravity flow hugging surface elevation
+    const gx = Math.floor(this.x);
+    if (gx >= 0 && gx < simWidth) {
+      const surfaceY = elevationMap[gx];
+      const slope = (gx < simWidth - 1 ? elevationMap[gx + 1] - elevationMap[Math.max(0, gx - 1)] : 0) * 0.5;
+
+      // Accelerate downslope
+      const dirX = this.side === 'west' ? -1 : 1;
+      this.vx += (dirX * 3.8 + slope * 1.9) * dt;
+      this.vy += 2.4 * dt;
+
+      this.x += this.vx * dt * 26;
+      // Maintain ground contact with turbulent billow lift
+      const targetY = surfaceY - this.radius * 0.45 + Math.sin(this.turbulence) * 2.2;
+      this.y += (targetY - this.y) * 0.16;
+    } else {
+      this.alive = false;
+    }
+  }
+
+  render(ctx, scaleX, scaleY) {
+    if (!this.alive) return;
+    const progress = this.life / this.maxLife;
+    const alpha = (1 - progress) * 0.78;
+    const r = Math.max(1, this.radius * scaleX);
+
+    ctx.save();
+    const cx = this.x * scaleX;
+    const cy = this.y * scaleY;
+
+    // Volumetric gradient with incandescent base and billowing ash top
+    const grad = ctx.createRadialGradient(cx, cy, Math.max(0, r * 0.18), cx, cy, r);
+    if (this.temp > 400) {
+      grad.addColorStop(0, `rgba(255, 120, 20, ${alpha * 0.95})`);
+      grad.addColorStop(0.35, `rgba(180, 70, 30, ${alpha * 0.85})`);
+      grad.addColorStop(0.75, `rgba(70, 60, 65, ${alpha * 0.65})`);
+      grad.addColorStop(1, `rgba(30, 28, 35, 0)`);
+    } else {
+      grad.addColorStop(0, `rgba(140, 130, 135, ${alpha * 0.85})`);
+      grad.addColorStop(0.6, `rgba(80, 75, 80, ${alpha * 0.65})`);
+      grad.addColorStop(1, `rgba(40, 38, 42, 0)`);
+    }
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(0, r), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/**
+ * Convective Plinian Plume Particle:
+ * Ascends via thermal buoyancy to neutral buoyancy level (~25-33 km),
+ * then expands radially with stratospheric wind shear into the Umbrella Pine.
+ */
+export class PlumeParticle {
+  constructor(x, y, vx, vy, isUmbrella = false) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.isUmbrella = isUmbrella;
+    this.radius = 2.5 + Math.random() * 3.5;
+    this.maxRadius = 15 + Math.random() * 18;
+    this.life = 0;
+    this.maxLife = 6.5 + Math.random() * 5.5;
+    this.alive = true;
+    this.temp = 920;
+    this.charge = (Math.random() - 0.5) * 2; // Triboelectric charge
+    this.wobblePhase = Math.random() * Math.PI * 2;
+    this.ashDensity = 0.8 + Math.random() * 0.4;
+  }
+
+  update(dt, windSpeed, neutralBuoyancyY) {
+    if (!this.alive) return;
+    this.life += dt;
+    if (this.life >= this.maxLife) {
+      this.alive = false;
+      return;
+    }
+
+    const progress = this.life / this.maxLife;
+    this.wobblePhase += dt * 2.6;
+
+    // Thermal buoyancy ascent: F_b = (rho_amb - rho_p) * g
+    if (this.y > neutralBuoyancyY) {
+      // Momentum & convective rise through troposphere
+      const buoyancy = Math.max(0.2, (this.y - neutralBuoyancyY) * 0.085);
+      this.vy -= buoyancy * dt * 9.81;
+      this.temp = Math.max(40, this.temp - dt * 135);
+    } else {
+      // Reached Neutral Buoyancy Level (Stratosphere): Lateral Umbrella Pine expansion
+      this.isUmbrella = true;
+      this.vy *= 0.86; // Vertical motion stalls
+      // Radial umbrella mushrooming
+      const spreadDir = this.vx >= 0 ? 1 : -1;
+      this.vx += spreadDir * (1.3 + Math.random() * 2.2) * dt;
+      // Stratospheric wind shear drift
+      this.vx += windSpeed * 2.0 * dt;
+    }
+
+    // Aerodynamic dampening
+    this.vx *= 0.96;
+    this.vy *= 0.97;
+
+    this.x += (this.vx + Math.sin(this.wobblePhase) * 0.45) * dt * 21;
+    this.y += this.vy * dt * 21;
+    this.radius = Math.min(this.maxRadius, this.radius + dt * 4.6);
+  }
+
+  render(ctx, scaleX, scaleY) {
+    if (!this.alive) return;
+    const progress = this.life / this.maxLife;
+    const alpha = Math.sin(progress * Math.PI) * 0.68;
+    const r = Math.max(1, this.radius * scaleX);
+
+    ctx.save();
+    const cx = this.x * scaleX;
+    const cy = this.y * scaleY;
+
+    const grad = ctx.createRadialGradient(cx, cy, Math.max(0, r * 0.12), cx, cy, r);
+    if (this.temp > 600) {
+      grad.addColorStop(0, `rgba(255, 180, 40, ${alpha * 0.92})`);
+      grad.addColorStop(0.45, `rgba(160, 70, 30, ${alpha * 0.75})`);
+      grad.addColorStop(1, `rgba(40, 35, 45, 0)`);
+    } else {
+      const ashShade = Math.floor(45 + progress * 70);
+      grad.addColorStop(0, `rgba(${ashShade + 20}, ${ashShade + 15}, ${ashShade + 25}, ${alpha * 0.85})`);
+      grad.addColorStop(0.55, `rgba(${ashShade}, ${ashShade - 5}, ${ashShade + 5}, ${alpha * 0.65})`);
+      grad.addColorStop(1, `rgba(25, 22, 28, 0)`);
+    }
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(0, r), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/**
+ * Volcanic Lightning (Dirty Thunderstorm):
+ * Procedural branching fractal electrostatic discharge within plume ash clouds.
+ */
+export class VolcanicLightning {
+  constructor(startX, startY, endX, endY) {
+    this.segments = [];
+    this.life = 0;
+    this.maxLife = 0.24 + Math.random() * 0.14; // Short flash
+    this.alive = true;
+    this.intensity = 0.85 + Math.random() * 0.15;
+    this.generateBranches(startX, startY, endX, endY, 5);
+  }
+
+  generateBranches(x1, y1, x2, y2, depth) {
+    if (depth <= 0) {
+      this.segments.push({ x1, y1, x2, y2 });
+      return;
+    }
+
+    const midX = (x1 + x2) * 0.5 + (Math.random() - 0.5) * 15;
+    const midY = (y1 + y2) * 0.5 + (Math.random() - 0.5) * 15;
+
+    this.generateBranches(x1, y1, midX, midY, depth - 1);
+    this.generateBranches(midX, midY, x2, y2, depth - 1);
+
+    // Stochastic lateral fork
+    if (Math.random() < 0.42) {
+      const forkX = midX + (midX - x1) * 0.72 + (Math.random() - 0.5) * 20;
+      const forkY = midY + (midY - y1) * 0.72 + (Math.random() - 0.5) * 20;
+      this.generateBranches(midX, midY, forkX, forkY, depth - 2);
+    }
+  }
+
+  update(dt) {
+    this.life += dt;
+    if (this.life >= this.maxLife) {
+      this.alive = false;
+    }
+  }
+
+  render(ctx, scaleX, scaleY) {
+    if (!this.alive || this.segments.length === 0) return;
+    const alpha = (1 - this.life / this.maxLife) * this.intensity;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(180, 215, 255, ${alpha})`;
+    ctx.lineWidth = 2.6;
+    ctx.shadowColor = '#5c9eff';
+    ctx.shadowBlur = 14;
+
+    ctx.beginPath();
+    for (const seg of this.segments) {
+      ctx.moveTo(seg.x1 * scaleX, seg.y1 * scaleY);
+      ctx.lineTo(seg.x2 * scaleX, seg.y2 * scaleY);
+    }
+    ctx.stroke();
+
+    // Hot white electric core
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 1.25})`;
+    ctx.lineWidth = 1.0;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Acoustic Shockwave:
+ * Spherical Mach shockfront expanding outward from phreatomagmatic vent explosions,
+ * displacing air, ash, and particles.
+ */
+export class Shockwave {
+  constructor(x, y, maxRadius = 85, speed = 95) {
+    this.x = x;
+    this.y = y;
+    this.radius = 2;
+    this.maxRadius = maxRadius;
+    this.speed = speed;
+    this.alive = true;
+    this.thickness = 4.5;
+  }
+
+  update(dt) {
+    this.radius += this.speed * dt;
+    if (this.radius >= this.maxRadius) {
+      this.alive = false;
+    }
+  }
+
+  render(ctx, scaleX, scaleY) {
+    if (!this.alive) return;
+    const progress = this.radius / this.maxRadius;
+    const alpha = (1 - progress) * 0.48;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 240, 210, ${alpha})`;
+    ctx.lineWidth = Math.max(1, this.thickness * (1 - progress * 0.5));
+    ctx.beginPath();
+    ctx.arc(this.x * scaleX, this.y * scaleY, Math.max(0, this.radius * scaleX), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+/**
+ * Roman Naval Evacuation Galley (Classis Misenensis):
+ * Detailed Roman naval quadrireme commanded by Pliny the Elder.
+ * Features animated rhythmic oar sweeps, deck pumice accumulation,
+ * legionary banners, speech bubbles, and refugee rescue logic.
+ */
+export class RomanGalley {
+  constructor(x, y, name = 'Minerva (Flagship)', isFlagship = true) {
+    this.x = x;
+    this.y = y;
+    this.name = name;
+    this.isFlagship = isFlagship;
+    this.speed = 8.5; // knots
+    this.oarPhase = 0;
+    this.oarCadence = 26; // SPM
+    this.deckPumice = 0; // kg of pumice on deck
+    this.rescuedCount = 0;
+    this.targetX = 185; // Coast near Herculaneum/Pompeii
+    this.state = 'sailing_to_coast'; // 'sailing_to_coast', 'rescuing', 'retreating'
+    this.dialog = isFlagship ? 'Fortes fortuna iuvat!' : 'Ad latus praetorium!';
+    this.dialogTimer = 4.2;
+    this.health = 100;
+  }
+
+  update(dt, pumiceFallRate) {
+    this.oarPhase += (this.oarCadence / 60) * Math.PI * 2 * dt;
+    if (this.dialogTimer > 0) this.dialogTimer -= dt;
+
+    // Deck pumice accumulation under tephra fallout
+    if (pumiceFallRate > 0) {
+      this.deckPumice += pumiceFallRate * dt * 1.5;
+      // Crew actively sweeps pumice overboard as recounted by Pliny
+      this.deckPumice = Math.max(0, this.deckPumice - dt * 0.82);
+      if (this.deckPumice > 60) {
+        this.health = Math.max(20, this.health - dt * 2.2);
+      }
+    }
+
+    // Navigation state machine
+    if (this.state === 'sailing_to_coast') {
+      if (this.x < this.targetX) {
+        this.x += this.speed * dt * 0.65;
+      } else {
+        this.state = 'rescuing';
+        this.dialog = 'Cives recipite! Ascendite in navem!';
+        this.dialogTimer = 5.2;
+      }
+    } else if (this.state === 'rescuing') {
+      this.rescuedCount += dt * 3.8;
+      if (this.rescuedCount > 85 || this.deckPumice > 48) {
+        this.state = 'retreating';
+        this.dialog = 'Retrahite remis! Stabilias petamus!';
+        this.dialogTimer = 5.2;
+      }
+    } else if (this.state === 'retreating') {
+      this.x -= this.speed * dt * 0.45;
+      if (this.x < 130) {
+        this.state = 'sailing_to_coast';
+      }
+    }
+  }
+
+  render(ctx, scaleX, scaleY) {
+    const px = this.x * scaleX;
+    const py = this.y * scaleY;
+
+    ctx.save();
+    ctx.translate(px, py);
+
+    // Dynamic water bobbing
+    const bob = Math.sin(this.oarPhase) * 1.6;
+    ctx.translate(0, bob);
+
+    // Hull dimensions
+    const hullLen = this.isFlagship ? 48 : 38;
+    const hullH = 9;
+
+    // Bronze underwater ram (Rostrum)
+    ctx.fillStyle = '#C29B38';
+    ctx.beginPath();
+    ctx.moveTo(hullLen * 0.5, 2);
+    ctx.lineTo(hullLen * 0.5 + 8, 4);
+    ctx.lineTo(hullLen * 0.5 + 4, 7);
+    ctx.lineTo(hullLen * 0.5, 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Wooden hull (Oak & Pine)
+    ctx.fillStyle = this.isFlagship ? '#5C2D15' : '#422410';
+    ctx.beginPath();
+    ctx.moveTo(-hullLen * 0.5, -hullH * 0.4);
+    ctx.lineTo(hullLen * 0.45, -hullH * 0.3);
+    ctx.quadraticCurveTo(hullLen * 0.54, 0, hullLen * 0.5, hullH * 0.6);
+    ctx.lineTo(-hullLen * 0.42, hullH * 0.6);
+    ctx.quadraticCurveTo(-hullLen * 0.54, hullH * 0.2, -hullLen * 0.5, -hullH * 0.4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Red Roman trim stripe
+    ctx.strokeStyle = '#8B1E2D';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-hullLen * 0.48, 0);
+    ctx.lineTo(hullLen * 0.46, 0);
+    ctx.stroke();
+
+    // Painted apotropaic eye (Oculus) on the prow
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(hullLen * 0.4, -1, Math.max(0, 1.8), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0F1522';
+    ctx.beginPath();
+    ctx.arc(hullLen * 0.4 + 0.4, -1, Math.max(0, 0.9), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Animated bank of rowing oars
+    const oarCount = 8;
+    const oarStrokeAngle = Math.sin(this.oarPhase) * 0.42;
+    ctx.strokeStyle = '#D8B278';
+    ctx.lineWidth = 1.2;
+
+    for (let i = 0; i < oarCount; i++) {
+      const ox = -hullLen * 0.35 + (i / (oarCount - 1)) * (hullLen * 0.7);
+      const oy = 2;
+      const oarLen = 14;
+      const bladeX = ox + Math.sin(oarStrokeAngle) * oarLen;
+      const bladeY = oy + Math.cos(oarStrokeAngle) * oarLen * 0.6;
+
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(bladeX, bladeY);
+      ctx.stroke();
+
+      // Oar blade dip splash in water
+      if (bladeY > 7) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.fillRect(bladeX - 1, bladeY, 2.5, 1.5);
+      }
+    }
+
+    // Mast and Furled Square Sail
+    ctx.strokeStyle = '#6B4423';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -hullH * 0.4);
+    ctx.lineTo(0, -hullH * 2.6);
+    ctx.stroke();
+
+    // Sail Yardarm
+    ctx.strokeStyle = '#8B5A2B';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-14, -hullH * 2.3);
+    ctx.lineTo(14, -hullH * 2.3);
+    ctx.stroke();
+
+    // Furled Sail canvas
+    ctx.fillStyle = '#E5DAC4';
+    ctx.fillRect(-13, -hullH * 2.3, 26, 4);
+
+    // Roman Legionary Imperial Vexillum (Eagle Banner)
+    if (this.isFlagship) {
+      ctx.fillStyle = '#A31826';
+      ctx.fillRect(-1, -hullH * 3.1, 7, 5);
+      ctx.fillStyle = '#FFD700';
+      ctx.font = '5px sans-serif';
+      ctx.fillText('SPQR', 0, -hullH * 3.1 + 4);
+    }
+
+    // Pumice debris accumulation on deck
+    if (this.deckPumice > 2) {
+      ctx.fillStyle = '#D6CCB6';
+      for (let p = 0; p < Math.min(18, Math.floor(this.deckPumice * 0.4)); p++) {
+        const pxPos = -hullLen * 0.35 + ((p * 7) % Math.floor(hullLen * 0.7));
+        ctx.fillRect(pxPos, -hullH * 0.4 - 1, 2, 2);
+      }
+    }
+
+    // Speech bubble for Pliny the Elder / Captain
+    if (this.dialogTimer > 0) {
+      ctx.fillStyle = 'rgba(15, 18, 28, 0.88)';
+      ctx.strokeStyle = '#D4AF37';
+      ctx.lineWidth = 1;
+      const textW = ctx.measureText(this.dialog).width;
+      const bW = textW + 14;
+      const bH = 15;
+      const bX = -bW * 0.5;
+      const bY = -hullH * 3.5 - bH;
+
+      ctx.fillRect(bX, bY, bW, bH);
+      ctx.strokeRect(bX, bY, bW, bH);
+
+      ctx.fillStyle = '#F5E6C8';
+      ctx.font = '8px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.dialog, 0, bY + 11);
+      ctx.textAlign = 'left';
+    }
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Seismograph:
+ * High-precision circular waveform buffer recording P-waves, S-waves,
+ * and volcanic harmonic tremor in real-time.
+ */
+export class Seismograph {
+  constructor(bufferSize = 140) {
+    this.bufferSize = bufferSize;
+    this.values = new Float32Array(bufferSize);
+    this.head = 0;
+    this.peakAcceleration = 0;
+    this.harmonicPhase = 0;
+  }
+
+  record(tremorIntensity, dt) {
+    this.harmonicPhase += dt * 18;
+    // Harmonic tremor + high frequency micro-fracture noise
+    const harmonic = Math.sin(this.harmonicPhase) * 0.42 + Math.sin(this.harmonicPhase * 2.7) * 0.26;
+    const noise = (Math.random() - 0.5) * 0.36;
+    const val = (harmonic + noise) * tremorIntensity;
+
+    this.values[this.head] = val;
+    this.head = (this.head + 1) % this.bufferSize;
+    this.peakAcceleration = Math.max(Math.abs(val), this.peakAcceleration * 0.98);
+  }
+
+  render(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Frame & oscilloscope dark background
+    ctx.fillStyle = 'rgba(8, 12, 18, 0.88)';
+    ctx.strokeStyle = '#D4AF37';
+    ctx.lineWidth = 1;
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeRect(0, 0, w, h);
+
+    // Gridlines
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.18)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.5);
+    ctx.lineTo(w, h * 0.5);
+    ctx.moveTo(0, h * 0.25);
+    ctx.lineTo(w, h * 0.25);
+    ctx.moveTo(0, h * 0.75);
+    ctx.lineTo(w, h * 0.75);
+    ctx.stroke();
+
+    // Seismograph trace
+    ctx.strokeStyle = '#FF3B30';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+
+    const midY = h * 0.5;
+    for (let i = 0; i < this.bufferSize; i++) {
+      const idx = (this.head + i) % this.bufferSize;
+      const sx = (i / (this.bufferSize - 1)) * w;
+      const sy = midY - this.values[idx] * (h * 0.42);
+      if (i === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+
+    // Title and peak readout
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = '8px monospace';
+    ctx.fillText('SEISMIC TREMOR (G)', 4, 9);
+    ctx.fillStyle = '#FF8C00';
+    ctx.fillText(`${this.peakAcceleration.toFixed(3)}g`, w - 38, 9);
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Historical Settlement Site:
+ * Roman coastal cities, villas, and temples around the Bay of Naples
+ */
+export class SettlementSite {
+  constructor(name, x, latinName, type = 'town') {
+    this.name = name;
+    this.x = x;
+    this.latinName = latinName;
+    this.type = type;
+    this.damaged = false;
+    this.buriedDepth = 0;
+  }
+}
+// ============================================================================
+// SECTION 5: MAIN VESUVIUS SIMULATION ENGINE
+// ============================================================================
 
 export class VesuviusEngine {
   constructor(canvas, ctx, controlsContainer) {
@@ -35,175 +1436,372 @@ export class VesuviusEngine {
     this.ctx = ctx;
     this.controlsContainer = controlsContainer;
 
-    // Simulation grid dimensions
-    this.simWidth = 240;
-    this.simHeight = 160;
-    this.grid = new Uint8Array(this.simWidth * this.simHeight);
-    this.heat = new Float32Array(this.simWidth * this.simHeight);
-    this.visited = new Uint8Array(this.simWidth * this.simHeight);
+    // Viewport scaling
+    this.width = canvas ? canvas.width || 800 : 800;
+    this.height = canvas ? canvas.height || 600 : 600;
+    this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
 
-    // Offscreen render buffer
-    this.offscreenCanvas = document.createElement('canvas');
-    this.offscreenCanvas.width = this.simWidth;
-    this.offscreenCanvas.height = this.simHeight;
-    this.offscreenCtx = this.offscreenCanvas.getContext('2d');
-    this.imgData = this.offscreenCtx.createImageData(this.simWidth, this.simHeight);
+    // Simulation grid dimensions (280 x 180 = 50,400 cells)
+    this.simWidth = 280;
+    this.simHeight = 180;
+    this.cellCount = this.simWidth * this.simHeight;
 
-    // State & parameters
+    // Primary cellular automata buffers
+    this.grid = new Uint8Array(this.cellCount);
+    this.heat = new Float32Array(this.cellCount);
+    this.visited = new Uint8Array(this.cellCount);
+    this.pressure = new Float32Array(this.cellCount);
+    this.elevationMap = new Int16Array(this.simWidth);
+
+    // Offscreen render canvas for ultra-fast CA blitting
+    if (typeof document !== 'undefined') {
+      this.offscreenCanvas = document.createElement('canvas');
+      this.offscreenCanvas.width = this.simWidth;
+      this.offscreenCanvas.height = this.simHeight;
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d');
+      this.imgData = this.offscreenCtx.createImageData(this.simWidth, this.simHeight);
+    } else {
+      this.offscreenCanvas = null;
+      this.offscreenCtx = null;
+      this.imgData = { data: new Uint8ClampedArray(this.cellCount * 4) };
+    }
+
+    // Kinematic entity collections
+    this.bombs = [];
+    this.bombFragments = [];
+    this.pdcs = [];
+    this.plumeParticles = [];
+    this.lightningBolts = [];
+    this.shockwaves = [];
+    this.fleet = [];
+    this.seismograph = new Seismograph(140);
+    this.audio = new VesuviusAudioSynthesizer();
+
+    // Simulation state and volcanological parameters
+    this.currentPhase = PHASE.DORMANT;
+    this.targetPlumeKm = 0.5;
+    this.plumeHeightKm = 0.5;
+    this.massEruptionRate = 0; // kg/s
+    this.vei = 0;
+    this.chamberPressure = 25; // MPa (0 to 100)
+    this.ventExitVelocity = 35; // m/s
+    this.windSpeed = -1.2; // m/s (drift towards Pompeii/Stabiae to the south-east)
+    this.magmaViscosity = 12;
+    this.time = 0;
+    this.screenShake = 0;
+    this.shakeOffsetX = 0;
+    this.shakeOffsetY = 0;
     this.selectedElement = ELEMENT.LAVA;
     this.brushSize = 4;
     this.isDrawing = false;
     this.mousePos = { x: 0, y: 0 };
-    this.chamberPressure = 20;
-    this.windSpeed = -0.5;
-    this.eruptionActive = false;
-    this.volcanoBuilt = false;
-    this.particleCount = 0;
+    this.activeParticles = 0;
+    this.isPaused = false;
+    this.showHUD = true;
 
+    // Topographical benchmarks
+    this.ventX = Math.floor(this.simWidth * 0.44); // Mount Somma crater peak
+    this.ventY = Math.floor(this.simHeight * 0.41);
+    this.chamberX = this.ventX;
+    this.chamberY = this.simHeight - 28;
+    this.chamberRadius = 26;
+    this.waterlineX = Math.floor(this.simWidth * 0.68); // Bay of Naples coastline
+
+    // Settlements
+    this.settlements = [
+      new SettlementSite('Herculaneum', 182, 'Herculaneum', 'port'),
+      new SettlementSite('Pompeii', 146, 'Pompeii', 'forum'),
+      new SettlementSite('Stabiae', 215, 'Stabiae', 'villa'),
+      new SettlementSite('Misenum', 28, 'Misenum', 'naval_base')
+    ];
+
+    // Initialize simulation environment and DOM
     this.initControls();
     this.buildVolcanoTerrain();
+    this.initFleet();
   }
 
+  // ==========================================================================
+  // SECTION 6: DOM CONTROLS & UI CONFIGURATION (HEADLESS SAFE)
+  // ==========================================================================
+
   initControls() {
-    if (!this.controlsContainer) return;
+    if (!this.controlsContainer || typeof document === 'undefined') return;
 
     this.controlsContainer.innerHTML = `
-      <div class="control-group">
-        <label>Material Brush</label>
-        <div class="control-btn-grid" id="elem-selector">
+      <div class="control-group" style="margin-bottom: 12px;">
+        <label style="font-weight: bold; color: var(--accent-gold, #D4AF37); font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+          🌋 Eruption Phase Chronology
+        </label>
+        <div class="control-btn-grid" id="phase-selector" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 5px;">
+          <button class="sub-btn active" data-phase="${PHASE.DORMANT}">0: Dormant</button>
+          <button class="sub-btn" data-phase="${PHASE.SEISMIC_TREMOR}">1: Tremor</button>
+          <button class="sub-btn" data-phase="${PHASE.PHREATOMAGMATIC}">2: Phreatic</button>
+          <button class="sub-btn" data-phase="${PHASE.SUB_PLINIAN}">3: Sub-Plinian</button>
+          <button class="sub-btn" data-phase="${PHASE.ULTRA_PLINIAN}">4: Ultra-Plinian</button>
+          <button class="sub-btn" data-phase="${PHASE.COLUMN_COLLAPSE}">5: PDC Surges</button>
+          <button class="sub-btn" data-phase="${PHASE.CALDERA_COLLAPSE}">6: Caldera</button>
+        </div>
+      </div>
+
+      <div class="control-group" style="margin-bottom: 12px;">
+        <label style="font-weight: bold; color: var(--accent-gold, #D4AF37); font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
+          🧪 Elemental Brush
+        </label>
+        <div class="control-btn-grid" id="elem-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 5px;">
           <button class="sub-btn active" data-elem="${ELEMENT.LAVA}">🔥 Lava</button>
           <button class="sub-btn" data-elem="${ELEMENT.WATER}">💧 Water</button>
+          <button class="sub-btn" data-elem="${ELEMENT.PUMICE}">🪨 Pumice</button>
+          <button class="sub-btn" data-elem="${ELEMENT.BASALT}">🧱 Basalt</button>
           <button class="sub-btn" data-elem="${ELEMENT.SAND}">🏜️ Sand</button>
-          <button class="sub-btn" data-elem="${ELEMENT.STONE}">🪨 Basalt</button>
-          <button class="sub-btn" data-elem="${ELEMENT.OIL}">🛢️ Naptha</button>
-          <button class="sub-btn" data-elem="${ELEMENT.FIRE}">⚡ Fire</button>
-          <button class="sub-btn" data-elem="${ELEMENT.MAGMA_CORE}">🌋 Magma Core</button>
+          <button class="sub-btn" data-elem="${ELEMENT.ASH}">🌪️ Ash</button>
+          <button class="sub-btn" data-elem="${ELEMENT.MAGMA_CORE}">🌋 Magma</button>
+          <button class="sub-btn" data-elem="${ELEMENT.SULFUR_GAS}">☣️ Sulfur</button>
           <button class="sub-btn" data-elem="${ELEMENT.EMPTY}">🧹 Excavate</button>
         </div>
       </div>
 
-      <div class="control-group">
-        <label>Brush Radius: <span id="brush-val">${this.brushSize}px</span></label>
-        <input type="range" id="brush-slider" min="1" max="14" value="${this.brushSize}">
+      <div class="control-group" style="margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #ccc;">
+          <span>Brush Radius</span>
+          <span id="brush-val" style="color: var(--accent-gold, #D4AF37); font-weight: bold;">${this.brushSize}px</span>
+        </div>
+        <input type="range" id="brush-slider" min="1" max="16" value="${this.brushSize}" style="width: 100%;">
       </div>
 
-      <div class="control-group">
-        <label>Magma Chamber Pressure</label>
-        <input type="range" id="pressure-slider" min="0" max="100" value="${this.chamberPressure}">
+      <div class="control-group" style="margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #ccc;">
+          <span>Chamber Pressure (MPa)</span>
+          <span id="pressure-val" style="color: var(--accent-gold, #D4AF37); font-weight: bold;">${this.chamberPressure} MPa</span>
+        </div>
+        <input type="range" id="pressure-slider" min="0" max="100" value="${this.chamberPressure}" style="width: 100%;">
       </div>
 
-      <div class="control-group">
-        <label>Atmospheric Wind Drift</label>
-        <input type="range" id="wind-slider" min="-3" max="3" step="0.5" value="${this.windSpeed}">
+      <div class="control-group" style="margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #ccc;">
+          <span>Atmospheric Wind Drift</span>
+          <span id="wind-val" style="color: var(--accent-gold, #D4AF37); font-weight: bold;">${this.windSpeed} m/s</span>
+        </div>
+        <input type="range" id="wind-slider" min="-5" max="5" step="0.5" value="${this.windSpeed}" style="width: 100%;">
       </div>
 
-      <div class="control-group">
-        <button id="erupt-btn" class="sub-btn" style="background: rgba(200,50,50,0.3); border-color: var(--accent-crimson); font-weight: bold; padding: 10px;">
-          🌋 TRIGGER PLINIAN ERUPTION
+      <div class="control-group" style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #ccc;">
+          <span>Magma Viscosity</span>
+          <span id="visc-val" style="color: var(--accent-gold, #D4AF37); font-weight: bold;">${this.magmaViscosity}</span>
+        </div>
+        <input type="range" id="visc-slider" min="1" max="50" value="${this.magmaViscosity}" style="width: 100%;">
+      </div>
+
+      <div class="control-group" style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+        <button id="btn-ultra" class="sub-btn" style="background: rgba(180, 40, 20, 0.4); border-color: #FF3B30; font-weight: bold; padding: 7px;">
+          🌋 TRIGGER ULTRA-PLINIAN CLIMAX
+        </button>
+        <button id="btn-pdc" class="sub-btn" style="background: rgba(160, 100, 20, 0.4); border-color: #FFA500; font-weight: bold; padding: 7px;">
+          🌊 COLUMN COLLAPSE & PDCs
+        </button>
+        <button id="btn-shock" class="sub-btn" style="background: rgba(40, 120, 200, 0.3); border-color: #38ACEC; font-weight: bold; padding: 7px;">
+          💥 PHREATOMAGMATIC SHOCKWAVE
+        </button>
+        <button id="btn-fleet" class="sub-btn" style="background: rgba(120, 40, 180, 0.3); border-color: #9B59B6; font-weight: bold; padding: 7px;">
+          🚢 DEPLOY ROMAN RESCUE FLEET
+        </button>
+        <button id="btn-reset" class="sub-btn" style="background: rgba(80, 80, 90, 0.3); border-color: #888; font-weight: bold; padding: 7px;">
+          🔄 RESET MOUNT SOMMA & BAY
         </button>
       </div>
     `;
 
-    // Bind controls
-    this.controlsContainer.querySelectorAll('#elem-selector .sub-btn').forEach(btn => {
+    // Bind Phase selection buttons
+    this.controlsContainer.querySelectorAll('#phase-selector .sub-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        this.controlsContainer.querySelectorAll('#elem-selector .sub-btn').forEach(b => b.classList.remove('active'));
+        const p = parseInt(btn.dataset.phase, 10);
+        this.setEruptionPhase(p);
+      });
+    });
+
+    // Bind Element brush selector buttons
+    this.controlsContainer.querySelectorAll('#elem-selector .sub-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.controlsContainer.querySelectorAll('#elem-selector .sub-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.selectedElement = parseInt(btn.dataset.elem, 10);
       });
     });
 
+    // Sliders
     const brushSlider = this.controlsContainer.querySelector('#brush-slider');
     const brushVal = this.controlsContainer.querySelector('#brush-val');
-    brushSlider.addEventListener('input', (e) => {
-      this.brushSize = parseInt(e.target.value, 10);
-      brushVal.textContent = `${this.brushSize}px`;
-    });
+    if (brushSlider) {
+      brushSlider.addEventListener('input', (e) => {
+        this.brushSize = parseInt(e.target.value, 10);
+        if (brushVal) brushVal.textContent = `${this.brushSize}px`;
+      });
+    }
 
     const pressureSlider = this.controlsContainer.querySelector('#pressure-slider');
-    pressureSlider.addEventListener('input', (e) => {
-      this.chamberPressure = parseInt(e.target.value, 10);
-    });
+    const pressureVal = this.controlsContainer.querySelector('#pressure-val');
+    if (pressureSlider) {
+      pressureSlider.addEventListener('input', (e) => {
+        this.chamberPressure = parseInt(e.target.value, 10);
+        if (pressureVal) pressureVal.textContent = `${this.chamberPressure} MPa`;
+      });
+    }
 
     const windSlider = this.controlsContainer.querySelector('#wind-slider');
-    windSlider.addEventListener('input', (e) => {
-      this.windSpeed = parseFloat(e.target.value);
-    });
+    const windVal = this.controlsContainer.querySelector('#wind-val');
+    if (windSlider) {
+      windSlider.addEventListener('input', (e) => {
+        this.windSpeed = parseFloat(e.target.value);
+        if (windVal) windVal.textContent = `${this.windSpeed} m/s`;
+      });
+    }
 
-    const eruptBtn = this.controlsContainer.querySelector('#erupt-btn');
-    eruptBtn.addEventListener('click', () => {
-      this.triggerEruption();
-    });
+    const viscSlider = this.controlsContainer.querySelector('#visc-slider');
+    const viscVal = this.controlsContainer.querySelector('#visc-val');
+    if (viscSlider) {
+      viscSlider.addEventListener('input', (e) => {
+        this.magmaViscosity = parseInt(e.target.value, 10);
+        if (viscVal) viscVal.textContent = `${this.magmaViscosity}`;
+      });
+    }
+
+    // Action Triggers
+    const btnUltra = this.controlsContainer.querySelector('#btn-ultra');
+    if (btnUltra) btnUltra.addEventListener('click', () => this.setEruptionPhase(PHASE.ULTRA_PLINIAN));
+
+    const btnPdc = this.controlsContainer.querySelector('#btn-pdc');
+    if (btnPdc) btnPdc.addEventListener('click', () => this.setEruptionPhase(PHASE.COLUMN_COLLAPSE));
+
+    const btnShock = this.controlsContainer.querySelector('#btn-shock');
+    if (btnShock) btnShock.addEventListener('click', () => this.triggerShockwave(this.ventX, this.ventY, 85));
+
+    const btnFleet = this.controlsContainer.querySelector('#btn-fleet');
+    if (btnFleet) btnFleet.addEventListener('click', () => this.deployFleetMission());
+
+    const btnReset = this.controlsContainer.querySelector('#btn-reset');
+    if (btnReset) btnReset.addEventListener('click', () => this.reset());
   }
+
+  // ==========================================================================
+  // SECTION 7: TOPOGRAPHICAL TERRAIN GENERATION & HYDROLOGY
+  // ==========================================================================
 
   buildVolcanoTerrain() {
     this.grid.fill(ELEMENT.EMPTY);
-    this.heat.fill(20); // 20 C ambient
+    this.heat.fill(20); // 20°C ambient
+    this.pressure.fill(0);
 
     const w = this.simWidth;
     const h = this.simHeight;
-    const peakX = Math.floor(w * 0.48);
-    const peakY = Math.floor(h * 0.42);
-    const ventWidth = 14;
+    const ventX = this.ventX;
+    const ventY = this.ventY;
+    const coastX = this.waterlineX;
 
-    // Construct stratified stratovolcano cone
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
+    // 1. Build Bedrock crust and Mount Somma Stratovolcano Profile
+    for (let x = 0; x < w; x++) {
+      // Flank profile equation
+      let surfaceY;
+      if (x < coastX) {
+        // Continental landmass with volcano cone
+        const distFromPeak = Math.abs(x - ventX);
+        const mountainElevation = Math.max(0, (h - 32 - ventY) - distFromPeak * 0.78);
+        surfaceY = Math.floor(h - 32 - mountainElevation);
+      } else {
+        // Coastal shoreline descending into the Bay of Naples
+        const distIntoBay = x - coastX;
+        surfaceY = Math.floor(h - 30 + Math.min(18, distIntoBay * 0.45));
+      }
+
+      this.elevationMap[x] = surfaceY;
+
+      for (let y = surfaceY; y < h; y++) {
         const idx = y * w + x;
-        
-        // Bedrock base
-        if (y > h - 18) {
-          this.grid[idx] = ELEMENT.STONE;
-          this.heat[idx] = 25;
-          continue;
-        }
-
-        // Mountain flanks slope equation
-        const distFromPeak = Math.abs(x - peakX);
-        const mountainHeight = Math.max(0, (h - 20 - peakY) - distFromPeak * 0.72);
-        const surfaceY = (h - 20) - mountainHeight;
-
-        if (y >= surfaceY) {
-          // Vent conduit in middle
-          if (distFromPeak < ventWidth / 2 && y < h - 35) {
-            // Conduit interior: magma reservoir
-            if (y > h - 50) {
-              this.grid[idx] = ELEMENT.LAVA;
-              this.heat[idx] = 850;
-            } else {
-              this.grid[idx] = ELEMENT.EMPTY;
-            }
+        // Deep bedrock vs volcanic stratocone layers
+        if (y > h - 14) {
+          this.grid[idx] = ELEMENT.BASALT;
+          this.heat[idx] = 45;
+        } else if (y >= surfaceY) {
+          // Stratified volcanic layers (ancient ash falls and basalt lava flows)
+          const layerSeed = Math.sin(x * 0.12) * 3 + y;
+          if (layerSeed % 12 < 3) {
+            this.grid[idx] = ELEMENT.ASH;
+            this.heat[idx] = 25;
+          } else if (layerSeed % 12 < 5) {
+            this.grid[idx] = ELEMENT.SAND;
+            this.heat[idx] = 22;
           } else {
-            // Layered volcanic rock and ash strata
-            if ((y + Math.sin(x * 0.15) * 3) % 10 < 3) {
-              this.grid[idx] = ELEMENT.ASH;
-            } else {
-              this.grid[idx] = ELEMENT.STONE;
-            }
-            this.heat[idx] = 30;
+            this.grid[idx] = ELEMENT.STONE;
+            this.heat[idx] = 28;
           }
         }
       }
     }
 
-    // Subterranean Magma Chamber
-    const chamberX = peakX;
-    const chamberY = h - 26;
-    const chamberR = 24;
+    // 2. Excavate Central Volcanic Conduit / Neck
+    const conduitRadius = 7;
+    for (let y = ventY; y < h - 35; y++) {
+      for (let dx = -conduitRadius; dx <= conduitRadius; dx++) {
+        const cx = ventX + dx;
+        if (cx >= 0 && cx < w) {
+          const idx = y * w + cx;
+          if (y > h - 52) {
+            this.grid[idx] = ELEMENT.LAVA;
+            this.heat[idx] = 1050;
+          } else {
+            this.grid[idx] = ELEMENT.EMPTY;
+            this.heat[idx] = 150;
+          }
+        }
+      }
+    }
 
-    for (let dy = -chamberR; dy <= chamberR; dy++) {
-      for (let dx = -chamberR; dx <= chamberR; dx++) {
-        if (dx * dx + dy * dy * 1.5 < chamberR * chamberR) {
-          const cx = chamberX + dx;
-          const cy = chamberY + dy;
-          if (cx >= 0 && cx < w && cy >= 0 && cy < h) {
-            const idx = cy * w + cx;
-            if (dx * dx + dy * dy < 16) {
+    // 3. Fill the Bay of Naples with Water
+    const seaLevelY = h - 28;
+    for (let x = coastX; x < w; x++) {
+      for (let y = seaLevelY; y < h; y++) {
+        const idx = y * w + x;
+        if (this.grid[idx] === ELEMENT.EMPTY) {
+          this.grid[idx] = ELEMENT.WATER;
+          this.heat[idx] = 18;
+        }
+      }
+    }
+
+    // 4. Subterranean Groundwater Aquifers (Breaches create Phreatomagmatic Blasts)
+    const aquiferX1 = Math.floor(w * 0.32);
+    const aquiferX2 = Math.floor(w * 0.58);
+    const aquiferY = h - 45;
+    for (let dy = -5; dy <= 5; dy++) {
+      for (let dx = -8; dx <= 8; dx++) {
+        if (dx * dx + dy * dy < 50) {
+          const idx1 = (aquiferY + dy) * w + (aquiferX1 + dx);
+          const idx2 = (aquiferY + dy) * w + (aquiferX2 + dx);
+          this.grid[idx1] = ELEMENT.WATER;
+          this.heat[idx1] = 24;
+          this.grid[idx2] = ELEMENT.WATER;
+          this.heat[idx2] = 24;
+        }
+      }
+    }
+
+    // 5. Deep Plutonic Magma Chamber
+    const cX = this.chamberX;
+    const cY = this.chamberY;
+    const cR = this.chamberRadius;
+    for (let dy = -cR; dy <= cR; dy++) {
+      for (let dx = -cR; dx <= cR; dx++) {
+        if (dx * dx + dy * dy * 1.4 < cR * cR) {
+          const px = cX + dx;
+          const py = cY + dy;
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            const idx = py * w + px;
+            if (dx * dx + dy * dy < 36) {
               this.grid[idx] = ELEMENT.MAGMA_CORE;
-              this.heat[idx] = 1200;
+              this.heat[idx] = 1350;
             } else {
               this.grid[idx] = ELEMENT.LAVA;
-              this.heat[idx] = 950;
+              this.heat[idx] = 1150;
             }
           }
         }
@@ -211,161 +1809,238 @@ export class VesuviusEngine {
     }
   }
 
-  triggerEruption() {
-    this.eruptionActive = true;
+  initFleet() {
+    this.fleet = [
+      new RomanGalley(this.waterlineX + 18, this.simHeight - 31, 'Minerva (Flagship)', true),
+      new RomanGalley(this.waterlineX + 38, this.simHeight - 29, 'Victoria (Liburnian)', false),
+      new RomanGalley(this.waterlineX + 58, this.simHeight - 30, 'Neptunus (Quadrireme)', false)
+    ];
+  }
+
+  deployFleetMission() {
+    for (const galley of this.fleet) {
+      galley.state = 'sailing_to_coast';
+      galley.dialog = 'Ad oram Herculanei contendite!';
+      galley.dialogTimer = 4.5;
+    }
+    this.audio.playOarStroke();
+  }
+
+  // ==========================================================================
+  // SECTION 8: VOLCANOLOGICAL PHASE CONTROLLER & TRIGGERS
+  // ==========================================================================
+
+  setEruptionPhase(phaseIndex) {
+    this.currentPhase = phaseIndex;
+    const config = PHASE_CONFIG[phaseIndex];
+    if (!config) return;
+
+    this.vei = config.vei;
+    this.targetPlumeKm = config.plumeTargetKm;
+    this.massEruptionRate = config.massRateKgS;
+    this.chamberPressure = Math.min(100, 20 + phaseIndex * 13);
+
+    // Audio cues
+    this.audio.ensureContext();
+    this.audio.setRumbleIntensity(config.seismicTremor);
+
+    if (phaseIndex === PHASE.PHREATOMAGMATIC || phaseIndex === PHASE.ULTRA_PLINIAN) {
+      this.triggerShockwave(this.ventX, this.ventY, 95);
+      this.audio.playExplosion(1.2);
+    } else if (phaseIndex === PHASE.COLUMN_COLLAPSE) {
+      this.triggerColumnCollapseSurges();
+    } else if (phaseIndex === PHASE.CALDERA_COLLAPSE) {
+      this.triggerCalderaCollapse();
+    }
+
+    // Update UI button states if container exists
+    if (this.controlsContainer) {
+      this.controlsContainer.querySelectorAll('#phase-selector .sub-btn').forEach((btn) => {
+        const p = parseInt(btn.dataset.phase, 10);
+        btn.classList.toggle('active', p === phaseIndex);
+      });
+      const pressureSlider = this.controlsContainer.querySelector('#pressure-slider');
+      const pressureVal = this.controlsContainer.querySelector('#pressure-val');
+      if (pressureSlider) pressureSlider.value = this.chamberPressure;
+      if (pressureVal) pressureVal.textContent = `${this.chamberPressure} MPa`;
+    }
+  }
+
+  triggerShockwave(x, y, intensity = 80) {
+    this.shockwaves.push(new Shockwave(x, y, intensity, 110));
+    this.screenShake = Math.min(15, intensity * 0.16);
+    this.audio.playExplosion(intensity * 0.012);
+
+    // Blast away loose ash and smoke around shock origin
     const w = this.simWidth;
     const h = this.simHeight;
-    const ventX = Math.floor(w * 0.48);
-    const ventY = Math.floor(h * 0.42);
-
-    // Blast conduit clear of obstructions
-    for (let dy = -15; dy <= 20; dy++) {
-      for (let dx = -10; dx <= 10; dx++) {
-        const x = ventX + dx;
-        const y = ventY + dy;
-        if (x >= 0 && x < w && y >= 0 && y < h) {
-          const idx = y * w + x;
-          this.grid[idx] = ELEMENT.FIRE;
-          this.heat[idx] = 1100;
-        }
-      }
-    }
-
-    // Spawn massive ash column and lava fountain
-    for (let i = 0; i < 40; i++) {
-      const vx = ventX + (Math.random() - 0.5) * 12;
-      const vy = ventY - 5 - Math.random() * 25;
-      const rx = Math.floor(vx);
-      const ry = Math.floor(vy);
-      if (rx >= 0 && rx < w && ry >= 0 && ry < h) {
-        const idx = ry * w + rx;
-        this.grid[idx] = Math.random() < 0.6 ? ELEMENT.LAVA : ELEMENT.FIRE;
-        this.heat[idx] = 1000;
-      }
-    }
-  }
-
-  onMouseDown(pos) {
-    this.isDrawing = true;
-    this.mousePos = pos;
-    this.paint(pos);
-  }
-
-  onMouseMove(pos) {
-    this.mousePos = pos;
-    if (this.isDrawing) {
-      this.paint(pos);
-    }
-  }
-
-  onMouseUp() {
-    this.isDrawing = false;
-  }
-
-  onWheel(deltaY) {
-    if (deltaY < 0) {
-      this.brushSize = Math.min(16, this.brushSize + 1);
-    } else {
-      this.brushSize = Math.max(1, this.brushSize - 1);
-    }
-    const brushVal = this.controlsContainer.querySelector('#brush-val');
-    const brushSlider = this.controlsContainer.querySelector('#brush-slider');
-    if (brushVal) brushVal.textContent = `${this.brushSize}px`;
-    if (brushSlider) brushSlider.value = this.brushSize;
-  }
-
-  onContextMenu(pos) {
-    // Right click triggers heat / explosion at point
-    const gx = Math.floor((pos.x / this.canvas.width) * this.simWidth);
-    const gy = Math.floor((pos.y / this.canvas.height) * this.simHeight);
-    this.explode(gx, gy, 10);
-  }
-
-  paint(pos) {
-    const gx = Math.floor((pos.x / this.canvas.width) * this.simWidth);
-    const gy = Math.floor((pos.y / this.canvas.height) * this.simHeight);
-    const r = this.brushSize;
-    const w = this.simWidth;
-    const h = this.simHeight;
-
-    for (let dy = -r; dy <= r; dy++) {
-      for (let dx = -r; dx <= r; dx++) {
-        if (dx * dx + dy * dy <= r * r) {
-          const x = gx + dx;
-          const y = gy + dy;
-          if (x >= 0 && x < w && y >= 0 && y < h) {
-            const idx = y * w + x;
-            this.grid[idx] = this.selectedElement;
-            if (this.selectedElement === ELEMENT.LAVA) this.heat[idx] = 950;
-            else if (this.selectedElement === ELEMENT.FIRE) this.heat[idx] = 1100;
-            else if (this.selectedElement === ELEMENT.WATER) this.heat[idx] = 15;
-            else if (this.selectedElement === ELEMENT.EMPTY) this.heat[idx] = 20;
-          }
-        }
-      }
-    }
-  }
-
-  explode(cx, cy, radius) {
-    const w = this.simWidth;
-    const h = this.simHeight;
-    for (let dy = -radius; dy <= radius; dy++) {
-      for (let dx = -radius; dx <= radius; dx++) {
-        const distSq = dx * dx + dy * dy;
-        if (distSq <= radius * radius) {
-          const x = cx + dx;
-          const y = cy + dy;
-          if (x >= 0 && x < w && y >= 0 && y < h) {
-            const idx = y * w + x;
-            if (distSq < radius * 2) {
-              this.grid[idx] = ELEMENT.FIRE;
-              this.heat[idx] = 1400;
-            } else if (this.grid[idx] === ELEMENT.STONE) {
-              this.grid[idx] = Math.random() < 0.5 ? ELEMENT.ASH : ELEMENT.SAND;
+    const blastRadius = 14;
+    for (let dy = -blastRadius; dy <= blastRadius; dy++) {
+      for (let dx = -blastRadius; dx <= blastRadius; dx++) {
+        if (dx * dx + dy * dy <= blastRadius * blastRadius) {
+          const bx = x + dx;
+          const by = y + dy;
+          if (bx >= 0 && bx < w && by >= 0 && by < h) {
+            const idx = by * w + bx;
+            const elem = this.grid[idx];
+            if (elem === ELEMENT.SMOKE || elem === ELEMENT.STEAM || elem === ELEMENT.ASH) {
+              this.grid[idx] = Math.random() < 0.3 ? ELEMENT.FIRE : ELEMENT.EMPTY;
             }
           }
         }
       }
     }
   }
+
+  triggerColumnCollapseSurges() {
+    this.triggerShockwave(this.ventX, this.ventY, 80);
+    // Spawn massive pyroclastic density currents down both flanks
+    for (let i = 0; i < 18; i++) {
+      const vxWest = -2.8 - Math.random() * 3.5;
+      const vyWest = 1.2 + Math.random() * 1.8;
+      this.pdcs.push(new PyroclasticCurrent(this.ventX - 6, this.ventY + 2, vxWest, vyWest, 'west'));
+
+      const vxEast = 2.8 + Math.random() * 3.5;
+      const vyEast = 1.2 + Math.random() * 1.8;
+      this.pdcs.push(new PyroclasticCurrent(this.ventX + 6, this.ventY + 2, vxEast, vyEast, 'east'));
+    }
+  }
+
+  triggerCalderaCollapse() {
+    this.triggerShockwave(this.ventX, this.ventY, 120);
+    this.screenShake = 22;
+    // Structural subsidence of crater rim
+    const w = this.simWidth;
+    const h = this.simHeight;
+    const rimRadius = 22;
+    for (let dx = -rimRadius; dx <= rimRadius; dx++) {
+      const cx = this.ventX + dx;
+      if (cx >= 0 && cx < w) {
+        const drop = Math.floor((1 - Math.abs(dx) / rimRadius) * 12);
+        for (let y = this.ventY - 5; y < this.ventY + 20; y++) {
+          const idx = y * w + cx;
+          if (this.grid[idx] === ELEMENT.STONE || this.grid[idx] === ELEMENT.ASH) {
+            this.grid[idx] = Math.random() < 0.6 ? ELEMENT.SAND : ELEMENT.FIRE;
+            this.heat[idx] = 850;
+          }
+        }
+        this.elevationMap[cx] = Math.min(h - 20, this.elevationMap[cx] + drop);
+      }
+    }
+  }
+  // ==========================================================================
+  // SECTION 9: CELLULAR AUTOMATA STEP & THERMAL HEAT DIFFUSION
+  // ==========================================================================
 
   update(dt) {
+    if (this.isPaused) return;
+    this.time += dt;
+
+    // Decay screen shake
+    if (this.screenShake > 0) {
+      this.shakeOffsetX = (Math.random() - 0.5) * this.screenShake;
+      this.shakeOffsetY = (Math.random() - 0.5) * this.screenShake;
+      this.screenShake = Math.max(0, this.screenShake - dt * 9);
+    } else {
+      this.shakeOffsetX = 0;
+      this.shakeOffsetY = 0;
+    }
+
+    // Smooth plume height lerp towards target
+    this.plumeHeightKm += (this.targetPlumeKm - this.plumeHeightKm) * dt * 0.45;
+
+    // 1. Thermodynamic Cellular Automata Pass
+    this.updateHeatDiffusion(dt);
+    this.updateCellularAutomata(dt);
+    this.updateMagmaChamber(dt);
+
+    // 2. High-Precision Kinematic & Particle Layer Pass
+    this.updateKinematics(dt);
+
+    // 3. Update Seismograph Waveform
+    const tremorVal = PHASE_CONFIG[this.currentPhase] ? PHASE_CONFIG[this.currentPhase].seismicTremor : 0.05;
+    this.seismograph.record(tremorVal + (this.screenShake > 0 ? 0.45 : 0), dt);
+  }
+
+  updateHeatDiffusion(dt) {
+    const w = this.simWidth;
+    const h = this.simHeight;
+    const alpha = 0.08; // Thermal diffusivity coefficient
+
+    // Sample discrete 4-neighbor Laplacian heat transfer
+    for (let y = 1; y < h - 1; y += 2) {
+      for (let x = 1; x < w - 1; x += 2) {
+        const idx = y * w + x;
+        const elem = this.grid[idx];
+        if (elem === ELEMENT.EMPTY) continue;
+
+        const tCenter = this.heat[idx];
+        const laplacian =
+          this.heat[idx - 1] +
+          this.heat[idx + 1] +
+          this.heat[idx - w] +
+          this.heat[idx + w] -
+          4 * tCenter;
+
+        this.heat[idx] += alpha * laplacian * dt * 10;
+
+        // Phase transitions under thermodynamic thresholds
+        if (elem === ELEMENT.LAVA && this.heat[idx] < 650) {
+          // Lava solidifies to Basalt when cooled below 650°C
+          this.grid[idx] = ELEMENT.BASALT;
+        } else if (elem === ELEMENT.BASALT && this.heat[idx] > 1150) {
+          // Basalt remelts into Lava
+          this.grid[idx] = ELEMENT.LAVA;
+        } else if (elem === ELEMENT.WATER && this.heat[idx] > 100) {
+          // Water boils into Steam
+          this.grid[idx] = ELEMENT.STEAM;
+          this.audio.playSteamHiss();
+        }
+      }
+    }
+  }
+
+  updateMagmaChamber(dt) {
+    const w = this.simWidth;
+    const h = this.simHeight;
+    const cX = this.chamberX;
+    const cY = this.chamberY;
+
+    // Chamber pressure forces lava bubbles up the central feeder conduit
+    if (this.chamberPressure > 5) {
+      const bubbleProb = this.chamberPressure * 0.008;
+      if (Math.random() < bubbleProb) {
+        const bx = cX + Math.floor((Math.random() - 0.5) * 10);
+        const by = cY - 14;
+        const idx = by * w + bx;
+        if (by >= 0 && (this.grid[idx] === ELEMENT.EMPTY || this.grid[idx] === ELEMENT.LAVA)) {
+          this.grid[idx] = Math.random() < 0.25 ? ELEMENT.FIRE : ELEMENT.LAVA;
+          this.heat[idx] = 1150;
+        }
+      }
+    }
+  }
+
+  updateCellularAutomata(dt) {
     this.visited.fill(0);
     const w = this.simWidth;
     const h = this.simHeight;
     let totalActive = 0;
 
-    // Process subterranean pressure & chamber bubbling
-    if (this.chamberPressure > 0) {
-      const chamberX = Math.floor(w * 0.48);
-      const chamberY = h - 26;
-      if (Math.random() < this.chamberPressure * 0.005) {
-        // Spawn rising lava bubble
-        const bx = chamberX + Math.floor((Math.random() - 0.5) * 10);
-        const by = chamberY - 10;
-        const idx = by * w + bx;
-        if (this.grid[idx] === ELEMENT.EMPTY || this.grid[idx] === ELEMENT.LAVA) {
-          this.grid[idx] = Math.random() < 0.3 ? ELEMENT.FIRE : ELEMENT.LAVA;
-          this.heat[idx] = 1100;
-        }
-      }
-    }
-
-    // Bottom-to-top traversal for falling gravity elements
+    // Bottom-to-top traversal for gravity falling elements
     for (let y = h - 1; y >= 0; y--) {
-      // Alternate X direction scan to prevent directional bias
-      const leftToRight = (y % 2 === 0);
-      const startX = leftToRight ? 0 : w - 1;
-      const endX = leftToRight ? w : -1;
-      const stepX = leftToRight ? 1 : -1;
+      // Alternate X scan direction to prevent directional bias
+      const ltr = (y + Math.floor(this.time * 60)) % 2 === 0;
+      const startX = ltr ? 0 : w - 1;
+      const endX = ltr ? w : -1;
+      const stepX = ltr ? 1 : -1;
 
       for (let x = startX; x !== endX; x += stepX) {
         const idx = y * w + x;
         const elem = this.grid[idx];
-
         if (elem === ELEMENT.EMPTY) continue;
-        totalActive++;
 
+        totalActive++;
         if (this.visited[idx]) continue;
 
         switch (elem) {
@@ -374,9 +2049,12 @@ export class VesuviusEngine {
             this.updateFallingSolid(x, y, idx, elem);
             break;
 
+          case ELEMENT.PUMICE:
+            this.updatePumice(x, y, idx);
+            break;
+
           case ELEMENT.WATER:
-          case ELEMENT.OIL:
-            this.updateLiquid(x, y, idx, elem, elem === ELEMENT.WATER ? 3 : 2);
+            this.updateLiquid(x, y, idx, elem, 4);
             break;
 
           case ELEMENT.LAVA:
@@ -392,21 +2070,19 @@ export class VesuviusEngine {
             this.updateGas(x, y, idx, elem);
             break;
 
+          case ELEMENT.SULFUR_GAS:
+            this.updateSulfurGas(x, y, idx);
+            break;
+
           case ELEMENT.MAGMA_CORE:
-            // Continuous magma generator
-            if (Math.random() < 0.08) {
-              const aboveIdx = (y - 1) * w + x;
-              if (y > 0 && (this.grid[aboveIdx] === ELEMENT.EMPTY || this.grid[aboveIdx] === ELEMENT.STONE)) {
-                this.grid[aboveIdx] = ELEMENT.LAVA;
-                this.heat[aboveIdx] = 1100;
-              }
-            }
+            // Continuous plutonic heat source
+            this.heat[idx] = 1350;
             break;
         }
       }
     }
 
-    this.particleCount = totalActive;
+    this.activeParticles = totalActive;
   }
 
   updateFallingSolid(x, y, idx, elem) {
@@ -417,14 +2093,14 @@ export class VesuviusEngine {
     const belowIdx = (y + 1) * w + x;
     const belowElem = this.grid[belowIdx];
 
-    // Fall directly down
-    if (belowElem === ELEMENT.EMPTY || belowElem === ELEMENT.WATER || belowElem === ELEMENT.OIL) {
+    // Fall straight down through empty or light fluids
+    if (belowElem === ELEMENT.EMPTY || belowElem === ELEMENT.WATER) {
       this.swap(idx, belowIdx);
       this.visited[belowIdx] = 1;
       return;
     }
 
-    // Down-diagonal slide
+    // Down-diagonal slide along angle of repose
     const dir = Math.random() < 0.5 ? 1 : -1;
     const d1x = x + dir;
     const d2x = x - dir;
@@ -447,12 +2123,41 @@ export class VesuviusEngine {
     }
   }
 
+  updatePumice(x, y, idx) {
+    const w = this.simWidth;
+    const h = this.simHeight;
+    if (y >= h - 1) return;
+
+    const belowIdx = (y + 1) * w + x;
+    const belowElem = this.grid[belowIdx];
+
+    // Porous Pumice physics: Density ~620 kg/m^3 is LESS than Water (1000 kg/m^3)
+    // Therefore, Pumice FLOATS on Water, creating vast pumice rafts in the Bay!
+    if (belowElem === ELEMENT.WATER) {
+      // Float atop water: slide horizontally across water surface
+      const floatDir = this.windSpeed >= 0 ? 1 : -1;
+      const sideX = x + floatDir;
+      if (sideX >= 0 && sideX < w) {
+        const sideIdx = y * w + sideX;
+        if (this.grid[sideIdx] === ELEMENT.EMPTY) {
+          this.swap(idx, sideIdx);
+          this.visited[sideIdx] = 1;
+          return;
+        }
+      }
+      return; // Rest comfortably floating atop water
+    }
+
+    // Otherwise behaves as lightweight granular tephra
+    this.updateFallingSolid(x, y, idx, ELEMENT.PUMICE);
+  }
+
   updateLiquid(x, y, idx, elem, spread) {
     const w = this.simWidth;
     const h = this.simHeight;
     if (y >= h - 1) return;
 
-    // Down
+    // Fall straight down
     const belowIdx = (y + 1) * w + x;
     if (this.grid[belowIdx] === ELEMENT.EMPTY) {
       this.swap(idx, belowIdx);
@@ -460,13 +2165,7 @@ export class VesuviusEngine {
       return;
     }
 
-    // Water extinguish fire or boil
-    if (elem === ELEMENT.WATER && this.heat[idx] > 100) {
-      this.grid[idx] = ELEMENT.STEAM;
-      return;
-    }
-
-    // Diagonal flow
+    // Down-diagonal flow
     const dir = Math.random() < 0.5 ? 1 : -1;
     const d1 = x + dir;
     const d2 = x - dir;
@@ -483,7 +2182,7 @@ export class VesuviusEngine {
       return;
     }
 
-    // Lateral spread
+    // Lateral spreading
     for (let s = 1; s <= spread; s++) {
       const lx = x + dir * s;
       if (lx >= 0 && lx < w && this.grid[y * w + lx] === ELEMENT.EMPTY) {
@@ -498,7 +2197,7 @@ export class VesuviusEngine {
     const w = this.simWidth;
     const h = this.simHeight;
 
-    // Lava interaction with neighbors
+    // Contact interactions: Water + Lava -> Violent Phreatomagmatic Flashing!
     const neighbors = [
       (y - 1) * w + x,
       (y + 1) * w + x,
@@ -508,23 +2207,22 @@ export class VesuviusEngine {
 
     for (const nIdx of neighbors) {
       if (nIdx >= 0 && nIdx < w * h) {
-        const nElem = this.grid[nIdx];
-        if (nElem === ELEMENT.WATER) {
-          // Water + Lava -> Stone + Steam explosion!
-          this.grid[idx] = ELEMENT.STONE;
+        if (this.grid[nIdx] === ELEMENT.WATER) {
+          // Instant explosive phase change!
+          this.grid[idx] = ELEMENT.BASALT;
           this.grid[nIdx] = ELEMENT.STEAM;
-          this.heat[idx] = 300;
-          this.heat[nIdx] = 200;
+          this.heat[idx] = 450;
+          this.heat[nIdx] = 280;
+          this.triggerShockwave(x, y, 25);
+          this.audio.playSteamHiss();
           return;
-        } else if (nElem === ELEMENT.OIL) {
-          this.grid[nIdx] = ELEMENT.FIRE;
-          this.heat[nIdx] = 1200;
         }
       }
     }
 
-    // Viscous fluid motion (slower than water)
-    if (Math.random() < 0.7) {
+    // Viscous fluid motion governed by magma viscosity
+    const moveProb = 1.0 / (1.0 + this.magmaViscosity * 0.18);
+    if (Math.random() < moveProb) {
       this.updateLiquid(x, y, idx, ELEMENT.LAVA, 1);
     }
   }
@@ -533,22 +2231,20 @@ export class VesuviusEngine {
     const w = this.simWidth;
     const h = this.simHeight;
 
-    // Fire burns and dies quickly
-    if (Math.random() < 0.25) {
-      this.grid[idx] = Math.random() < 0.4 ? ELEMENT.SMOKE : ELEMENT.EMPTY;
+    // Rapid thermal dissipation into smoke
+    if (Math.random() < 0.28) {
+      this.grid[idx] = Math.random() < 0.45 ? ELEMENT.SMOKE : ELEMENT.EMPTY;
       return;
     }
 
     // Rise upward
     if (y > 0) {
-      const upX = x + Math.floor((Math.random() - 0.5) * 3 + this.windSpeed);
+      const upX = x + Math.floor((Math.random() - 0.5) * 3 + this.windSpeed * 0.3);
       if (upX >= 0 && upX < w) {
         const upIdx = (y - 1) * w + upX;
         if (this.grid[upIdx] === ELEMENT.EMPTY) {
           this.swap(idx, upIdx);
           this.visited[upIdx] = 1;
-        } else if (this.grid[upIdx] === ELEMENT.OIL) {
-          this.grid[upIdx] = ELEMENT.FIRE;
         }
       }
     }
@@ -559,13 +2255,13 @@ export class VesuviusEngine {
     const h = this.simHeight;
 
     // Dissipate at ceiling or with age
-    if (y <= 1 || Math.random() < (elem === ELEMENT.STEAM ? 0.015 : 0.008)) {
+    if (y <= 1 || Math.random() < (elem === ELEMENT.STEAM ? 0.012 : 0.006)) {
       this.grid[idx] = ELEMENT.EMPTY;
       return;
     }
 
-    // Rise up with wind drift
-    const upX = x + Math.floor((Math.random() - 0.5) * 2 + this.windSpeed);
+    // Convective ascent with atmospheric wind drift
+    const upX = x + Math.floor((Math.random() - 0.5) * 2.5 + this.windSpeed * 0.6);
     const upY = y - 1;
 
     if (upX >= 0 && upX < w && upY >= 0) {
@@ -573,6 +2269,31 @@ export class VesuviusEngine {
       if (this.grid[targetIdx] === ELEMENT.EMPTY) {
         this.swap(idx, targetIdx);
         this.visited[targetIdx] = 1;
+      }
+    }
+  }
+
+  updateSulfurGas(x, y, idx) {
+    const w = this.simWidth;
+    const h = this.simHeight;
+
+    // Sulfur gas (SO2/H2S) is heavy (density 1.88 kg/m3) -> sinks into ravines!
+    if (y < h - 1 && Math.random() < 0.35) {
+      const belowIdx = (y + 1) * w + x;
+      if (this.grid[belowIdx] === ELEMENT.EMPTY) {
+        this.swap(idx, belowIdx);
+        this.visited[belowIdx] = 1;
+        return;
+      }
+    }
+
+    // Lateral drift with wind
+    const driftX = x + (this.windSpeed >= 0 ? 1 : -1);
+    if (driftX >= 0 && driftX < w && Math.random() < 0.4) {
+      const sideIdx = y * w + driftX;
+      if (this.grid[sideIdx] === ELEMENT.EMPTY) {
+        this.swap(idx, sideIdx);
+        this.visited[sideIdx] = 1;
       }
     }
   }
@@ -586,13 +2307,264 @@ export class VesuviusEngine {
     this.heat[i2] = tempHeat;
   }
 
-  render(ctx) {
+  // ==========================================================================
+  // SECTION 10: KINEMATICS, BALLISTICS & CONVECTIVE PLUME EVOLUTION
+  // ==========================================================================
+
+  updateKinematics(dt) {
+    const config = PHASE_CONFIG[this.currentPhase];
+    const ventX = this.ventX;
+    const ventY = this.ventY;
+
+    // 1. Spawn Volcanic Bombs based on phase bomb rate
+    if (config && config.bombRate > 0) {
+      if (Math.random() < config.bombRate * dt * 2.5) {
+        const ejectionSpeed = 12 + Math.random() * 22;
+        const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * 0.95;
+        const vx = Math.cos(angle) * ejectionSpeed;
+        const vy = Math.sin(angle) * ejectionSpeed;
+        const radius = 2.0 + Math.random() * 3.5;
+        this.bombs.push(new VolcanicBomb(ventX + (Math.random() - 0.5) * 6, ventY - 4, vx, vy, radius));
+      }
+    }
+
+    // 2. Spawn Convective Plume Column Particles
+    const plumeSpawnRate = Math.floor(this.plumeHeightKm * 1.8);
+    for (let p = 0; p < plumeSpawnRate; p++) {
+      const vx = (Math.random() - 0.5) * 3.0 + this.windSpeed * 0.4;
+      const vy = -(6.0 + this.plumeHeightKm * 0.85 + Math.random() * 4.0);
+      this.plumeParticles.push(new PlumeParticle(ventX + (Math.random() - 0.5) * 8, ventY - 2, vx, vy));
+    }
+
+    // 3. Volcanic Lightning Generation within Plume
+    if (config && config.lightningRate > 0) {
+      if (Math.random() < config.lightningRate * dt * 3.5) {
+        const lx1 = ventX + (Math.random() - 0.5) * 45 + this.windSpeed * 8;
+        const ly1 = Math.max(10, ventY - 25 - Math.random() * (this.plumeHeightKm * 2.5));
+        const lx2 = lx1 + (Math.random() - 0.5) * 35;
+        const ly2 = ly1 + 18 + Math.random() * 35;
+        this.lightningBolts.push(new VolcanicLightning(lx1, ly1, lx2, ly2));
+        this.audio.playLightningCrack();
+      }
+    }
+
+    // 4. Update Volcanic Bombs & Handle Ground Impact
+    for (let i = this.bombs.length - 1; i >= 0; i--) {
+      const bomb = this.bombs[i];
+      bomb.update(dt, this.simWidth, this.simHeight, this.windSpeed, this.elevationMap);
+
+      if (bomb.impacted) {
+        // Crater excavation & deposit hot tephra in CA grid
+        const bx = Math.floor(bomb.x);
+        const by = Math.floor(bomb.y);
+        this.excavateCrater(bx, by, bomb.radius * 1.5, bomb.isPumice ? ELEMENT.PUMICE : ELEMENT.BASALT);
+        const frags = bomb.createFragments();
+        this.bombFragments.push(...frags);
+        this.audio.playExplosion(0.35);
+      }
+
+      if (!bomb.alive) {
+        this.bombs.splice(i, 1);
+      }
+    }
+
+    // Update Bomb Fragments
+    for (let i = this.bombFragments.length - 1; i >= 0; i--) {
+      const frag = this.bombFragments[i];
+      frag.update(dt, this.simWidth, this.simHeight, this.elevationMap);
+      if (!frag.alive) {
+        this.bombFragments.splice(i, 1);
+      }
+    }
+
+    // 5. Update Pyroclastic Density Currents (PDCs)
+    for (let i = this.pdcs.length - 1; i >= 0; i--) {
+      const pdc = this.pdcs[i];
+      pdc.update(dt, this.elevationMap, this.simWidth);
+
+      // Scorch terrain & deposit thick ignimbrite ash in CA grid
+      if (Math.random() < 0.25) {
+        const px = Math.floor(pdc.x);
+        const py = Math.floor(pdc.y);
+        if (px >= 0 && px < this.simWidth && py >= 0 && py < this.simHeight) {
+          const idx = py * this.simWidth + px;
+          if (this.grid[idx] === ELEMENT.EMPTY) {
+            this.grid[idx] = ELEMENT.ASH;
+            this.heat[idx] = pdc.temp;
+          }
+        }
+      }
+
+      if (!pdc.alive) {
+        this.pdcs.splice(i, 1);
+      }
+    }
+
+    // 6. Update Convective Plume Column
+    const neutralBuoyancyY = Math.max(8, ventY - this.plumeHeightKm * 3.8);
+    for (let i = this.plumeParticles.length - 1; i >= 0; i--) {
+      const p = this.plumeParticles[i];
+      p.update(dt, this.windSpeed, neutralBuoyancyY);
+      if (!p.alive) {
+        this.plumeParticles.splice(i, 1);
+      }
+    }
+
+    // 7. Update Lightning Bolts
+    for (let i = this.lightningBolts.length - 1; i >= 0; i--) {
+      const bolt = this.lightningBolts[i];
+      bolt.update(dt);
+      if (!bolt.alive) {
+        this.lightningBolts.splice(i, 1);
+      }
+    }
+
+    // 8. Update Shockwaves
+    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+      const sw = this.shockwaves[i];
+      sw.update(dt);
+      if (!sw.alive) {
+        this.shockwaves.splice(i, 1);
+      }
+    }
+
+    // 9. Update Roman Naval Evacuation Fleet
+    const pumiceFall = this.currentPhase >= PHASE.SUB_PLINIAN ? 1.8 : 0;
+    for (const galley of this.fleet) {
+      galley.update(dt, pumiceFall);
+    }
+  }
+
+  excavateCrater(cx, cy, radius, depositElem = ELEMENT.BASALT) {
     const w = this.simWidth;
     const h = this.simHeight;
-    const data = this.imgData.data;
+    const rInt = Math.ceil(radius);
 
-    let p = 0;
-    for (let i = 0; i < w * h; i++) {
+    for (let dy = -rInt; dy <= rInt; dy++) {
+      for (let dx = -rInt; dx <= rInt; dx++) {
+        if (dx * dx + dy * dy <= radius * radius) {
+          const px = cx + dx;
+          const py = cy + dy;
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            const idx = py * w + px;
+            if (dx * dx + dy * dy < radius) {
+              this.grid[idx] = ELEMENT.FIRE;
+              this.heat[idx] = 950;
+            } else if (this.grid[idx] === ELEMENT.STONE || this.grid[idx] === ELEMENT.SAND) {
+              this.grid[idx] = depositElem;
+              this.heat[idx] = 500;
+            }
+          }
+        }
+      }
+    }
+  }
+  // ==========================================================================
+  // SECTION 11: RENDERING PIPELINE & MULTI-LAYER COMPOSITION
+  // ==========================================================================
+
+  render(ctx) {
+    if (!ctx) return;
+    const w = this.canvas ? this.canvas.width : this.width;
+    const h = this.canvas ? this.canvas.height : this.height;
+
+    ctx.save();
+    // Apply screen shake
+    if (this.screenShake > 0) {
+      ctx.translate(this.shakeOffsetX, this.shakeOffsetY);
+    }
+
+    // Layer 1: Atmospheric Sky & Bay Backdrop
+    this.renderAtmosphericSky(ctx, w, h);
+
+    // Layer 2: Distant Capri & Gulf Silhouette
+    this.renderDistantIslands(ctx, w, h);
+
+    // Layer 3: Cellular Automata Grid (Thermal Glow & Incandescence)
+    this.renderCellularGrid(ctx, w, h);
+
+    // Layer 4: Roman Coastal Settlements & Umbrella Pines
+    this.renderSettlementsAndFlora(ctx, w, h);
+
+    // Layer 5: Roman Naval Evacuation Fleet
+    this.renderFleet(ctx, w, h);
+
+    // Layer 6: Pyroclastic Density Currents (PDCs)
+    this.renderPyroclasticCurrents(ctx, w, h);
+
+    // Layer 7: Convective Plume & Umbrella Pine Canopy
+    this.renderPlumeCanopy(ctx, w, h);
+
+    // Layer 8: Ballistic Volcanic Bombs & Shrapnel
+    this.renderVolcanicBombs(ctx, w, h);
+
+    // Layer 9: Volcanic Lightning Corona Flashes
+    this.renderVolcanicLightning(ctx, w, h);
+
+    // Layer 10: Shockwave Wavefronts
+    this.renderShockwaves(ctx, w, h);
+
+    // Layer 11: Canvas Telemetry HUD & Historical Plinian Epigraphy
+    if (this.showHUD) {
+      this.renderHUD(ctx, w, h);
+    }
+
+    // Layer 12: Interactive Brush Cursor Indicator
+    this.renderBrushCursor(ctx, w, h);
+
+    ctx.restore();
+  }
+
+  renderAtmosphericSky(ctx, w, h) {
+    const config = PHASE_CONFIG[this.currentPhase] || PHASE_CONFIG[0];
+    const darkness = config.skyDarkness;
+
+    // Gradient from pristine Mediterranean azure down to apocalyptic ash twilight
+    const grad = ctx.createLinearGradient(0, 0, 0, h * 0.75);
+    if (darkness < 0.3) {
+      grad.addColorStop(0, '#1c4273');
+      grad.addColorStop(0.6, '#46729e');
+      grad.addColorStop(1, '#c29a68');
+    } else if (darkness < 0.7) {
+      grad.addColorStop(0, '#141724');
+      grad.addColorStop(0.5, '#452c2c');
+      grad.addColorStop(1, '#8f4a2d');
+    } else {
+      // Complete darkness: "Nox omnibus noctibus nigrior densiorque"
+      grad.addColorStop(0, '#06070a');
+      grad.addColorStop(0.5, '#1e1112');
+      grad.addColorStop(1, '#571811');
+    }
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  renderDistantIslands(ctx, w, h) {
+    ctx.save();
+    // Distant Isle of Capri & Sorrento Peninsula silhouette
+    ctx.fillStyle = 'rgba(28, 38, 54, 0.45)';
+    ctx.beginPath();
+    ctx.moveTo(w * 0.65, h * 0.68);
+    ctx.quadraticCurveTo(w * 0.78, h * 0.63, w * 0.88, h * 0.68);
+    ctx.quadraticCurveTo(w * 0.94, h * 0.64, w, h * 0.69);
+    ctx.lineTo(w, h * 0.74);
+    ctx.lineTo(w * 0.65, h * 0.74);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  renderCellularGrid(ctx, w, h) {
+    if (!this.offscreenCtx || !this.imgData) return;
+
+    const data = this.imgData.data;
+    const simW = this.simWidth;
+    const simH = this.simHeight;
+    const timeVal = this.time;
+
+    let ptr = 0;
+    for (let i = 0; i < this.cellCount; i++) {
       const elem = this.grid[i];
       const rgba = PALETTE[elem] || PALETTE[ELEMENT.EMPTY];
 
@@ -601,51 +2573,419 @@ export class VesuviusEngine {
       let b = rgba[2];
       const a = rgba[3];
 
-      // Dynamic glow for heat
+      // Dynamic incandescence and heat flicker for Molten Lava & Fire
       if (elem === ELEMENT.LAVA) {
-        const flicker = (Math.sin(i * 0.3 + Date.now() * 0.005) + 1) * 20;
+        const flicker = (Math.sin(i * 0.28 + timeVal * 12) + 1) * 18;
         r = Math.min(255, r + flicker);
-        g = Math.min(255, g + flicker * 0.5);
+        g = Math.min(255, g + flicker * 0.45);
       } else if (elem === ELEMENT.FIRE) {
         r = 255;
-        g = Math.floor(150 + Math.random() * 105);
-        b = Math.floor(Math.random() * 50);
+        g = Math.floor(160 + Math.random() * 95);
+        b = Math.floor(Math.random() * 40);
+      } else if (elem === ELEMENT.WATER) {
+        // Shimmering Bay of Naples waves
+        const wave = Math.sin((i % simW) * 0.18 + timeVal * 4) * 12;
+        b = Math.min(255, Math.max(0, b + wave));
       }
 
-      data[p] = r;
-      data[p + 1] = g;
-      data[p + 2] = b;
-      data[p + 3] = a;
-      p += 4;
+      data[ptr] = r;
+      data[ptr + 1] = g;
+      data[ptr + 2] = b;
+      data[ptr + 3] = a;
+      ptr += 4;
     }
 
-    // Blit to offscreen canvas
     this.offscreenCtx.putImageData(this.imgData, 0, 0);
 
-    // Draw scaled up to main canvas with crisp pixelation
+    // Blit scaled up to main canvas with crisp pixelation
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(this.offscreenCanvas, 0, 0, this.canvas.width, this.canvas.height);
+    ctx.drawImage(this.offscreenCanvas, 0, 0, w, h);
+  }
 
-    // Render brush cursor indicator if mouse inside
-    if (this.mousePos) {
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      const scaleX = this.canvas.width / this.simWidth;
-      ctx.arc(this.mousePos.x, this.mousePos.y, this.brushSize * scaleX, 0, Math.PI * 2);
-      ctx.stroke();
+  renderSettlementsAndFlora(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+
+    ctx.save();
+
+    // 1. Herculaneum (Coastal port settlement near x = 180)
+    const hercX = 182 * scaleX;
+    const hercY = (this.elevationMap[182] || (this.simHeight - 32)) * scaleY;
+    this.drawRomanVilla(ctx, hercX, hercY, 'Herculaneum');
+
+    // 2. Pompeii (Flank Roman Forum & Basilica near x = 145)
+    const pompX = 146 * scaleX;
+    const pompY = (this.elevationMap[146] || (this.simHeight - 34)) * scaleY;
+    this.drawRomanVilla(ctx, pompX, pompY, 'Pompeii');
+
+    // 3. Umbrella Pines (Pinus Pinea) on the peaceful mountain slopes
+    const treeSites = [75, 95, 115, 162, 205];
+    for (const tx of treeSites) {
+      const ty = (this.elevationMap[tx] || (this.simHeight - 30)) * scaleY;
+      this.drawUmbrellaPineTree(ctx, tx * scaleX, ty);
+    }
+
+    ctx.restore();
+  }
+
+  drawRomanVilla(ctx, x, y, name) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Stone podium
+    ctx.fillStyle = '#C8BCA6';
+    ctx.fillRect(-12, -4, 24, 4);
+
+    // Classical Marble Colonnade
+    ctx.fillStyle = '#EAE2D2';
+    for (let c = -9; c <= 9; c += 6) {
+      ctx.fillRect(c, -16, 2.5, 12);
+    }
+
+    // Roman Terracotta Tile Roof (Tegula & Imbrex)
+    ctx.fillStyle = '#A3462A';
+    ctx.beginPath();
+    ctx.moveTo(-15, -16);
+    ctx.lineTo(0, -24);
+    ctx.lineTo(15, -16);
+    ctx.closePath();
+    ctx.fill();
+
+    // Latin Settlement Marker
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = '8px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, 0, 10);
+
+    ctx.restore();
+  }
+
+  drawUmbrellaPineTree(ctx, x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Bare trunk arching high (authentic Pinus Pinea form)
+    ctx.strokeStyle = '#4A3525';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-1, -14, 0, -22);
+    ctx.stroke();
+
+    // Flat parasol canopy atop trunk
+    ctx.fillStyle = '#264A2F';
+    ctx.beginPath();
+    ctx.ellipse(0, -24, 9, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  renderFleet(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    for (const galley of this.fleet) {
+      galley.render(ctx, scaleX, scaleY);
     }
   }
 
-  getEntityCount() {
-    return this.particleCount;
+  renderPyroclasticCurrents(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    for (const pdc of this.pdcs) {
+      pdc.render(ctx, scaleX, scaleY);
+    }
+  }
+
+  renderPlumeCanopy(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    for (const p of this.plumeParticles) {
+      p.render(ctx, scaleX, scaleY);
+    }
+  }
+
+  renderVolcanicBombs(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    for (const bomb of this.bombs) {
+      bomb.render(ctx, scaleX, scaleY);
+    }
+    for (const frag of this.bombFragments) {
+      frag.render(ctx, scaleX, scaleY);
+    }
+  }
+
+  renderVolcanicLightning(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    for (const bolt of this.lightningBolts) {
+      bolt.render(ctx, scaleX, scaleY);
+    }
+  }
+
+  renderShockwaves(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    for (const sw of this.shockwaves) {
+      sw.render(ctx, scaleX, scaleY);
+    }
+  }
+
+  // ==========================================================================
+  // SECTION 12: CANVAS TELEMETRY HUD & HISTORICAL PLINIAN EPIGRAPHY
+  // ==========================================================================
+
+  renderHUD(ctx, w, h) {
+    const config = PHASE_CONFIG[this.currentPhase] || PHASE_CONFIG[0];
+
+    ctx.save();
+
+    // 1. Top Bar: Title & Eruption Status
+    ctx.fillStyle = 'rgba(10, 14, 22, 0.85)';
+    ctx.strokeStyle = '#D4AF37';
+    ctx.lineWidth = 1;
+    ctx.fillRect(12, 12, w - 24, 38);
+    ctx.strokeRect(12, 12, w - 24, 38);
+
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = 'bold 12px serif';
+    ctx.fillText('MONS VESUVIUS AD 79 — PLINIAN VOLCANOLOGY SIMULATOR', 22, 28);
+
+    ctx.fillStyle = '#E5DAC4';
+    ctx.font = '10px monospace';
+    ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 43);
+
+    // VEI Badge on Right
+    ctx.fillStyle = config.vei >= 4 ? '#FF3B30' : '#FFA500';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`VEI INDEX: ${this.vei} / 8`, w - 24, 28);
+
+    ctx.fillStyle = '#B0BEC5';
+    ctx.font = '10px monospace';
+    ctx.fillText(`PLUME: ${this.plumeHeightKm.toFixed(1)} KM | MASS: ${(this.massEruptionRate / 1e6).toFixed(1)} MT/S`, w - 24, 43);
+    ctx.textAlign = 'left';
+
+    // 2. Seismograph Oscilloscope Box (Bottom Left)
+    this.seismograph.render(ctx, 12, h - 85, 175, 68);
+
+    // 3. Eyewitness Latin Scroll Box (Bottom Right)
+    const scrollW = Math.min(380, w * 0.46);
+    const scrollH = 68;
+    const scrollX = w - scrollW - 12;
+    const scrollY = h - scrollH - 17;
+
+    ctx.fillStyle = 'rgba(10, 14, 22, 0.88)';
+    ctx.strokeStyle = '#D4AF37';
+    ctx.fillRect(scrollX, scrollY, scrollW, scrollH);
+    ctx.strokeRect(scrollX, scrollY, scrollW, scrollH);
+
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = 'bold 8px monospace';
+    ctx.fillText('C. PLINIUS SECUNDUS — EPISTULAE VI.16', scrollX + 8, scrollY + 12);
+
+    ctx.fillStyle = '#F5E6C8';
+    ctx.font = 'italic 9px serif';
+    ctx.fillText(`"${config.excerpt}"`, scrollX + 8, scrollY + 28);
+
+    // Rescued Citizens & Fleet Status
+    let totalRescued = 0;
+    for (const g of this.fleet) totalRescued += Math.floor(g.rescuedCount);
+    ctx.fillStyle = '#72D572';
+    ctx.font = '8px monospace';
+    ctx.fillText(`FLEET RESCUED: ${totalRescued} ROMAN CITIZENS | FLEET: ${this.fleet.length} GALLEYS`, scrollX + 8, scrollY + 54);
+
+    ctx.restore();
+  }
+
+  renderBrushCursor(ctx, w, h) {
+    if (!this.mousePos) return;
+    const scaleX = w / this.simWidth;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(this.mousePos.x, this.mousePos.y, Math.max(0, this.brushSize * scaleX), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  // ==========================================================================
+  // SECTION 13: INTERACTION, BRUSH TOOLS & EVENT DISPATCHERS
+  // ==========================================================================
+
+  onMouseDown(pos) {
+    this.isDrawing = true;
+    this.mousePos = pos;
+    this.paint(pos);
+    this.audio.ensureContext();
+  }
+
+  onMouseMove(pos) {
+    this.mousePos = pos;
+    if (this.isDrawing) {
+      this.paint(pos);
+    }
+  }
+
+  onMouseUp() {
+    this.isDrawing = false;
+  }
+
+  onWheel(deltaY) {
+    if (deltaY < 0) {
+      this.brushSize = Math.min(16, this.brushSize + 1);
+    } else {
+      this.brushSize = Math.max(1, this.brushSize - 1);
+    }
+    if (this.controlsContainer) {
+      const brushVal = this.controlsContainer.querySelector('#brush-val');
+      const brushSlider = this.controlsContainer.querySelector('#brush-slider');
+      if (brushVal) brushVal.textContent = `${this.brushSize}px`;
+      if (brushSlider) brushSlider.value = this.brushSize;
+    }
+  }
+
+  onContextMenu(pos) {
+    // Localized Phreatomagmatic blast trigger on right click
+    const gx = Math.floor((pos.x / (this.canvas ? this.canvas.width : this.width)) * this.simWidth);
+    const gy = Math.floor((pos.y / (this.canvas ? this.canvas.height : this.height)) * this.simHeight);
+    this.triggerShockwave(gx, gy, 45);
+    this.excavateCrater(gx, gy, 6, ELEMENT.FIRE);
+  }
+
+  onKeyDown(key) {
+    const k = (key || '').toLowerCase();
+    switch (k) {
+      case '1':
+        this.selectedElement = ELEMENT.LAVA;
+        break;
+      case '2':
+        this.selectedElement = ELEMENT.WATER;
+        break;
+      case '3':
+        this.selectedElement = ELEMENT.PUMICE;
+        break;
+      case '4':
+        this.selectedElement = ELEMENT.BASALT;
+        break;
+      case '5':
+        this.selectedElement = ELEMENT.SAND;
+        break;
+      case '6':
+        this.selectedElement = ELEMENT.ASH;
+        break;
+      case '7':
+        this.selectedElement = ELEMENT.MAGMA_CORE;
+        break;
+      case '8':
+        this.selectedElement = ELEMENT.SULFUR_GAS;
+        break;
+      case '0':
+      case 'e':
+        this.selectedElement = ELEMENT.EMPTY;
+        break;
+      case 'p':
+        this.isPaused = !this.isPaused;
+        break;
+      case 'h':
+        this.showHUD = !this.showHUD;
+        break;
+      case 'u':
+        this.setEruptionPhase(PHASE.ULTRA_PLINIAN);
+        break;
+      case 'c':
+        this.setEruptionPhase(PHASE.COLUMN_COLLAPSE);
+        break;
+      case 'r':
+        this.reset();
+        break;
+    }
+  }
+
+  onKeyUp() {
+    // Event contract compliance
+  }
+
+  paint(pos) {
+    const w = this.simWidth;
+    const h = this.simHeight;
+    const cw = this.canvas ? this.canvas.width : this.width;
+    const ch = this.canvas ? this.canvas.height : this.height;
+    const gx = Math.floor((pos.x / (cw || 1)) * w);
+    const gy = Math.floor((pos.y / (ch || 1)) * h);
+    const r = this.brushSize;
+
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (dx * dx + dy * dy <= r * r) {
+          const px = gx + dx;
+          const py = gy + dy;
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            const idx = py * w + px;
+            this.grid[idx] = this.selectedElement;
+            const props = ELEMENT_PROPS[this.selectedElement];
+            if (props) this.heat[idx] = props.baseTemp;
+          }
+        }
+      }
+    }
+  }
+
+  // ==========================================================================
+  // SECTION 14: LIFECYCLE, RESIZE, RESET & ENTITY TELEMETRY
+  // ==========================================================================
+
+  resize(width, height, dpr = 1) {
+    this.width = width;
+    this.height = height;
+    this.dpr = dpr;
   }
 
   reset() {
     this.buildVolcanoTerrain();
+    this.initFleet();
+    this.bombs = [];
+    this.bombFragments = [];
+    this.pdcs = [];
+    this.plumeParticles = [];
+    this.lightningBolts = [];
+    this.shockwaves = [];
+    this.setEruptionPhase(PHASE.DORMANT);
   }
 
   destroy() {
-    // Teardown
+    if (this.controlsContainer) {
+      this.controlsContainer.innerHTML = '';
+    }
+    this.bombs = [];
+    this.bombFragments = [];
+    this.pdcs = [];
+    this.plumeParticles = [];
+    this.lightningBolts = [];
+    this.shockwaves = [];
+    this.fleet = [];
+    if (this.audio && this.audio.ctx) {
+      try {
+        this.audio.ctx.close();
+      } catch {
+        // Guard
+      }
+    }
+  }
+
+  getEntityCount() {
+    // Total count of active simulated elements and kinematic bodies
+    return (
+      this.activeParticles +
+      this.bombs.length +
+      this.bombFragments.length +
+      this.pdcs.length +
+      this.plumeParticles.length +
+      this.lightningBolts.length +
+      this.shockwaves.length +
+      this.fleet.length
+    );
   }
 }

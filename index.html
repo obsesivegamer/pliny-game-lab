@@ -43,6 +43,7 @@
           <input type="range" id="audio-volume-slider" min="0" max="1" step="0.05" value="0.65" title="Master Volume">
         </div>
         <span id="audio-soundscape-pill" class="telemetry-pill soundscape-pill" title="Active Pavilion Ambient Soundscape">♫ <strong id="soundscape-title">Caldera Rumble</strong></span>
+        <button id="codex-toggle-btn" class="icon-nav-btn" title="Open Plinius Codex (Latin Lore & Citations)">📖</button>
         <button id="fullscreen-btn" class="icon-nav-btn" title="Toggle Fullscreen">⛶</button>
       </div>
     </header>
@@ -145,6 +146,36 @@
       <!-- Message / Help Toast -->
       <div id="hint-overlay">Click and drag to interact</div>
     </main>
+    
+    <!-- Plinius Codex Slide-out Drawer -->
+    <aside id="codex-drawer" class="codex-drawer" aria-hidden="true">
+      <div id="codex-backdrop" class="codex-backdrop"></div>
+      <div class="codex-panel">
+        <div class="codex-header">
+          <div class="codex-header-text">
+            <span class="codex-badge">PLINII NATURALIS HISTORIA</span>
+            <h2 id="codex-title">Vesuvius (Mons Vesuvius)</h2>
+          </div>
+          <button id="codex-close-btn" class="icon-nav-btn codex-close-btn" aria-label="Close Codex">✕</button>
+        </div>
+        <div class="codex-content">
+          <div class="codex-card codex-latin-card">
+            <div class="codex-card-label">📜 Classical Excerpt</div>
+            <blockquote id="codex-latin-quote">"..."</blockquote>
+            <p id="codex-translation">"..."</p>
+            <div id="codex-book-ref" class="codex-ref">Pliny the Elder</div>
+          </div>
+          <div class="codex-card">
+            <div class="codex-card-label">🔬 Scientific Principles Simulated</div>
+            <p id="codex-science">...</p>
+          </div>
+          <div class="codex-card">
+            <div class="codex-card-label">🎮 Mechanics & Interaction Guide</div>
+            <p id="codex-controls">...</p>
+          </div>
+        </div>
+      </div>
+    </aside>
   </div>
 
   <script type="module" src="src/core/hub.js"></script>

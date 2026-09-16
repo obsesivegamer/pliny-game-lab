@@ -1056,3 +1056,172 @@ html, body {
     -webkit-line-clamp: 2;
   }
 }
+
+/* ==========================================================================
+   PLINIUS CODEX DRAWER
+   ========================================================================== */
+
+.codex-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0.3s ease;
+}
+
+.codex-drawer.open {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.codex-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 5, 8, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.codex-drawer.open .codex-backdrop {
+  opacity: 1;
+}
+
+.codex-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, 92vw);
+  background: #0d1017;
+  border-left: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
+}
+
+.codex-drawer.open .codex-panel {
+  transform: translateX(0);
+}
+
+.codex-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: rgba(212, 175, 55, 0.05);
+}
+
+.codex-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.codex-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+#codex-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: #fff;
+  margin: 0;
+}
+
+.codex-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.codex-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+  transform: scale(1.08);
+}
+
+.codex-content {
+  padding: 24px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.codex-card {
+  background: rgba(18, 22, 31, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.codex-latin-card {
+  border-color: rgba(212, 175, 55, 0.35);
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.08), rgba(18, 22, 31, 0.95));
+}
+
+.codex-card-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 1.5px;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+#codex-latin-quote {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #f6ecdc;
+  border-left: 3px solid var(--accent-gold);
+  padding-left: 14px;
+  margin: 0 0 12px 0;
+}
+
+#codex-translation {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #d1d5db;
+  margin-bottom: 12px;
+}
+
+.codex-ref {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent-gold);
+  opacity: 0.85;
+}
+
+#codex-science, #codex-controls {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #d1d5db;
+  margin: 0;
+}
+

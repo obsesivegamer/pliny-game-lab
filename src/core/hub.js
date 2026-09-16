@@ -2,6 +2,7 @@
 // Manages 10 Thematic Pavilions and 50 Roman / Natural History Simulations
 
 import { soundMaster } from "./sound.js";
+import { CODEX_DATA } from "./codex.js";
 
 export const PAVILIONS = [
   { id: "ignis", name: "I. Ignis & Terra (Earth & Fire)", games: ["vesuvius", "geyser", "caverna", "terrae_motus", "aurum"] },
@@ -572,6 +573,16 @@ class PlinyHub {
     this.volumeSlider = document.getElementById("audio-volume-slider");
     this.soundscapeTitle = document.getElementById("soundscape-title");
     this.soundscapePill = document.getElementById("audio-soundscape-pill");
+    this.codexToggleBtn = document.getElementById("codex-toggle-btn");
+    this.codexDrawer = document.getElementById("codex-drawer");
+    this.codexBackdrop = document.getElementById("codex-backdrop");
+    this.codexCloseBtn = document.getElementById("codex-close-btn");
+    this.codexTitle = document.getElementById("codex-title");
+    this.codexLatinQuote = document.getElementById("codex-latin-quote");
+    this.codexTranslation = document.getElementById("codex-translation");
+    this.codexBookRef = document.getElementById("codex-book-ref");
+    this.codexScience = document.getElementById("codex-science");
+    this.codexControls = document.getElementById("codex-controls");
     this.focusedCardIndex = -1;
 
     this.pavilionSelect = document.getElementById("pavilion-select");
@@ -745,6 +756,16 @@ class PlinyHub {
 
     this.initShowcaseHeroCanvas();
     this.updateSoundscapeHUD();
+
+    if (this.codexToggleBtn) {
+      this.codexToggleBtn.addEventListener("click", () => this.toggleCodex());
+    }
+    if (this.codexCloseBtn) {
+      this.codexCloseBtn.addEventListener("click", () => this.closeCodex());
+    }
+    if (this.codexBackdrop) {
+      this.codexBackdrop.addEventListener("click", () => this.closeCodex());
+    }
 
     this.setupInputHandling();
 
@@ -1007,8 +1028,12 @@ class PlinyHub {
         }
       }
 
-      // Escape: return to showcase or clear search
+      // Escape: close codex first, return to showcase, or clear search
       if (e.key === "Escape") {
+        if (this.codexDrawer && this.codexDrawer.classList.contains("open")) {
+          this.closeCodex();
+          return;
+        }
         if (this.currentView === "simulator") {
           this.switchView("showcase");
         } else if (this.showcaseSearch && document.activeElement === this.showcaseSearch) {
@@ -1017,6 +1042,11 @@ class PlinyHub {
           this.showcaseSearch.blur();
           this.filterShowcase();
         }
+      }
+
+      // 'c' or 'C' toggles Plinius Codex
+      if ((e.key === "c" || e.key === "C") && !isTyping) {
+        this.toggleCodex();
       }
 
       // Showcase shortcuts when not typing in search
@@ -1088,6 +1118,44 @@ class PlinyHub {
     if (this.soundscapeTitle) {
       this.soundscapeTitle.textContent = soundMaster.getCurrentAmbienceTitle();
     }
+  }
+
+  toggleCodex() {
+    if (!this.codexDrawer) return;
+    if (this.codexDrawer.classList.contains("open")) {
+      this.closeCodex();
+    } else {
+      this.openCodex(this.activeKey);
+    }
+  }
+
+  openCodex(key = this.activeKey) {
+    if (!this.codexDrawer) return;
+    const entry = CODEX_DATA[key] || {
+      title: (DEMOS[key] ? DEMOS[key].name : key),
+      book: "Naturalis Historia",
+      latinQuote: "Natura nihil frustra facit, omniaque ad ordinem componit.",
+      translation: "Nature does nothing in vain, and arranges all things according to order.",
+      science: (DEMOS[key] ? DEMOS[key].desc : "Simulation physical dynamics."),
+      controlsGuide: (DEMOS[key] ? DEMOS[key].hint : "Interactive simulation controls.")
+    };
+
+    if (this.codexTitle) this.codexTitle.textContent = entry.title;
+    if (this.codexLatinQuote) this.codexLatinQuote.textContent = `"${entry.latinQuote}"`;
+    if (this.codexTranslation) this.codexTranslation.textContent = `"${entry.translation}"`;
+    if (this.codexBookRef) this.codexBookRef.textContent = entry.book;
+    if (this.codexScience) this.codexScience.textContent = entry.science;
+    if (this.codexControls) this.codexControls.textContent = entry.controlsGuide;
+
+    this.codexDrawer.classList.add("open");
+    this.codexDrawer.setAttribute("aria-hidden", "false");
+    soundMaster.playChime("E5", 0.18);
+  }
+
+  closeCodex() {
+    if (!this.codexDrawer) return;
+    this.codexDrawer.classList.remove("open");
+    this.codexDrawer.setAttribute("aria-hidden", "true");
   }
 
   initShowcaseHeroCanvas() {
@@ -1265,12 +1333,12 @@ class PlinyHub {
 
     if (this.gameNumVal) this.gameNumVal.textContent = gameIdx + "/50";
     if (this.pavilionBadge) this.pavilionBadge.textContent = info.pavilionName;
-    this.demoTitle.textContent = info.name;
-    this.demoDesc.textContent = info.desc;
-    this.hintOverlay.textContent = info.hint;
+    if (this.demoTitle) this.demoTitle.textContent = info.name;
+    if (this.demoDesc) this.demoDesc.textContent = info.desc;
+    if (this.hintOverlay) this.hintOverlay.textContent = info.hint;
 
     // Reset controls container
-    this.controlsContainer.innerHTML = "";
+    if (this.controlsContainer) this.controlsContainer.innerHTML = "";
 
     try {
       let EngineClass = this.engineCache[key];
@@ -1290,6 +1358,11 @@ class PlinyHub {
       if (this.currentView === "simulator" && info.pavilionId) {
         soundMaster.startPavilionAmbience(info.pavilionId);
         this.updateSoundscapeHUD();
+      }
+
+      // If codex drawer is open, update its content for the new demo
+      if (this.codexDrawer && this.codexDrawer.classList.contains("open")) {
+        this.openCodex(key);
       }
     } catch (err) {
       console.warn("Failed to load engine for " + key, err);
