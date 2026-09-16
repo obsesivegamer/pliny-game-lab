@@ -16,6 +16,7 @@
 - 2026-09-16T00:30:00-04:00 [TOOL] All remaining 31 engines landed and verified. 50/50 engines PASSED (0 failed, 0 pending).
 - 2026-09-16T12:57:00-04:00 [TOOL] Puppeteer Browser Visual QA executed across all 50 engines in headless Chrome: 50/50 PASSED clean (0 errors, 0 warnings).
 - 2026-09-16T13:45:00-04:00 [USER] Built Step 1B: Showcase Homepage modeled on Fable 5 Showcase with 50-card responsive grid, live search (hotkey /), 11 pavilion filter chips, hero stats, and seamless arcade simulator toggling. Verified clean across E2E and visual suites.
+- 2026-09-16T15:20:00-04:00 [CODE] Upgraded chariot.js to 2,488-line monumental Circus Maximus Grand Prix simulation matching pavilion flagship standards (colosseum, trireme, antikythera). Added quadriga 4-horse harness kinematics, non-linear centrifugal drift, spina monuments with 7 turning delphines and 7 ova, Flaminian obelisk, 320+ animated spectators, 4 faction AI personalities, and telemetry HUD. Passes all 50/50 test suites.
 
 ## [DISCOVERIES]
 - 2026-09-15T20:19:00-04:00 [TOOL] Headless Node simulation requires guarding controlsContainer and DOM queries with typeof document !== 'undefined'.
