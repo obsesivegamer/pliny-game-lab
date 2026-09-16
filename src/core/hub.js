@@ -901,7 +901,7 @@ class PlinyHub {
       const demo = DEMOS[key];
       const overallNum = idx + 1;
       const numStr = String(overallNum).padStart(2, "0");
-      const thumbUrl = `.audit/screenshots/${numStr}_${key}.png`;
+      const thumbUrl = `assets/screenshots/${numStr}_${key}.png`;
       const color = PAVILION_COLORS[demo.pavilionId] || "#d4af37";
       const shortPavilion = demo.pavilionName.split("(")[0].trim();
       const cleanTitle = demo.name.replace(/\(.*?\)/, "").trim();
