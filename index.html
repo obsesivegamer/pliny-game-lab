@@ -38,7 +38,11 @@
         <span class="telemetry-pill">Game: <strong id="game-num-val">1/50</strong></span>
         <span class="telemetry-pill">FPS: <strong id="fps-val">60</strong></span>
         <span class="telemetry-pill">Entities: <strong id="entity-val">0</strong></span>
-        <button id="audio-toggle-btn" class="icon-nav-btn" title="Toggle Sound (Mute/Unmute)">🔊</button>
+        <div class="telemetry-pill audio-group" title="Audio Controls">
+          <button id="audio-toggle-btn" class="icon-nav-btn" title="Toggle Sound (Mute/Unmute)">🔊</button>
+          <input type="range" id="audio-volume-slider" min="0" max="1" step="0.05" value="0.65" title="Master Volume">
+        </div>
+        <span id="audio-soundscape-pill" class="telemetry-pill soundscape-pill" title="Active Pavilion Ambient Soundscape">♫ <strong id="soundscape-title">Caldera Rumble</strong></span>
         <button id="fullscreen-btn" class="icon-nav-btn" title="Toggle Fullscreen">⛶</button>
       </div>
     </header>
@@ -46,6 +50,7 @@
     <!-- Showcase Homepage View -->
     <section id="showcase-view">
       <div class="showcase-hero">
+        <canvas id="showcase-canvas"></canvas>
         <div class="showcase-kicker">A 50-ENGINE SIMULATION LABORATORY • PLINII NATURALIS HISTORIA</div>
         <h1 class="showcase-title">THE PLINY GAME LAB</h1>
         <p class="showcase-lede">

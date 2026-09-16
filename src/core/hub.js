@@ -569,6 +569,10 @@ class PlinyHub {
     this.controlsPanel = document.getElementById("controls-panel");
     this.fullscreenBtn = document.getElementById("fullscreen-btn");
     this.audioToggleBtn = document.getElementById("audio-toggle-btn");
+    this.volumeSlider = document.getElementById("audio-volume-slider");
+    this.soundscapeTitle = document.getElementById("soundscape-title");
+    this.soundscapePill = document.getElementById("audio-soundscape-pill");
+    this.focusedCardIndex = -1;
 
     this.pavilionSelect = document.getElementById("pavilion-select");
     this.gameSelect = document.getElementById("game-select");
@@ -718,8 +722,29 @@ class PlinyHub {
         this.audioToggleBtn.textContent = isMuted ? "🔇" : "🔊";
         this.audioToggleBtn.title = isMuted ? "Unmute Sound" : "Mute Sound";
         this.audioToggleBtn.classList.toggle("muted", isMuted);
+        this.updateSoundscapeHUD();
       });
     }
+
+    if (this.volumeSlider) {
+      this.volumeSlider.addEventListener("input", (e) => {
+        soundMaster.resume();
+        const vol = parseFloat(e.target.value);
+        soundMaster.setVolume(vol);
+        if (soundMaster.isMuted && vol > 0) {
+          soundMaster.toggleMute();
+          if (this.audioToggleBtn) {
+            this.audioToggleBtn.textContent = "🔊";
+            this.audioToggleBtn.title = "Mute Sound";
+            this.audioToggleBtn.classList.remove("muted");
+          }
+        }
+        this.updateSoundscapeHUD();
+      });
+    }
+
+    this.initShowcaseHeroCanvas();
+    this.updateSoundscapeHUD();
 
     this.setupInputHandling();
 
@@ -793,6 +818,7 @@ class PlinyHub {
       const info = DEMOS[this.activeKey];
       if (info && info.pavilionId) {
         soundMaster.startPavilionAmbience(info.pavilionId);
+        this.updateSoundscapeHUD();
       }
       if (typeof history !== "undefined" && history.replaceState) {
         history.replaceState(null, "", `#game=${this.activeKey}`);
@@ -967,10 +993,12 @@ class PlinyHub {
   setupKeyboardShortcuts() {
     if (typeof window === "undefined") return;
     window.addEventListener("keydown", (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+      const isTyping = (activeTag === "input" || activeTag === "textarea");
+
       // Focus search on '/' when in showcase
       if (e.key === "/" && this.currentView === "showcase") {
-        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
-        if (activeTag !== "input" && activeTag !== "textarea") {
+        if (!isTyping) {
           e.preventDefault();
           if (this.showcaseSearch) {
             this.showcaseSearch.focus();
@@ -978,6 +1006,7 @@ class PlinyHub {
           }
         }
       }
+
       // Escape: return to showcase or clear search
       if (e.key === "Escape") {
         if (this.currentView === "simulator") {
@@ -989,7 +1018,185 @@ class PlinyHub {
           this.filterShowcase();
         }
       }
+
+      // Showcase shortcuts when not typing in search
+      if (this.currentView === "showcase" && !isTyping) {
+        // Pavilion quick jump keys (1-9 for Pavilions 1-9, 0 for Pavilion 10)
+        if (e.key >= "1" && e.key <= "9") {
+          const pavIdx = parseInt(e.key, 10) - 1;
+          if (PAVILIONS[pavIdx]) {
+            soundMaster.playChime("C5", 0.15);
+            this.selectPavilionFilter(PAVILIONS[pavIdx].id);
+          }
+        } else if (e.key === "0") {
+          if (PAVILIONS[9]) {
+            soundMaster.playChime("C5", 0.15);
+            this.selectPavilionFilter(PAVILIONS[9].id);
+          }
+        } else if (e.key === "a" || e.key === "A") {
+          soundMaster.playChime("A4", 0.15);
+          this.selectPavilionFilter("all");
+        }
+
+        // Arrow keys navigation in Showcase Grid
+        if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(e.key)) {
+          if (!this.showcaseGrid) return;
+          const visibleCards = Array.from(this.showcaseGrid.querySelectorAll(".engine-card")).filter(
+            c => c.style.display !== "none"
+          );
+          if (visibleCards.length === 0) return;
+
+          e.preventDefault();
+          let nextIdx = this.focusedCardIndex;
+
+          if (nextIdx < 0 || nextIdx >= visibleCards.length) {
+            nextIdx = 0;
+          } else if (e.key === "ArrowRight") {
+            nextIdx = (nextIdx + 1) % visibleCards.length;
+          } else if (e.key === "ArrowLeft") {
+            nextIdx = (nextIdx - 1 + visibleCards.length) % visibleCards.length;
+          } else if (e.key === "ArrowDown") {
+            nextIdx = Math.min(visibleCards.length - 1, nextIdx + 4);
+          } else if (e.key === "ArrowUp") {
+            nextIdx = Math.max(0, nextIdx - 4);
+          }
+
+          visibleCards.forEach(c => c.classList.remove("keyboard-focused"));
+          this.focusedCardIndex = nextIdx;
+          const targetCard = visibleCards[nextIdx];
+          targetCard.classList.add("keyboard-focused");
+          targetCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          soundMaster.playChime("A4", 0.05);
+        }
+
+        // Enter: launch focused card
+        if (e.key === "Enter" && this.focusedCardIndex >= 0) {
+          const visibleCards = Array.from(this.showcaseGrid.querySelectorAll(".engine-card")).filter(
+            c => c.style.display !== "none"
+          );
+          if (visibleCards[this.focusedCardIndex]) {
+            e.preventDefault();
+            const key = visibleCards[this.focusedCardIndex].dataset.key;
+            this.launchDemo(key);
+          }
+        }
+      }
     });
+  }
+
+  updateSoundscapeHUD() {
+    if (this.soundscapeTitle) {
+      this.soundscapeTitle.textContent = soundMaster.getCurrentAmbienceTitle();
+    }
+  }
+
+  initShowcaseHeroCanvas() {
+    const canvas = document.getElementById("showcase-canvas");
+    if (!canvas || typeof window === "undefined") return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resizeHeroCanvas = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      canvas.width = parent.clientWidth || 1200;
+      canvas.height = parent.clientHeight || 420;
+    };
+    resizeHeroCanvas();
+    window.addEventListener("resize", resizeHeroCanvas);
+
+    const stars = [];
+    const count = 75;
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * (canvas.width || 1200),
+        y: Math.random() * (canvas.height || 420),
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        radius: Math.random() * 1.8 + 0.6,
+        alpha: Math.random() * 0.6 + 0.3,
+        twinkleSpeed: Math.random() * 0.02 + 0.01,
+        color: Math.random() > 0.35 ? "#d4af37" : "#3bd6c6"
+      });
+    }
+
+    let mouseX = -1000, mouseY = -1000;
+    const heroEl = canvas.parentElement;
+    if (heroEl) {
+      heroEl.addEventListener("mousemove", (e) => {
+        const rect = heroEl.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+      });
+      heroEl.addEventListener("mouseleave", () => {
+        mouseX = -1000;
+        mouseY = -1000;
+      });
+    }
+
+    const animate = () => {
+      if (this.currentView === "showcase") {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Constellation lines between nearby stars
+        for (let i = 0; i < stars.length; i++) {
+          const s1 = stars[i];
+          for (let j = i + 1; j < stars.length; j++) {
+            const s2 = stars[j];
+            const dx = s2.x - s1.x;
+            const dy = s2.y - s1.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 110) {
+              ctx.strokeStyle = "rgba(212, 175, 55, " + (0.22 * (1 - dist / 110)) + ")";
+              ctx.lineWidth = 0.75;
+              ctx.beginPath();
+              ctx.moveTo(s1.x, s1.y);
+              ctx.lineTo(s2.x, s2.y);
+              ctx.stroke();
+            }
+          }
+
+          // Interactive magnetic web to mouse cursor
+          const mdx = mouseX - s1.x;
+          const mdy = mouseY - s1.y;
+          const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+          if (mdist < 140) {
+            ctx.strokeStyle = "rgba(59, 214, 198, " + (0.4 * (1 - mdist / 140)) + ")";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(s1.x, s1.y);
+            ctx.lineTo(mouseX, mouseY);
+            ctx.stroke();
+          }
+        }
+
+        // Render celestial stars
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          s.x += s.vx;
+          s.y += s.vy;
+          if (s.x < 0) s.x = w;
+          if (s.x > w) s.x = 0;
+          if (s.y < 0) s.y = h;
+          if (s.y > h) s.y = 0;
+
+          s.alpha += Math.sin(Date.now() * s.twinkleSpeed) * 0.008;
+          const clampedAlpha = Math.max(0.15, Math.min(0.85, s.alpha));
+
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = clampedAlpha;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        }
+      }
+
+      requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
   }
 
   populateSelectors() {
@@ -1082,6 +1289,7 @@ class PlinyHub {
       // Update ambient soundscape if currently viewing simulator
       if (this.currentView === "simulator" && info.pavilionId) {
         soundMaster.startPavilionAmbience(info.pavilionId);
+        this.updateSoundscapeHUD();
       }
     } catch (err) {
       console.warn("Failed to load engine for " + key, err);

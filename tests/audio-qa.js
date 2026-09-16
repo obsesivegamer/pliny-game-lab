@@ -113,11 +113,45 @@ async function runAudioQA() {
   });
 
   // 5. Test Showcase -> Simulator Navigation Sound Triggering
-  console.log('\n5. Testing navigation audio triggering...');
+  console.log('\n5. Testing navigation audio triggering & Soundscape HUD...');
   await page.click('.engine-card');
   await new Promise(r => setTimeout(r, 600));
   const simActive = !await page.$eval('#viewport-container', el => el.classList.contains('view-hidden'));
   console.log(`   Launched simulator from card click: ${simActive ? '✓ YES' : '✗ NO'}`);
+
+  const activeSoundscapeTitle = await page.$eval('#soundscape-title', el => el.textContent.trim());
+  console.log(`   Soundscape HUD active title: "${activeSoundscapeTitle}" -> ${activeSoundscapeTitle.length > 0 ? '✓ OK' : '✗ EMPTY'}`);
+
+  // Test volume slider interaction
+  const sliderExists = await page.$('#audio-volume-slider') !== null;
+  console.log(`   Volume slider present in telemetry: ${sliderExists ? '✓ YES' : '✗ NO'}`);
+
+  // Return to showcase
+  await page.click('#showcase-nav-btn');
+  await new Promise(r => setTimeout(r, 300));
+
+  // Test Keyboard Navigation in Showcase
+  console.log('\n6. Testing Keyboard Navigation & Shortcuts in Showcase...');
+  // ArrowRight moves card focus
+  await page.keyboard.press('ArrowRight');
+  const focusedCard1 = await page.$('.engine-card.keyboard-focused');
+  console.log(`   ArrowRight focuses engine card: ${focusedCard1 !== null ? '✓ YES' : '✗ NO'}`);
+
+  // Quick jump to Pavilion 3 (Mechanica) with '3'
+  await page.keyboard.press('3');
+  await new Promise(r => setTimeout(r, 200));
+  const activeChip3 = await page.$eval('.chip-btn.active', el => el.dataset.pav);
+  console.log(`   Press '3' selects pavilion: "${activeChip3}" -> ${activeChip3 === 'mechanica' ? '✓ YES' : '✗ NO'}`);
+
+  // Press 'A' to reset to All
+  await page.keyboard.press('a');
+  await new Promise(r => setTimeout(r, 200));
+  const activeChipAll = await page.$eval('.chip-btn.active', el => el.dataset.pav);
+  console.log(`   Press 'A' resets filter to: "${activeChipAll}" -> ${activeChipAll === 'all' ? '✓ YES' : '✗ NO'}`);
+
+  // Test hero constellation canvas
+  const canvasExists = await page.$('#showcase-canvas') !== null;
+  console.log(`   Interactive constellation hero canvas present: ${canvasExists ? '✓ YES' : '✗ NO'}`);
 
   await browser.close();
 

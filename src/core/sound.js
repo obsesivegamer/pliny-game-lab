@@ -58,6 +58,19 @@ const NOTE_OFFSETS = {
   B: 11
 };
 
+export const PAVILION_SOUNDSCAPE_NAMES = {
+  ignis: "Ignis Caldera (40Hz Sub-Rumble & Embers)",
+  bestiarium: "Bestiarium (Pastoral Drone & Cicadas)",
+  mechanica: "Mechanica (Vitruvian Escapement)",
+  cosmographia: "Cosmographia (Musica Universalis)",
+  fabula: "Fabula (Circus Arena Murmur)",
+  mathematica: "Mathematica (Monochord Harmonics)",
+  mare: "Mare Nostrum (Ocean Swell & Bell)",
+  architectura: "Architectura (Basilica Chamber Echo)",
+  alchemia: "Alchemia (Alembic Distillation)",
+  strategia: "Strategia (War Drum Heartbeat)"
+};
+
 /**
  * Generate soft-clipping saturation curve for Roman bronze instruments
  */
@@ -189,6 +202,14 @@ export class PlinySoundMaster {
       }
     }
     return this.volume;
+  }
+
+  /**
+   * Returns descriptive title of currently active ambient soundscape
+   */
+  getCurrentAmbienceTitle() {
+    if (!this.currentPavilionId || this.isMuted) return "Muted / Silent";
+    return PAVILION_SOUNDSCAPE_NAMES[this.currentPavilionId] || "Ambient Resonance";
   }
 
   /**
