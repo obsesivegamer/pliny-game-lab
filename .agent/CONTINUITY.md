@@ -28,6 +28,7 @@
   - `src/demos/bestiarium/bestiarium.js` (3,567 lines): 6 Plinian species (Cervus, Leo, Griffin, Basilisk, Monoceros, Elephantus), Lotka-Volterra predator-prey dynamics, 2D scent-trail diffusion, and sensory perception cones.
   - `src/demos/mechanica/mechanica.js` (3,617 lines): 5 operational classical engineering machines (Polyspaston crane with MA=8, Heron's steam aeolipile, Archimedes water screw, temple sanctuary automatic siphon doors, and Vitruvian gear train with dynamic tension stress tensors and cable severing).
 - 2026-09-16T16:29:00-04:00 [CODE] Built Plinius Codex slide-out parchment lore drawer (`src/core/codex.js`, `index.html`, `style.css`, `src/core/hub.js`) with authentic Latin excerpts, translations, and scientific models for all 50 simulations. Keyboard shortcut `C` / `Escape`. Verified 100% green on `tests/codex-qa.js`. Total codebase now 90,543 lines across 50 monumental simulations.
+- 2026-09-16T17:03:00-04:00 [CODE] Deployed live to GitHub Pages at https://obsesivegamer.github.io/pliny-game-lab/. Created public repository `obsesivegamer/pliny-game-lab`, configured `.nojekyll`, staged `assets/screenshots/`, added Open Graph / Twitter Card social preview metadata, authored `README.md`, and added topics. Verified 100% clean live over HTTPS with Puppeteer (0 console errors).
 
 ## [DISCOVERIES]
 - 2026-09-15T20:19:00-04:00 [TOOL] Headless Node simulation requires guarding controlsContainer and DOM queries with typeof document !== 'undefined'.
