@@ -14,6 +14,7 @@ fi
 
 echo "=== [2/3] Syntax Integrity Checks ==="
 node --check src/core/hub.js
+node --check src/core/sound.js
 node --check src/demos/vesuvius/vesuvius.js
 node --check src/demos/geyser/geyser.js
 node --check src/demos/caverna/caverna.js

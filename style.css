@@ -132,6 +132,12 @@ html, body {
   color: var(--accent-gold);
 }
 
+#audio-toggle-btn.muted {
+  color: var(--accent-crimson);
+  border-color: rgba(200, 50, 50, 0.4);
+  background: rgba(200, 50, 50, 0.1);
+}
+
 .badge {
   display: inline-block;
   font-family: var(--font-mono);

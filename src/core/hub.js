@@ -1,6 +1,8 @@
 // Pliny Game Lab — 50 Engines Master Coordinator
 // Manages 10 Thematic Pavilions and 50 Roman / Natural History Simulations
 
+import { soundMaster } from "./sound.js";
+
 export const PAVILIONS = [
   { id: "ignis", name: "I. Ignis & Terra (Earth & Fire)", games: ["vesuvius", "geyser", "caverna", "terrae_motus", "aurum"] },
   { id: "bestiarium", name: "II. Bestiarium & Silva (ALife & Botany)", games: ["bestiarium", "myrmex", "apis", "hydra", "silva"] },
@@ -566,6 +568,7 @@ class PlinyHub {
     this.togglePanelBtn = document.getElementById("toggle-panel");
     this.controlsPanel = document.getElementById("controls-panel");
     this.fullscreenBtn = document.getElementById("fullscreen-btn");
+    this.audioToggleBtn = document.getElementById("audio-toggle-btn");
 
     this.pavilionSelect = document.getElementById("pavilion-select");
     this.gameSelect = document.getElementById("game-select");
@@ -697,6 +700,27 @@ class PlinyHub {
       });
     }
 
+    // Audio Unlock & Toggle
+    if (typeof window !== "undefined") {
+      const unlockAudio = () => {
+        soundMaster.resume();
+        window.removeEventListener("click", unlockAudio);
+        window.removeEventListener("keydown", unlockAudio);
+      };
+      window.addEventListener("click", unlockAudio, { once: true });
+      window.addEventListener("keydown", unlockAudio, { once: true });
+    }
+
+    if (this.audioToggleBtn) {
+      this.audioToggleBtn.addEventListener("click", () => {
+        soundMaster.resume();
+        const isMuted = soundMaster.toggleMute();
+        this.audioToggleBtn.textContent = isMuted ? "🔇" : "🔊";
+        this.audioToggleBtn.title = isMuted ? "Unmute Sound" : "Mute Sound";
+        this.audioToggleBtn.classList.toggle("muted", isMuted);
+      });
+    }
+
     this.setupInputHandling();
 
     // Route initial view based on URL hash
@@ -756,6 +780,7 @@ class PlinyHub {
       if (this.viewportContainer) this.viewportContainer.classList.add("view-hidden");
       if (this.showcaseNavBtn) this.showcaseNavBtn.classList.add("active");
       if (this.simulatorNavBtn) this.simulatorNavBtn.classList.remove("active");
+      soundMaster.playChime("D5", 0.15);
       if (typeof history !== "undefined" && history.replaceState) {
         history.replaceState(null, "", "#showcase");
       }
@@ -765,6 +790,10 @@ class PlinyHub {
       if (this.simulatorNavBtn) this.simulatorNavBtn.classList.add("active");
       if (this.showcaseNavBtn) this.showcaseNavBtn.classList.remove("active");
       this.handleResize();
+      const info = DEMOS[this.activeKey];
+      if (info && info.pavilionId) {
+        soundMaster.startPavilionAmbience(info.pavilionId);
+      }
       if (typeof history !== "undefined" && history.replaceState) {
         history.replaceState(null, "", `#game=${this.activeKey}`);
       }
@@ -772,6 +801,8 @@ class PlinyHub {
   }
 
   launchDemo(key) {
+    soundMaster.resume();
+    soundMaster.playLaunchFanfare();
     this.switchDemo(key);
     this.switchView("simulator");
     if (typeof window !== "undefined") {
@@ -791,7 +822,11 @@ class PlinyHub {
       allChip.className = "chip-btn active";
       allChip.dataset.pav = "all";
       allChip.innerHTML = `<span class="chip-dot" style="--dot-color: var(--accent-gold);"></span> All (50)`;
-      allChip.addEventListener("click", () => this.selectPavilionFilter("all", allChip));
+      allChip.addEventListener("mouseenter", () => soundMaster.playChime("D5", 0.08));
+      allChip.addEventListener("click", () => {
+        soundMaster.playChime("A4", 0.15);
+        this.selectPavilionFilter("all", allChip);
+      });
       this.showcaseChips.appendChild(allChip);
 
       // Pavilion chips
@@ -802,7 +837,11 @@ class PlinyHub {
         const color = PAVILION_COLORS[pav.id] || "#d4af37";
         const shortName = pav.name.split("(")[0].trim();
         chip.innerHTML = `<span class="chip-dot" style="--dot-color: ${color};"></span> ${shortName} (${pav.games.length})`;
-        chip.addEventListener("click", () => this.selectPavilionFilter(pav.id, chip));
+        chip.addEventListener("mouseenter", () => soundMaster.playChime("E5", 0.08));
+        chip.addEventListener("click", () => {
+          soundMaster.playChime("C5", 0.15);
+          this.selectPavilionFilter(pav.id, chip);
+        });
         this.showcaseChips.appendChild(chip);
       });
     }
@@ -847,6 +886,7 @@ class PlinyHub {
         </div>
       `;
 
+      card.addEventListener("mouseenter", () => soundMaster.playChime("A4", 0.05));
       card.addEventListener("click", () => this.launchDemo(key));
       this.showcaseGrid.appendChild(card);
     });
@@ -1037,6 +1077,11 @@ class PlinyHub {
       const dpr = window.devicePixelRatio || 1;
       if (this.currentEngine.resize) {
         this.currentEngine.resize(this.canvas.width, this.canvas.height, dpr);
+      }
+
+      // Update ambient soundscape if currently viewing simulator
+      if (this.currentView === "simulator" && info.pavilionId) {
+        soundMaster.startPavilionAmbience(info.pavilionId);
       }
     } catch (err) {
       console.warn("Failed to load engine for " + key, err);
