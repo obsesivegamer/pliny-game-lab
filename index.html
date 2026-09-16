@@ -22,6 +22,9 @@
 
       <!-- Pavilion & Game Switcher -->
       <div id="nav-controls">
+        <button id="showcase-nav-btn" class="nav-toggle-btn active" title="View 50-Engine Showcase">🏛️ Showcase</button>
+        <button id="simulator-nav-btn" class="nav-toggle-btn" title="View Active Simulation">🎮 Simulator</button>
+        <div class="nav-divider"></div>
         <select id="pavilion-select" title="Select Thematic Pavilion"></select>
         <select id="game-select" title="Select Engine / Simulation"></select>
         <div class="btn-group">
@@ -39,8 +42,81 @@
       </div>
     </header>
 
-    <!-- Main Viewport -->
-    <main id="viewport-container">
+    <!-- Showcase Homepage View -->
+    <section id="showcase-view">
+      <div class="showcase-hero">
+        <div class="showcase-kicker">A 50-ENGINE SIMULATION LABORATORY • PLINII NATURALIS HISTORIA</div>
+        <h1 class="showcase-title">THE PLINY GAME LAB</h1>
+        <p class="showcase-lede">
+          Fifty interactive procedural simulations, ancient mechanisms, generative ecosystems, and classical phenomena — each <b>designed, architected, and verified end-to-end by autonomous AI agents in a single day</b>, inspired by Pliny the Elder's 37 books of <em>Naturalis Historia</em>. Every engine is a pure, self-contained ES module running on Canvas 2D and WebAudio with zero external dependencies.
+        </p>
+        <div class="showcase-stats">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-total-engines">50</div>
+            <div class="stat-label">Engines</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">10</div>
+            <div class="stat-label">Pavilions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">37</div>
+            <div class="stat-label">Books of Pliny</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">0</div>
+            <div class="stat-label">Dependencies</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">60</div>
+            <div class="stat-label">FPS Native</div>
+          </div>
+        </div>
+        <div class="showcase-hero-actions">
+          <button id="hero-launch-btn" class="hero-btn hero-btn-primary">▶ Launch Vesuvius (#1)</button>
+          <button id="hero-random-btn" class="hero-btn hero-btn-secondary">🎲 Random Engine</button>
+          <a href="#showcase-bar" class="hero-btn hero-btn-tertiary">📜 Explore All 50 ↓</a>
+        </div>
+        <div class="hero-hairline"></div>
+      </div>
+
+      <!-- Sticky Filter / Search Toolbar -->
+      <div id="showcase-bar" class="showcase-toolbar">
+        <div class="toolbar-inner">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="M21 21l-4.3-4.3"/>
+            </svg>
+            <input id="showcase-search" type="search" placeholder="Search 50 engines by name, physics, keyword… (press / to focus)" autocomplete="off" aria-label="Search engines">
+          </div>
+          <div id="showcase-chips" class="pavilion-chips"></div>
+          <div id="showcase-count" class="match-count">Showing 50 of 50 engines</div>
+        </div>
+      </div>
+
+      <!-- 50 Engine Cards Grid -->
+      <main class="showcase-main">
+        <div id="showcase-grid" class="showcase-grid"></div>
+        <div id="showcase-empty" class="showcase-empty" style="display: none;">
+          <div class="empty-icon">🏛️</div>
+          <p>No engines match your search query.</p>
+          <button id="clear-search-btn" class="action-btn">Clear Search Filter</button>
+        </div>
+      </main>
+
+      <!-- Showcase Footer -->
+      <footer class="showcase-footer">
+        <div class="footer-line"></div>
+        <div class="footer-content">
+          <p><b>The Pliny Game Lab.</b> 50 simulations across 10 Pavilions: <em>Ignis & Terra, Bestiarium, Mechanica, Cosmographia, Fabula, Mathematica, Mare Nostrum, Architectura, Alchemia, and Strategia</em>. Built with pure vanilla ES modules, Canvas 2D, and WebAudio API.</p>
+          <p class="footer-sub">Inspired by Gaius Plinius Secundus (AD 23/24 – 79) • Verified green across 50/50 headless and real browser QA suites.</p>
+        </div>
+      </footer>
+    </section>
+
+    <!-- Main Viewport (Simulator View) -->
+    <main id="viewport-container" class="view-hidden">
       <canvas id="main-canvas"></canvas>
       
       <!-- Interactive Floating Sidebar -->

@@ -536,10 +536,23 @@ export const DEMOS = {
   }
 };
 
+export const PAVILION_COLORS = {
+  ignis: "#ff6b4a",
+  bestiarium: "#34d399",
+  mechanica: "#38bdf8",
+  cosmographia: "#a78bfa",
+  fabula: "#f43f5e",
+  mathematica: "#fbbf24",
+  mare: "#2dd4bf",
+  architectura: "#fb923c",
+  alchemia: "#c084fc",
+  strategia: "#e11d48"
+};
+
 class PlinyHub {
   constructor() {
     this.canvas = document.getElementById("main-canvas");
-    this.ctx = this.canvas.getContext("2d");
+    this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
     this.controlsContainer = document.getElementById("dynamic-controls");
     this.demoTitle = document.getElementById("demo-title");
     this.demoDesc = document.getElementById("demo-desc");
@@ -560,10 +573,30 @@ class PlinyHub {
     this.randomBtn = document.getElementById("random-game-btn");
     this.nextBtn = document.getElementById("next-game-btn");
 
+    // Showcase & View Elements
+    this.currentView = "showcase";
+    this.showcaseView = document.getElementById("showcase-view");
+    this.viewportContainer = document.getElementById("viewport-container");
+    this.showcaseNavBtn = document.getElementById("showcase-nav-btn");
+    this.simulatorNavBtn = document.getElementById("simulator-nav-btn");
+    this.brandEl = document.querySelector(".brand");
+
+    this.showcaseGrid = document.getElementById("showcase-grid");
+    this.showcaseSearch = document.getElementById("showcase-search");
+    this.showcaseChips = document.getElementById("showcase-chips");
+    this.showcaseCount = document.getElementById("showcase-count");
+    this.showcaseEmpty = document.getElementById("showcase-empty");
+    this.clearSearchBtn = document.getElementById("clear-search-btn");
+    this.heroLaunchBtn = document.getElementById("hero-launch-btn");
+    this.heroRandomBtn = document.getElementById("hero-random-btn");
+
+    this.activePavilionFilter = "all";
+    this.searchQuery = "";
+
     this.activeKey = "vesuvius";
     this.currentEngine = null;
     this.isPaused = false;
-    this.lastTime = performance.now();
+    this.lastTime = (typeof performance !== "undefined") ? performance.now() : Date.now();
     this.frameCount = 0;
     this.fpsTimer = 0;
     this.engineCache = {};
@@ -573,77 +606,350 @@ class PlinyHub {
 
   init() {
     this.populateSelectors();
+    this.initShowcase();
+    this.initViewControls();
+    this.setupKeyboardShortcuts();
     this.handleResize();
-    window.addEventListener("resize", () => this.handleResize());
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", () => this.handleResize());
+    }
 
     // Selector events
-    this.pavilionSelect.addEventListener("change", () => {
-      const pavId = this.pavilionSelect.value;
-      const pav = PAVILIONS.find(p => p.id === pavId);
-      if (pav && pav.games.length > 0) {
-        this.updateGameDropdown(pavId);
-        this.switchDemo(pav.games[0]);
-      }
-    });
+    if (this.pavilionSelect) {
+      this.pavilionSelect.addEventListener("change", () => {
+        const pavId = this.pavilionSelect.value;
+        const pav = PAVILIONS.find(p => p.id === pavId);
+        if (pav && pav.games.length > 0) {
+          this.updateGameDropdown(pavId);
+          this.switchDemo(pav.games[0]);
+        }
+      });
+    }
 
-    this.gameSelect.addEventListener("change", () => {
-      const key = this.gameSelect.value;
-      if (key && key !== this.activeKey) {
-        this.switchDemo(key);
-      }
-    });
+    if (this.gameSelect) {
+      this.gameSelect.addEventListener("change", () => {
+        const key = this.gameSelect.value;
+        if (key && key !== this.activeKey) {
+          this.switchDemo(key);
+        }
+      });
+    }
 
     // Navigation buttons
     const allKeys = Object.keys(DEMOS);
-    this.prevBtn.addEventListener("click", () => {
-      const idx = allKeys.indexOf(this.activeKey);
-      const prevIdx = (idx - 1 + allKeys.length) % allKeys.length;
-      this.switchDemo(allKeys[prevIdx]);
-    });
+    if (this.prevBtn) {
+      this.prevBtn.addEventListener("click", () => {
+        const idx = allKeys.indexOf(this.activeKey);
+        const prevIdx = (idx - 1 + allKeys.length) % allKeys.length;
+        this.switchDemo(allKeys[prevIdx]);
+      });
+    }
 
-    this.nextBtn.addEventListener("click", () => {
-      const idx = allKeys.indexOf(this.activeKey);
-      const nextIdx = (idx + 1) % allKeys.length;
-      this.switchDemo(allKeys[nextIdx]);
-    });
+    if (this.nextBtn) {
+      this.nextBtn.addEventListener("click", () => {
+        const idx = allKeys.indexOf(this.activeKey);
+        const nextIdx = (idx + 1) % allKeys.length;
+        this.switchDemo(allKeys[nextIdx]);
+      });
+    }
 
-    this.randomBtn.addEventListener("click", () => {
-      const randomIdx = Math.floor(Math.random() * allKeys.length);
-      this.switchDemo(allKeys[randomIdx]);
-    });
+    if (this.randomBtn) {
+      this.randomBtn.addEventListener("click", () => {
+        const randomIdx = Math.floor(Math.random() * allKeys.length);
+        this.switchDemo(allKeys[randomIdx]);
+      });
+    }
 
     // Reset button
-    this.resetBtn.addEventListener("click", () => {
-      if (this.currentEngine && this.currentEngine.reset) {
-        this.currentEngine.reset();
-      }
-    });
+    if (this.resetBtn) {
+      this.resetBtn.addEventListener("click", () => {
+        if (this.currentEngine && this.currentEngine.reset) {
+          this.currentEngine.reset();
+        }
+      });
+    }
 
     // Pause button
-    this.pauseBtn.addEventListener("click", () => {
-      this.isPaused = !this.isPaused;
-      this.pauseBtn.textContent = this.isPaused ? "Resume" : "Pause";
-      this.pauseBtn.style.color = this.isPaused ? "var(--accent-crimson)" : "var(--text-main)";
-    });
+    if (this.pauseBtn) {
+      this.pauseBtn.addEventListener("click", () => {
+        this.isPaused = !this.isPaused;
+        this.pauseBtn.textContent = this.isPaused ? "Resume" : "Pause";
+        this.pauseBtn.style.color = this.isPaused ? "var(--accent-crimson)" : "var(--text-main)";
+      });
+    }
 
     // Panel collapse
-    this.togglePanelBtn.addEventListener("click", () => {
-      this.controlsPanel.classList.toggle("collapsed");
-      this.togglePanelBtn.textContent = this.controlsPanel.classList.contains("collapsed") ? "+" : "−";
-    });
+    if (this.togglePanelBtn && this.controlsPanel) {
+      this.togglePanelBtn.addEventListener("click", () => {
+        this.controlsPanel.classList.toggle("collapsed");
+        this.togglePanelBtn.textContent = this.controlsPanel.classList.contains("collapsed") ? "+" : "−";
+      });
+    }
 
     // Fullscreen toggle
-    this.fullscreenBtn.addEventListener("click", () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+    if (this.fullscreenBtn) {
+      this.fullscreenBtn.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+    }
+
+    this.setupInputHandling();
+
+    // Route initial view based on URL hash
+    this.handleInitialRoute();
+
+    if (typeof requestAnimationFrame !== "undefined") {
+      requestAnimationFrame((t) => this.loop(t));
+    }
+  }
+
+  handleInitialRoute() {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (hash.startsWith("#game=")) {
+      const key = hash.replace("#game=", "").trim();
+      if (DEMOS[key]) {
+        this.switchDemo(key);
+        this.switchView("simulator");
+        return;
+      }
+    }
+    // Default: showcase homepage
+    this.switchDemo("vesuvius");
+    this.switchView("showcase");
+  }
+
+  initViewControls() {
+    if (this.showcaseNavBtn) {
+      this.showcaseNavBtn.addEventListener("click", () => this.switchView("showcase"));
+    }
+    if (this.simulatorNavBtn) {
+      this.simulatorNavBtn.addEventListener("click", () => this.switchView("simulator"));
+    }
+    if (this.brandEl) {
+      this.brandEl.addEventListener("click", () => this.switchView("showcase"));
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("hashchange", () => {
+        const hash = window.location.hash;
+        if (hash.startsWith("#game=")) {
+          const key = hash.replace("#game=", "").trim();
+          if (DEMOS[key] && key !== this.activeKey) {
+            this.switchDemo(key);
+          }
+          this.switchView("simulator");
+        } else if (hash === "#showcase" || hash === "") {
+          this.switchView("showcase");
+        }
+      });
+    }
+  }
+
+  switchView(viewName) {
+    this.currentView = viewName;
+    if (viewName === "showcase") {
+      if (this.showcaseView) this.showcaseView.classList.remove("view-hidden");
+      if (this.viewportContainer) this.viewportContainer.classList.add("view-hidden");
+      if (this.showcaseNavBtn) this.showcaseNavBtn.classList.add("active");
+      if (this.simulatorNavBtn) this.simulatorNavBtn.classList.remove("active");
+      if (typeof history !== "undefined" && history.replaceState) {
+        history.replaceState(null, "", "#showcase");
+      }
+    } else {
+      if (this.showcaseView) this.showcaseView.classList.add("view-hidden");
+      if (this.viewportContainer) this.viewportContainer.classList.remove("view-hidden");
+      if (this.simulatorNavBtn) this.simulatorNavBtn.classList.add("active");
+      if (this.showcaseNavBtn) this.showcaseNavBtn.classList.remove("active");
+      this.handleResize();
+      if (typeof history !== "undefined" && history.replaceState) {
+        history.replaceState(null, "", `#game=${this.activeKey}`);
+      }
+    }
+  }
+
+  launchDemo(key) {
+    this.switchDemo(key);
+    this.switchView("simulator");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
+  initShowcase() {
+    if (!this.showcaseGrid) return;
+
+    // 1. Build Pavilion Filter Chips
+    if (this.showcaseChips) {
+      this.showcaseChips.innerHTML = "";
+      
+      // All chip
+      const allChip = document.createElement("button");
+      allChip.className = "chip-btn active";
+      allChip.dataset.pav = "all";
+      allChip.innerHTML = `<span class="chip-dot" style="--dot-color: var(--accent-gold);"></span> All (50)`;
+      allChip.addEventListener("click", () => this.selectPavilionFilter("all", allChip));
+      this.showcaseChips.appendChild(allChip);
+
+      // Pavilion chips
+      PAVILIONS.forEach(pav => {
+        const chip = document.createElement("button");
+        chip.className = "chip-btn";
+        chip.dataset.pav = pav.id;
+        const color = PAVILION_COLORS[pav.id] || "#d4af37";
+        const shortName = pav.name.split("(")[0].trim();
+        chip.innerHTML = `<span class="chip-dot" style="--dot-color: ${color};"></span> ${shortName} (${pav.games.length})`;
+        chip.addEventListener("click", () => this.selectPavilionFilter(pav.id, chip));
+        this.showcaseChips.appendChild(chip);
+      });
+    }
+
+    // 2. Build 50 Engine Cards
+    this.showcaseGrid.innerHTML = "";
+    const allKeys = Object.keys(DEMOS);
+
+    allKeys.forEach((key, idx) => {
+      const demo = DEMOS[key];
+      const overallNum = idx + 1;
+      const numStr = String(overallNum).padStart(2, "0");
+      const thumbUrl = `.audit/screenshots/${numStr}_${key}.png`;
+      const color = PAVILION_COLORS[demo.pavilionId] || "#d4af37";
+      const shortPavilion = demo.pavilionName.split("(")[0].trim();
+      const cleanTitle = demo.name.replace(/\(.*?\)/, "").trim();
+
+      const card = document.createElement("article");
+      card.className = "engine-card";
+      card.dataset.key = key;
+      card.dataset.pavilion = demo.pavilionId;
+      card.dataset.search = `${demo.name} ${demo.pavilionName} ${demo.desc} ${demo.hint}`.toLowerCase();
+      card.style.setProperty("--card-accent", color);
+
+      card.innerHTML = `
+        <div class="card-thumb-wrap">
+          <img class="card-thumb" src="${thumbUrl}" alt="${demo.name}" loading="lazy" onerror="this.style.opacity='0.4'">
+          <div class="card-pavilion-tag">
+            <span class="chip-dot" style="--dot-color: ${color};"></span>
+            <span>${shortPavilion}</span>
+          </div>
+          <div class="card-num-tag">#${overallNum}/50</div>
+          <button class="card-launch-btn" title="Launch ${cleanTitle}">▶ Launch</button>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">
+            <span class="card-swatch"></span>
+            <span>${overallNum}. ${cleanTitle}</span>
+          </h3>
+          <p class="card-desc">${demo.desc}</p>
+          <div class="card-hint" title="${demo.hint}">🎮 ${demo.hint}</div>
+        </div>
+      `;
+
+      card.addEventListener("click", () => this.launchDemo(key));
+      this.showcaseGrid.appendChild(card);
+    });
+
+    // 3. Wire Search Input
+    if (this.showcaseSearch) {
+      this.showcaseSearch.addEventListener("input", (e) => {
+        this.searchQuery = e.target.value.toLowerCase().trim();
+        this.filterShowcase();
+      });
+    }
+
+    // 4. Wire Clear Search Button
+    if (this.clearSearchBtn) {
+      this.clearSearchBtn.addEventListener("click", () => {
+        if (this.showcaseSearch) this.showcaseSearch.value = "";
+        this.searchQuery = "";
+        this.selectPavilionFilter("all");
+      });
+    }
+
+    // 5. Wire Hero Buttons
+    if (this.heroLaunchBtn) {
+      this.heroLaunchBtn.addEventListener("click", () => {
+        this.launchDemo(this.activeKey || "vesuvius");
+      });
+    }
+
+    if (this.heroRandomBtn) {
+      this.heroRandomBtn.addEventListener("click", () => {
+        const randomKey = allKeys[Math.floor(Math.random() * allKeys.length)];
+        this.launchDemo(randomKey);
+      });
+    }
+  }
+
+  selectPavilionFilter(pavId, targetChip = null) {
+    this.activePavilionFilter = pavId;
+    if (this.showcaseChips) {
+      const chips = this.showcaseChips.querySelectorAll(".chip-btn");
+      chips.forEach(c => {
+        if (c.dataset.pav === pavId) {
+          c.classList.add("active");
+        } else {
+          c.classList.remove("active");
+        }
+      });
+    }
+    this.filterShowcase();
+  }
+
+  filterShowcase() {
+    if (!this.showcaseGrid) return;
+    const cards = this.showcaseGrid.querySelectorAll(".engine-card");
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      const matchPav = (this.activePavilionFilter === "all" || card.dataset.pavilion === this.activePavilionFilter);
+      const matchSearch = (!this.searchQuery || card.dataset.search.includes(this.searchQuery));
+
+      if (matchPav && matchSearch) {
+        card.style.display = "flex";
+        visibleCount++;
       } else {
-        document.exitFullscreen().catch(() => {});
+        card.style.display = "none";
       }
     });
 
-    this.setupInputHandling();
-    this.switchDemo("vesuvius");
-    requestAnimationFrame((t) => this.loop(t));
+    if (this.showcaseCount) {
+      this.showcaseCount.textContent = `Showing ${visibleCount} of 50 engines`;
+    }
+
+    if (this.showcaseEmpty) {
+      this.showcaseEmpty.style.display = (visibleCount === 0) ? "block" : "none";
+    }
+  }
+
+  setupKeyboardShortcuts() {
+    if (typeof window === "undefined") return;
+    window.addEventListener("keydown", (e) => {
+      // Focus search on '/' when in showcase
+      if (e.key === "/" && this.currentView === "showcase") {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+        if (activeTag !== "input" && activeTag !== "textarea") {
+          e.preventDefault();
+          if (this.showcaseSearch) {
+            this.showcaseSearch.focus();
+            this.showcaseSearch.select();
+          }
+        }
+      }
+      // Escape: return to showcase or clear search
+      if (e.key === "Escape") {
+        if (this.currentView === "simulator") {
+          this.switchView("showcase");
+        } else if (this.showcaseSearch && document.activeElement === this.showcaseSearch) {
+          this.showcaseSearch.value = "";
+          this.searchQuery = "";
+          this.showcaseSearch.blur();
+          this.filterShowcase();
+        }
+      }
+    });
   }
 
   populateSelectors() {
@@ -827,7 +1133,7 @@ class PlinyHub {
       this.fpsTimer = 0;
     }
 
-    if (this.currentEngine) {
+    if (this.currentEngine && this.currentView === "simulator") {
       try {
         if (!this.isPaused && this.currentEngine.update) {
           this.currentEngine.update(dt);
@@ -847,6 +1153,8 @@ class PlinyHub {
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  window.__hub = new PlinyHub();
-});
+if (typeof window !== 'undefined') {
+  window.addEventListener("DOMContentLoaded", () => {
+    window.__hub = new PlinyHub();
+  });
+}

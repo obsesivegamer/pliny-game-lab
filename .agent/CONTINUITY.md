@@ -15,6 +15,7 @@
 - 2026-09-16T00:24:00-04:00 [TOOL] Opus Game Design Architect completed .agent/SPECS_31_ENGINES.md.
 - 2026-09-16T00:30:00-04:00 [TOOL] All remaining 31 engines landed and verified. 50/50 engines PASSED (0 failed, 0 pending).
 - 2026-09-16T12:57:00-04:00 [TOOL] Puppeteer Browser Visual QA executed across all 50 engines in headless Chrome: 50/50 PASSED clean (0 errors, 0 warnings).
+- 2026-09-16T13:45:00-04:00 [USER] Built Step 1B: Showcase Homepage modeled on Fable 5 Showcase with 50-card responsive grid, live search (hotkey /), 11 pavilion filter chips, hero stats, and seamless arcade simulator toggling. Verified clean across E2E and visual suites.
 
 ## [DISCOVERIES]
 - 2026-09-15T20:19:00-04:00 [TOOL] Headless Node simulation requires guarding controlsContainer and DOM queries with typeof document !== 'undefined'.

@@ -90,7 +90,11 @@ async function runBrowserQA() {
       await page.evaluate(async (engineKey) => {
         // Access the hub instance — it's attached to window or we call switchDemo directly
         if (window.__hub) {
-          await window.__hub.switchDemo(engineKey);
+          if (window.__hub.launchDemo) {
+            window.__hub.launchDemo(engineKey);
+          } else {
+            await window.__hub.switchDemo(engineKey);
+          }
         } else {
           // Find the game-select dropdown and change it
           const gameSelect = document.getElementById('game-select');
