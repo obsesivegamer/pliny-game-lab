@@ -147,8 +147,8 @@ export class BestiariumEngine {
 
     this.creatures.push({
       type,
-      x,
-      y,
+      x: Number.isFinite(x) ? x : (this.width * 0.5 || 0),
+      y: Number.isFinite(y) ? y : (this.height * 0.5 || 0),
       vx: (Math.random() - 0.5) * 50,
       vy: (Math.random() - 0.5) * 50,
       heading: Math.random() * Math.PI * 2,
@@ -171,12 +171,15 @@ export class BestiariumEngine {
   }
 
   onMouseDown(pos) {
+    if (!pos) return;
+    const px = Number.isFinite(pos.x) ? pos.x : (this.width * 0.5 || 0);
+    const py = Number.isFinite(pos.y) ? pos.y : (this.height * 0.5 || 0);
     if (this.spawnMode === 'food') {
       for (let i = 0; i < 5; i++) {
-        this.spawnFood(pos.x + (Math.random() - 0.5) * 40, pos.y + (Math.random() - 0.5) * 40);
+        this.spawnFood(px + (Math.random() - 0.5) * 40, py + (Math.random() - 0.5) * 40);
       }
     } else {
-      this.spawnCreature(this.spawnMode, pos.x, pos.y);
+      this.spawnCreature(this.spawnMode, px, py);
     }
   }
 
@@ -237,7 +240,7 @@ export class BestiariumEngine {
 
       // Cap speed
       const curSpeed = Math.hypot(c.vx, c.vy);
-      if (curSpeed > c.dna.speed) {
+      if (curSpeed > c.dna.speed && curSpeed > 0) {
         c.vx = (c.vx / curSpeed) * c.dna.speed;
         c.vy = (c.vy / curSpeed) * c.dna.speed;
       }
@@ -247,6 +250,9 @@ export class BestiariumEngine {
 
       if (curSpeed > 1) {
         c.heading = Math.atan2(c.vy, c.vx);
+      }
+      if (!Number.isFinite(c.heading)) {
+        c.heading = 0;
       }
 
       // Reproduction check
@@ -264,7 +270,10 @@ export class BestiariumEngine {
       survivors.push(c);
     }
 
-    this.creatures = survivors.concat(newBirths);
+    this.creatures = survivors;
+    for (const b of newBirths) {
+      this.spawnCreature(b.type, b.x, b.y, b.dna);
+    }
 
     // Update decay particles
     for (let i = this.particles.length - 1; i >= 0; i--) {

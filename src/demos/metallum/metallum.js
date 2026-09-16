@@ -1663,6 +1663,8 @@ export class MetallumEngine {
     ctx.strokeRect(-22, -125, 36, 32);
 
     ctx.restore();
+
+    ctx.restore();
   }
 
   renderRomanHUD(ctx) {

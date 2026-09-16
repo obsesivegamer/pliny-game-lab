@@ -140,10 +140,10 @@ export class NautilusEngine {
       const siphunclePt = this.getQuadraticBezierPoint(pIn, pCtrl, pOut, 0.44);
 
       // Initial fluid fraction: inner chambers (0-6) are dry (~0%), outer chambers have hydrostatic fluid
-      const initialFluid = i < 6 ? 0.02 : 0.15 + 0.35 * Math.sin(i * 0.2);
+      const initialFluid = i < 6 ? 0.02 : Math.max(0.01, Math.min(0.95, 0.15 + 0.35 * Math.sin(i * 0.2)));
 
-      // Approximate volume of chamber proportional to local shell radius cubed
-      const approxVol = Math.pow(rOut - rIn, 2) * ((rOut + rIn) * 0.5) * 0.001;
+      // Approximate volume of chamber proportional to local shell radius cubed (liters)
+      const approxVol = Math.pow(rOut - rIn, 2) * ((rOut + rIn) * 0.5) * 0.000001;
 
       this.chambers.push({
         index: i,
@@ -260,18 +260,21 @@ export class NautilusEngine {
     if (count <= 0) return;
 
     // Siphon nozzle position in world coordinates (located on ventral side of living chamber)
-    const cosP = Math.cos(this.specimen.pitch);
-    const sinP = Math.sin(this.specimen.pitch);
+    const pitch = isFinite(this.specimen.pitch) ? this.specimen.pitch : -0.15;
+    const cosP = Math.cos(pitch);
+    const sinP = Math.sin(pitch);
 
     // Living chamber ventral nozzle offset
     const nozzleLocalX = 115;
     const nozzleLocalY = 48;
-    const nozzleWorldX = this.specimen.x + (nozzleLocalX * cosP - nozzleLocalY * sinP);
-    const nozzleWorldY = this.specimen.y + (nozzleLocalX * sinP + nozzleLocalY * cosP);
+    const specX = isFinite(this.specimen.x) ? this.specimen.x : this.width * 0.48;
+    const specY = isFinite(this.specimen.y) ? this.specimen.y : this.height * 0.45;
+    const nozzleWorldX = specX + (nozzleLocalX * cosP - nozzleLocalY * sinP);
+    const nozzleWorldY = specY + (nozzleLocalX * sinP + nozzleLocalY * cosP);
 
     // Jet impulse direction: expelled backwards & slightly down
-    const jetAngle = this.specimen.pitch + Math.PI * 0.88;
-    const baseJetSpeed = (this.jetThrustForce / 150) * 190;
+    const jetAngle = pitch + Math.PI * 0.88;
+    const baseJetSpeed = ((this.jetThrustForce || 150) / 150) * 190;
 
     for (let i = 0; i < count; i++) {
       const spread = (Math.random() - 0.5) * 0.45;
@@ -492,13 +495,14 @@ export class NautilusEngine {
     this.specimen.jetCooldown = 0.45;
 
     // Reaction impulse vector (pointing forward & slightly upward relative to shell)
-    const thrust = this.jetThrustForce * 0.95;
-    const forwardAngle = this.specimen.pitch - Math.PI * 0.12;
-    this.specimen.vx += Math.cos(forwardAngle) * thrust * 0.35;
-    this.specimen.vy += Math.sin(forwardAngle) * thrust * 0.35;
+    const thrust = (this.jetThrustForce || 150) * 0.95;
+    const pitch = isFinite(this.specimen.pitch) ? this.specimen.pitch : -0.15;
+    const forwardAngle = pitch - Math.PI * 0.12;
+    this.specimen.vx = (this.specimen.vx || 0) + Math.cos(forwardAngle) * thrust * 0.35;
+    this.specimen.vy = (this.specimen.vy || 0) + Math.sin(forwardAngle) * thrust * 0.35;
 
     // Rocking torque recoil
-    this.specimen.angularVel += 0.85;
+    this.specimen.angularVel = (this.specimen.angularVel || 0) + 0.85;
 
     // Eject water jet nodes
     this.spawnSiphonJetNodes(32);
@@ -508,23 +512,33 @@ export class NautilusEngine {
   }
 
   floodChambers(amount = 0.2) {
+    const amt = isFinite(amount) ? amount : 0.2;
     for (let i = 6; i < this.chambers.length; i++) {
-      this.chambers[i].fluidFraction = Math.min(1.0, this.chambers[i].fluidFraction + amount);
+      this.chambers[i].fluidFraction = Math.min(1.0, Math.max(0.01, (this.chambers[i].fluidFraction || 0) + amt));
     }
     this.playOsmosisSound();
   }
 
   purgeChambers(amount = 0.2) {
+    const amt = isFinite(amount) ? amount : 0.2;
     for (let i = 6; i < this.chambers.length; i++) {
-      this.chambers[i].fluidFraction = Math.max(0.01, this.chambers[i].fluidFraction - amount);
+      this.chambers[i].fluidFraction = Math.max(0.01, Math.min(1.0, (this.chambers[i].fluidFraction || 0) - amt));
     }
     this.playOsmosisSound();
   }
 
   update(dt) {
     // Clamp delta time to avoid simulation instability
-    const step = Math.min(dt, 0.05);
+    const step = Math.min(Math.max(0.001, isFinite(dt) ? dt : 0.016), 0.05);
     this.time += step;
+
+    // Sanitize specimen values if non-finite
+    if (!isFinite(this.specimen.x)) this.specimen.x = this.width * 0.48;
+    if (!isFinite(this.specimen.y)) this.specimen.y = this.height * 0.45;
+    if (!isFinite(this.specimen.vx)) this.specimen.vx = 0;
+    if (!isFinite(this.specimen.vy)) this.specimen.vy = 0;
+    if (!isFinite(this.specimen.pitch)) this.specimen.pitch = -0.15;
+    if (!isFinite(this.specimen.angularVel)) this.specimen.angularVel = 0;
 
     // 1. Current depth in meters (canvas Y mapped: 50px = 20m, height-50px = 500m)
     const depthMargin = 60;
@@ -533,12 +547,13 @@ export class NautilusEngine {
 
     // 2. Automated Siphuncle Cameral Fluid Osmoregulation:
     // Siphuncle senses depth error and alters target fluid fraction
-    const depthError = this.depthTarget - currentDepth; // positive means too shallow -> needs more liquid to sink
-    const baseTargetFluid = 0.18 + Math.max(0, Math.min(0.65, (this.depthTarget - 20) / 480 * 0.65));
+    const targetDepth = isFinite(this.depthTarget) ? this.depthTarget : 220;
+    const depthError = targetDepth - currentDepth; // positive means too shallow -> needs more liquid to sink
+    const baseTargetFluid = 0.18 + Math.max(0, Math.min(0.65, (targetDepth - 20) / 480 * 0.65));
 
     // Dynamic target fluid level across camerae
     let totalFluidMass = 0;
-    const osmosisSpeed = 0.45 * this.osmosisRate * step;
+    const osmosisSpeed = 0.45 * (this.osmosisRate || 1.2) * step;
 
     for (let i = 0; i < this.chambers.length; i++) {
       const ch = this.chambers[i];
@@ -552,17 +567,17 @@ export class NautilusEngine {
       }
 
       // Smooth osmotic diffusion
-      const diff = ch.targetFluidFraction - ch.fluidFraction;
-      ch.fluidFraction += diff * osmosisSpeed;
+      const diff = ch.targetFluidFraction - (ch.fluidFraction || 0);
+      ch.fluidFraction = Math.max(0.01, Math.min(0.95, (ch.fluidFraction || 0) + diff * osmosisSpeed));
 
       // Accumulate mass (water density = 1000 kg/m^3)
-      totalFluidMass += ch.volume * ch.fluidFraction * 0.55;
+      totalFluidMass += ch.volume * ch.fluidFraction * 1.05;
     }
-    this.specimen.fluidMass = totalFluidMass;
+    this.specimen.fluidMass = isFinite(totalFluidMass) ? totalFluidMass : 0.20;
 
     // 3. Archimedean Buoyancy Physics
     // Gravity Force: Fg = m_total * g
-    const totalMass = this.specimen.dryMass + this.specimen.fluidMass;
+    const totalMass = (this.specimen.dryMass || 0.82) + this.specimen.fluidMass;
     const fg = totalMass * this.gravity;
 
     // Buoyant Force: Fb = rho_water * V_displaced * g
@@ -576,21 +591,29 @@ export class NautilusEngine {
 
     // Apply forces if not being manually dragged
     if (!this.specimen.isDragging) {
-      this.specimen.vy += netAccY * step;
+      if (isFinite(netAccY)) {
+        this.specimen.vy += netAccY * step;
+      }
 
       // Hydrodynamic water drag (quadratic damping)
       const dragCoeff = 1.8;
       const speedSq = this.specimen.vx * this.specimen.vx + this.specimen.vy * this.specimen.vy;
       const speed = Math.sqrt(speedSq);
       if (speed > 0.001) {
-        const dragMag = dragCoeff * speedSq;
-        this.specimen.vx -= (this.specimen.vx / speed) * dragMag * step;
-        this.specimen.vy -= (this.specimen.vy / speed) * dragMag * step;
+        // Unconditionally stable semi-implicit quadratic drag formulation
+        const dragFactor = 1 / (1 + dragCoeff * speed * step);
+        this.specimen.vx *= dragFactor;
+        this.specimen.vy *= dragFactor;
       }
 
       // Linear viscous damping
       this.specimen.vx *= Math.pow(0.88, step * 60);
       this.specimen.vy *= Math.pow(0.90, step * 60);
+
+      // Clamp velocities to prevent runaway
+      const maxSpeed = 1200;
+      this.specimen.vx = Math.max(-maxSpeed, Math.min(maxSpeed, this.specimen.vx));
+      this.specimen.vy = Math.max(-maxSpeed, Math.min(maxSpeed, this.specimen.vy));
 
       // Integrate velocity to position
       this.specimen.x += this.specimen.vx * step;
@@ -620,9 +643,11 @@ export class NautilusEngine {
       const pitchDiff = targetPitch - this.specimen.pitch;
       const restoringTorque = pitchDiff * 14.0;
 
-      this.specimen.angularVel += restoringTorque * step;
+      this.specimen.angularVel = (this.specimen.angularVel || 0) + restoringTorque * step;
       this.specimen.angularVel *= Math.pow(0.82, step * 60); // Angular hydrodynamic damping
+      this.specimen.angularVel = Math.max(-10, Math.min(10, this.specimen.angularVel));
       this.specimen.pitch += this.specimen.angularVel * step;
+      this.specimen.pitch = Math.max(-Math.PI, Math.min(Math.PI, this.specimen.pitch));
     }
 
     // Jet pulse timer
@@ -640,14 +665,15 @@ export class NautilusEngine {
     // 5. Update Water Jet Particles
     for (let j = this.waterJetParticles.length - 1; j >= 0; j--) {
       const p = this.waterJetParticles[j];
-      p.x += p.vx * step;
-      p.y += p.vy * step;
+      p.x += (p.vx || 0) * step;
+      p.y += (p.vy || 0) * step;
       p.vx *= Math.pow(0.85, step * 60);
       p.vy *= Math.pow(0.85, step * 60);
       p.radius += (p.maxRadius - p.radius) * 4.0 * step;
-      p.life -= (1.0 / p.decay) * step;
+      const decay = p.decay > 0 ? p.decay : 1.0;
+      p.life -= (1.0 / decay) * step;
 
-      if (p.life <= 0) {
+      if (p.life <= 0 || !isFinite(p.x) || !isFinite(p.y)) {
         this.waterJetParticles.splice(j, 1);
       }
     }
@@ -655,7 +681,7 @@ export class NautilusEngine {
     // 6. Update Gas Particles inside chambers
     for (let g = 0; g < this.gasParticles.length; g++) {
       const gp = this.gasParticles[g];
-      gp.driftPhase += gp.driftSpeed * step;
+      gp.driftPhase += (gp.driftSpeed || 1) * step;
       // Micro-oscillation simulating osmotic gas exchange
       gp.currentOffsetX = Math.cos(gp.driftPhase) * 2.2;
       gp.currentOffsetY = Math.sin(gp.driftPhase) * 2.2;
@@ -664,8 +690,8 @@ export class NautilusEngine {
     // 7. Update Marine Plankton
     for (let m = 0; m < this.marinePlankton.length; m++) {
       const pl = this.marinePlankton[m];
-      pl.x += pl.vx * step;
-      pl.y += pl.vy * step;
+      pl.x += (pl.vx || 0) * step;
+      pl.y += (pl.vy || 0) * step;
 
       // Wrap around bounds
       if (pl.y < 0) pl.y = this.height;
@@ -721,6 +747,7 @@ export class NautilusEngine {
     renderCtx.save();
     for (let m = 0; m < this.marinePlankton.length; m++) {
       const pl = this.marinePlankton[m];
+      if (!isFinite(pl.x) || !isFinite(pl.y) || !isFinite(pl.size)) continue;
       const pulse = 0.5 + 0.5 * Math.sin(this.time * pl.pulseSpeed + m);
       renderCtx.fillStyle = `rgba(180, 230, 255, ${pl.luminance * pulse * 0.75})`;
       renderCtx.beginPath();
@@ -733,7 +760,8 @@ export class NautilusEngine {
     renderCtx.save();
     for (let j = 0; j < this.waterJetParticles.length; j++) {
       const p = this.waterJetParticles[j];
-      const alpha = Math.max(0, p.life);
+      if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.radius) || p.radius <= 0) continue;
+      const alpha = Math.max(0, p.life || 0);
 
       if (p.isVortexRing) {
         // Expansive vortex bubble ring
@@ -758,9 +786,13 @@ export class NautilusEngine {
 
     // 5. Render Nautilus Specimen (Transform to Specimen Frame)
     renderCtx.save();
-    renderCtx.translate(this.specimen.x, this.specimen.y);
-    renderCtx.rotate(this.specimen.pitch);
-    renderCtx.scale(this.specimen.scale, this.specimen.scale);
+    const specX = isFinite(this.specimen.x) ? this.specimen.x : this.width * 0.48;
+    const specY = isFinite(this.specimen.y) ? this.specimen.y : this.height * 0.45;
+    const specPitch = isFinite(this.specimen.pitch) ? this.specimen.pitch : -0.15;
+    const specScale = isFinite(this.specimen.scale) ? this.specimen.scale : 1.0;
+    renderCtx.translate(specX, specY);
+    renderCtx.rotate(specPitch);
+    renderCtx.scale(specScale, specScale);
 
     this.renderNautilusCutaway(renderCtx, pearlNacre, amberGold, deepSeaBlue);
 
@@ -907,8 +939,9 @@ export class NautilusEngine {
       const gp = this.gasParticles[g];
       const posX = gp.x + (gp.currentOffsetX || 0);
       const posY = gp.y + (gp.currentOffsetY || 0);
+      if (!isFinite(posX) || !isFinite(posY) || !isFinite(gp.radius) || gp.radius <= 0) continue;
 
-      ctx.fillStyle = `rgba(234, 230, 223, ${gp.alpha})`;
+      ctx.fillStyle = `rgba(234, 230, 223, ${isFinite(gp.alpha) ? gp.alpha : 0.5})`;
       ctx.beginPath();
       ctx.arc(posX, posY, gp.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -930,15 +963,17 @@ export class NautilusEngine {
     ctx.stroke();
 
     // Active transport pulse nodes traveling along the siphuncle
-    const activePulseNodeIndex = Math.floor((this.time * 6 * this.osmosisRate) % this.siphunclePath.length);
-    const activeNode = this.siphunclePath[activePulseNodeIndex];
-    if (activeNode) {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.shadowColor = '#FFFFFF';
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(activeNode.x, activeNode.y, 3.2, 0, Math.PI * 2);
-      ctx.fill();
+    if (this.siphunclePath.length > 0) {
+      const activePulseNodeIndex = Math.floor((this.time * 6 * (this.osmosisRate || 1.2)) % this.siphunclePath.length);
+      const activeNode = this.siphunclePath[activePulseNodeIndex];
+      if (activeNode && isFinite(activeNode.x) && isFinite(activeNode.y)) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.shadowColor = '#FFFFFF';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(activeNode.x, activeNode.y, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.restore();
 
@@ -1087,16 +1122,18 @@ export class NautilusEngine {
     // Current Depth & Pressure
     const depthMargin = 60;
     const depthSpan = Math.max(10, this.height - depthMargin * 2);
-    const currentDepthMeters = 20 + Math.max(0, Math.min(1, (this.specimen.y - depthMargin) / depthSpan)) * 480;
+    const validSpecY = isFinite(this.specimen.y) ? this.specimen.y : this.height * 0.45;
+    const currentDepthMeters = 20 + Math.max(0, Math.min(1, (validSpecY - depthMargin) / depthSpan)) * 480;
     const pressureAtm = 1.0 + (currentDepthMeters / 10.0);
 
     ctx.fillStyle = pearlColor;
     ctx.font = '11px monospace';
-    ctx.fillText(`DEPTH: ${Math.round(currentDepthMeters)}m / TARGET: ${Math.round(this.depthTarget)}m`, pad + 10, pad + 38);
+    const targetD = isFinite(this.depthTarget) ? this.depthTarget : 220;
+    ctx.fillText(`DEPTH: ${Math.round(currentDepthMeters)}m / TARGET: ${Math.round(targetD)}m`, pad + 10, pad + 38);
     ctx.fillText(`PRESSURE: ${pressureAtm.toFixed(1)} atm (${(pressureAtm * 1.013).toFixed(1)} bar)`, pad + 10, pad + 54);
 
     // Archimedean Buoyancy State
-    const totalMass = this.specimen.dryMass + this.specimen.fluidMass;
+    const totalMass = (this.specimen.dryMass || 0.82) + (this.specimen.fluidMass || 0.20);
     const neutralMass = 1.025;
     const netB = neutralMass - totalMass;
     let buoyancyLabel = 'NEUTRAL (EQUILIBRIUM)';
@@ -1117,7 +1154,7 @@ export class NautilusEngine {
     ctx.fillStyle = 'rgba(234, 230, 223, 0.85)';
     ctx.font = '10px monospace';
     const entities = this.getEntityCount();
-    ctx.fillText(`CAMERAL OSMOSIS: ${this.osmosisRate.toFixed(1)}x | ENTITIES: ${entities}`, pad + 10, pad + 88);
+    ctx.fillText(`CAMERAL OSMOSIS: ${(this.osmosisRate || 1.2).toFixed(1)}x | ENTITIES: ${entities}`, pad + 10, pad + 88);
 
     // Depth Gauge Scale on Right Margin
     const gaugeX = this.width - 24;
@@ -1132,7 +1169,7 @@ export class NautilusEngine {
     ctx.stroke();
 
     // Target depth marker
-    const targetY = gaugeY1 + ((this.depthTarget - 20) / 480) * (gaugeY2 - gaugeY1);
+    const targetY = gaugeY1 + ((targetD - 20) / 480) * (gaugeY2 - gaugeY1);
     ctx.fillStyle = amberColor;
     ctx.beginPath();
     ctx.moveTo(gaugeX - 8, targetY);
@@ -1142,7 +1179,7 @@ export class NautilusEngine {
     ctx.fill();
 
     // Current specimen depth marker
-    const specY = Math.max(gaugeY1, Math.min(gaugeY2, this.specimen.y));
+    const specY = Math.max(gaugeY1, Math.min(gaugeY2, validSpecY));
     ctx.fillStyle = '#48CAE4';
     ctx.beginPath();
     ctx.arc(gaugeX, specY, 4, 0, Math.PI * 2);
@@ -1166,8 +1203,10 @@ export class NautilusEngine {
     this.dpr = dpr;
 
     // Reposition specimen if bounds shift drastically
-    this.specimen.x = Math.max(120, Math.min(this.width - 120, this.specimen.x));
-    this.specimen.y = Math.max(80, Math.min(this.height - 80, this.specimen.y));
+    const curX = isFinite(this.specimen.x) ? this.specimen.x : this.width * 0.48;
+    const curY = isFinite(this.specimen.y) ? this.specimen.y : this.height * 0.45;
+    this.specimen.x = Math.max(120, Math.min(this.width - 120, curX));
+    this.specimen.y = Math.max(80, Math.min(this.height - 80, curY));
   }
 
   reset() {
@@ -1225,9 +1264,11 @@ export class NautilusEngine {
   /* -------------------------------------------------------------------------- */
 
   onMouseDown(pos) {
-    if (!pos) return;
-    const dx = pos.x - this.specimen.x;
-    const dy = pos.y - this.specimen.y;
+    if (!pos || !isFinite(pos.x) || !isFinite(pos.y)) return;
+    const specX = isFinite(this.specimen.x) ? this.specimen.x : this.width * 0.48;
+    const specY = isFinite(this.specimen.y) ? this.specimen.y : this.height * 0.45;
+    const dx = pos.x - specX;
+    const dy = pos.y - specY;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     // If clicked on specimen, begin drag
@@ -1254,15 +1295,16 @@ export class NautilusEngine {
   }
 
   onMouseMove(pos) {
-    if (!pos) return;
+    if (!pos || !isFinite(pos.x) || !isFinite(pos.y)) return;
     if (this.specimen.isDragging) {
-      const prevX = this.specimen.x;
-      const prevY = this.specimen.y;
-      this.specimen.x = pos.x - this.specimen.dragOffsetX;
-      this.specimen.y = pos.y - this.specimen.dragOffsetY;
-      // Calculate drag throw velocity
-      this.specimen.vx = (this.specimen.x - prevX) * 15;
-      this.specimen.vy = (this.specimen.y - prevY) * 15;
+      const prevX = isFinite(this.specimen.x) ? this.specimen.x : pos.x;
+      const prevY = isFinite(this.specimen.y) ? this.specimen.y : pos.y;
+      this.specimen.x = pos.x - (this.specimen.dragOffsetX || 0);
+      this.specimen.y = pos.y - (this.specimen.dragOffsetY || 0);
+      // Calculate drag throw velocity with clamp
+      const maxThrow = 600;
+      this.specimen.vx = Math.max(-maxThrow, Math.min(maxThrow, (this.specimen.x - prevX) * 15));
+      this.specimen.vy = Math.max(-maxThrow, Math.min(maxThrow, (this.specimen.y - prevY) * 15));
     }
   }
 
@@ -1277,16 +1319,16 @@ export class NautilusEngine {
       this.triggerSiphonJet();
     } else if (key === 'ArrowUp' || key === 'w' || key === 'W') {
       // Surface / ascend
-      this.depthTarget = Math.max(20, this.depthTarget - 25);
+      this.depthTarget = Math.max(20, (this.depthTarget || 220) - 25);
       this.updateDepthSliderUI();
     } else if (key === 'ArrowDown' || key === 's' || key === 'S') {
       // Dive / descend
-      this.depthTarget = Math.min(500, this.depthTarget + 25);
+      this.depthTarget = Math.min(500, (this.depthTarget || 220) + 25);
       this.updateDepthSliderUI();
     } else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-      this.specimen.angularVel -= 0.6;
+      this.specimen.angularVel = Math.max(-10, (this.specimen.angularVel || 0) - 0.6);
     } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-      this.specimen.angularVel += 0.6;
+      this.specimen.angularVel = Math.min(10, (this.specimen.angularVel || 0) + 0.6);
     }
   }
 

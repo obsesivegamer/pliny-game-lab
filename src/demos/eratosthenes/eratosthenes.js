@@ -1045,6 +1045,8 @@ export class EratosthenesEngine {
     ctx.font = 'bold 13px Cinzel, serif';
     ctx.textAlign = 'left';
     ctx.fillText('I. MACRO COSMOS: PARALLEL SOLAR GEOMETRY', x + 24, y + 32);
+
+    ctx.restore();
   }
 
   renderArchitecturalVignette(ctx, x, y, width, height) {
