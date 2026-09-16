@@ -828,14 +828,18 @@ class PlinyHub {
     }
 
     if (this.currentEngine) {
-      if (!this.isPaused && this.currentEngine.update) {
-        this.currentEngine.update(dt);
-      }
-      if (this.currentEngine.render) {
-        this.currentEngine.render(this.ctx);
-      }
-      if (this.currentEngine.getEntityCount && this.entityVal) {
-        this.entityVal.textContent = this.currentEngine.getEntityCount();
+      try {
+        if (!this.isPaused && this.currentEngine.update) {
+          this.currentEngine.update(dt);
+        }
+        if (this.currentEngine.render) {
+          this.currentEngine.render(this.ctx);
+        }
+        if (this.currentEngine.getEntityCount && this.entityVal) {
+          this.entityVal.textContent = this.currentEngine.getEntityCount();
+        }
+      } catch (err) {
+        console.warn("Engine error in " + this.activeKey + ":", err.message);
       }
     }
 
@@ -844,5 +848,5 @@ class PlinyHub {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  new PlinyHub();
+  window.__hub = new PlinyHub();
 });

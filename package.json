@@ -1,0 +1,8 @@
+{
+  "name": "pliny-game-lab",
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "puppeteer": "^25.11.0"
+  }
+}

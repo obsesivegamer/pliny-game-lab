@@ -14,14 +14,19 @@
 - 2026-09-15T20:36:00-04:00 [TOOL] 14 new engines landed and verified before weekly quota limit. (19/50 passed).
 - 2026-09-16T00:24:00-04:00 [TOOL] Opus Game Design Architect completed .agent/SPECS_31_ENGINES.md.
 - 2026-09-16T00:30:00-04:00 [TOOL] All remaining 31 engines landed and verified. 50/50 engines PASSED (0 failed, 0 pending).
+- 2026-09-16T12:57:00-04:00 [TOOL] Puppeteer Browser Visual QA executed across all 50 engines in headless Chrome: 50/50 PASSED clean (0 errors, 0 warnings).
 
 ## [DISCOVERIES]
 - 2026-09-15T20:19:00-04:00 [TOOL] Headless Node simulation requires guarding controlsContainer and DOM queries with typeof document !== 'undefined'.
 - 2026-09-15T20:36:00-04:00 [TOOL] Test harness needed roundRect, clearRect, getImageData mocks for Canvas2D and full AudioParam/AudioNode mocks for WebAudio.
 - 2026-09-16T00:26:00-04:00 [TOOL] Large subagent batch spikes trigger short-term concurrency 429 ("Resets in 0s"). Staggering into 5-6 worker batches prevents throttling.
+- 2026-09-16T10:45:00-04:00 [CODE] Missing favicon caused 404 in browser console; resolved with inline SVG data URI favicon and root favicon.ico.
+- 2026-09-16T10:47:00-04:00 [CODE] Vitrum engine negative radius in ctx.arc() fixed with Math.max(0, ...).
+- 2026-09-16T10:48:00-04:00 [CODE] Hub animation loop wrapped in try/catch to isolate per-engine render faults and preserve telemetry.
 
 ## [OUTCOMES]
-- 50/50 engines completed, tested, and verified green.
+- 50/50 engines completed and verified green across headless Node simulation and Puppeteer headless Chrome.
+- 50/50 screenshots captured in .audit/screenshots/ at 1280x800.
 - 10 Pavilions populated with 5 authentic simulations each:
   - I. Ignis & Terra: vesuvius, geyser, caverna, terrae_motus, aurum
   - II. Bestiarium & Silva: bestiarium, myrmex, apis, hydra, silva

@@ -902,12 +902,12 @@ export class VitrumEngine {
 
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(mouthX, mouthY, mouthR * 1.8, 0, Math.PI * 2);
+    ctx.arc(mouthX, mouthY, Math.max(0, mouthR * 1.8), 0, Math.PI * 2);
     ctx.fill();
 
     // Heavy Roman brick furnace arch outline
     ctx.beginPath();
-    ctx.arc(mouthX, mouthY, mouthR, -Math.PI * 0.5, Math.PI * 0.5, true);
+    ctx.arc(mouthX, mouthY, Math.max(0, mouthR), -Math.PI * 0.5, Math.PI * 0.5, true);
     ctx.lineTo(0, mouthY + mouthR);
     ctx.lineTo(0, mouthY - mouthR);
     ctx.closePath();
@@ -1037,7 +1037,7 @@ export class VitrumEngine {
 
       ctx.fillStyle = bloomGrad;
       ctx.beginPath();
-      ctx.arc(midSlice.x, midSlice.y, midSlice.outerR * 2.5, 0, Math.PI * 2);
+      ctx.arc(midSlice.x, midSlice.y, Math.max(0, midSlice.outerR * 2.5), 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -1049,7 +1049,7 @@ export class VitrumEngine {
     }
     // Rounded base tip
     const last = this.slices[N - 1];
-    ctx.arc(last.x, last.y, last.outerR, -Math.PI * 0.5, Math.PI * 0.5, false);
+    ctx.arc(last.x, last.y, Math.max(0, last.outerR), -Math.PI * 0.5, Math.PI * 0.5, false);
     for (let i = N - 1; i >= 0; i--) {
       ctx.lineTo(botOuter[i].x, botOuter[i].y);
     }
@@ -1098,7 +1098,7 @@ export class VitrumEngine {
         ctx.lineTo(topInner[i].x, topInner[i].y);
       }
       const lastInner = topInner[topInner.length - 1];
-      ctx.arc(lastInner.x, this.slices[N - 1].y, lastInner.y - this.slices[N - 1].y, -Math.PI * 0.5, Math.PI * 0.5, false);
+      ctx.arc(lastInner.x, this.slices[N - 1].y, Math.max(0, Math.abs(lastInner.y - this.slices[N - 1].y)), -Math.PI * 0.5, Math.PI * 0.5, false);
       for (let i = botInner.length - 1; i >= 0; i--) {
         ctx.lineTo(botInner[i].x, botInner[i].y);
       }
@@ -1166,7 +1166,7 @@ export class VitrumEngine {
       const alpha = Math.max(0, p.life * 0.75);
       ctx.fillStyle = `rgba(180, 240, 255, ${alpha})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(0, p.size), 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -1183,7 +1183,7 @@ export class VitrumEngine {
       const alpha = p.life * 0.35;
       ctx.fillStyle = `rgba(255, 140, 50, ${alpha})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(0, 2.5), 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -1194,7 +1194,7 @@ export class VitrumEngine {
       ctx.shadowColor = '#ff9100';
       ctx.shadowBlur = 6;
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+      ctx.arc(sp.x, sp.y, Math.max(0, sp.size), 0, Math.PI * 2);
       ctx.fill();
     }
 
