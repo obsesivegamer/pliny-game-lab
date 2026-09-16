@@ -15,7 +15,10 @@ fi
 echo "=== [2/3] Syntax Integrity Checks ==="
 node --check src/core/hub.js
 node --check src/demos/vesuvius/vesuvius.js
+node --check src/demos/geyser/geyser.js
+node --check src/demos/caverna/caverna.js
 node --check src/demos/bestiarium/bestiarium.js
+node --check src/demos/apis/apis.js
 node --check src/demos/cosmographia/cosmographia.js
 node --check src/demos/mechanica/mechanica.js
 node --check src/demos/labyrinthus/audio.js
@@ -24,8 +27,8 @@ echo "✓ All ES modules pass syntax checks"
 
 echo "=== [3/3] Engine Simulation Execution Tests ==="
 node tests/verify-engines.js
-echo "✓ All 5 engines simulated successfully"
+echo "✓ All active catalog engines simulated successfully"
 
 mkdir -p .audit
-echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Verification PASSED: All 5 engines verified green" >> .audit/verification.log
+echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] Verification PASSED: All active catalog engines verified green" >> .audit/verification.log
 echo "Proof recorded in .audit/verification.log"

@@ -74,39 +74,76 @@ html, body {
   margin-left: 5px;
 }
 
-/* Navigation */
-#demo-nav {
+/* Navigation Controls (Pavilion & Game Dropdowns) */
+#nav-controls {
   display: flex;
-  gap: 6px;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  align-items: center;
+  gap: 8px;
 }
 
-.nav-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  padding: 6px 14px;
+#pavilion-select, #game-select {
+  background: rgba(18, 20, 28, 0.95);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  padding: 6px 10px;
   border-radius: 6px;
-  font-size: 0.85rem;
   font-family: var(--font-display);
+  font-size: 0.8rem;
   font-weight: 600;
+  outline: none;
   cursor: pointer;
+  transition: all 0.2s ease;
+  max-width: 220px;
+}
+
+#pavilion-select:hover, #game-select:hover {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+#pavilion-select option, #game-select option {
+  background: #0d0f14;
+  color: var(--text-main);
+}
+
+.btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.icon-nav-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
 }
 
-.nav-btn:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+.icon-nav-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
 }
 
-.nav-btn.active {
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(212, 175, 55, 0.15);
   color: var(--accent-gold);
-  background: rgba(212, 175, 55, 0.12);
-  border-color: var(--panel-border);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  margin-bottom: 4px;
 }
 
 /* Telemetry */

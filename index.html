@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pliny Game Lab — Naturalis Historia</title>
+  <title>Pliny Game Lab — 50 Engines & Simulations</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,16 +16,22 @@
       <div class="brand">
         <span class="laurel">🏛️</span>
         <h1>PLINY GAME LAB</h1>
-        <span class="subtitle">Naturalis Historia Engine Suite</span>
+        <span class="subtitle">50 Naturalis Historia Engines</span>
       </div>
-      <nav id="demo-nav">
-        <button class="nav-btn active" data-demo="vesuvius">🌋 Vesuvius</button>
-        <button class="nav-btn" data-demo="bestiarium">🦅 Bestiarium</button>
-        <button class="nav-btn" data-demo="mechanica">⚙️ Mechanica</button>
-        <button class="nav-btn" data-demo="cosmographia">🪐 Cosmographia</button>
-        <button class="nav-btn" data-demo="labyrinthus">⚔️ Labyrinthus</button>
-      </nav>
+
+      <!-- Pavilion & Game Switcher -->
+      <div id="nav-controls">
+        <select id="pavilion-select" title="Select Thematic Pavilion"></select>
+        <select id="game-select" title="Select Engine / Simulation"></select>
+        <div class="btn-group">
+          <button id="prev-game-btn" class="icon-nav-btn" title="Previous Engine">◀</button>
+          <button id="random-game-btn" class="icon-nav-btn" title="Random Engine">🎲</button>
+          <button id="next-game-btn" class="icon-nav-btn" title="Next Engine">▶</button>
+        </div>
+      </div>
+
       <div id="telemetry">
+        <span class="telemetry-pill">Game: <strong id="game-num-val">1/50</strong></span>
         <span class="telemetry-pill">FPS: <strong id="fps-val">60</strong></span>
         <span class="telemetry-pill">Entities: <strong id="entity-val">0</strong></span>
         <button id="fullscreen-btn" title="Toggle Fullscreen">⛶</button>
@@ -39,13 +45,16 @@
       <!-- Interactive Floating Sidebar -->
       <aside id="controls-panel">
         <div class="panel-header">
-          <h2 id="demo-title">Vesuvius Sim</h2>
+          <div>
+            <div id="pavilion-badge" class="badge">Pavilion I</div>
+            <h2 id="demo-title">Vesuvius Sim</h2>
+          </div>
           <button id="toggle-panel" aria-label="Toggle Panel">−</button>
         </div>
         <p id="demo-desc" class="demo-description">Thermodynamic falling-sand & volcanic eruption simulation.</p>
         <div id="dynamic-controls"></div>
         <div class="panel-footer">
-          <button id="reset-btn" class="action-btn">Reset Simulation</button>
+          <button id="reset-btn" class="action-btn">Reset</button>
           <button id="pause-btn" class="action-btn">Pause</button>
         </div>
       </aside>
