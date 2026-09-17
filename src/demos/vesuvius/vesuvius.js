@@ -3122,8 +3122,21 @@ export class VesuviusEngine {
   renderFleet(ctx, w, h) {
     const scaleX = w / this.simWidth;
     const scaleY = h / this.simHeight;
+    const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY;
     for (const galley of this.fleet) {
       galley.render(ctx, scaleX, scaleY);
+      if (gameplay && galley.alive) {
+        ctx.save();
+        ctx.fillStyle = galley.selected ? '#FFD700' : '#E5DAC4';
+        ctx.font = '8px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(galley.isFlagship ? 'MINERVA' : galley.name.split(' ')[0], galley.x * scaleX, galley.y * scaleY + 18);
+        if (galley.cargo > 0) {
+          ctx.fillStyle = '#72D572';
+          ctx.fillText(`${Math.floor(galley.cargo)} aboard`, galley.x * scaleX, galley.y * scaleY + 28);
+        }
+        ctx.restore();
+      }
     }
   }
 
@@ -3217,36 +3230,61 @@ export class VesuviusEngine {
     // 2. Seismograph Oscilloscope Box (Bottom Left)
     this.seismograph.render(ctx, 12, h - 85, 175, 68);
 
-    // 3. Eyewitness Latin Scroll Box (Bottom Right)
-    const scrollW = Math.min(380, w * 0.46);
-    const scrollH = 68;
-    const scrollX = w - scrollW - 12;
-    const scrollY = h - scrollH - 17;
-
-    ctx.fillStyle = 'rgba(10, 14, 22, 0.88)';
-    ctx.strokeStyle = '#D4AF37';
-    ctx.fillRect(scrollX, scrollY, scrollW, scrollH);
-    ctx.strokeRect(scrollX, scrollY, scrollW, scrollH);
-
-    ctx.fillStyle = '#D4AF37';
-    ctx.font = 'bold 8px monospace';
-    ctx.fillText('C. PLINIUS SECUNDUS — EPISTULAE VI.16', scrollX + 8, scrollY + 12);
-
-    ctx.fillStyle = '#F5E6C8';
-    ctx.font = 'italic 9px serif';
-    ctx.fillText(`"${config.excerpt}"`, scrollX + 8, scrollY + 28);
-
-    let totalRescued = gameplayHud ? Math.floor(this.mission.rescued) : 0;
+    // 3. Eyewitness Latin Scroll — sandbox only. In mission mode it covered the bay fleet.
     if (!gameplayHud) {
+      const scrollW = Math.min(380, w * 0.46);
+      const scrollH = 68;
+      const scrollX = w - scrollW - 12;
+      const scrollY = h - scrollH - 17;
+
+      ctx.fillStyle = 'rgba(10, 14, 22, 0.88)';
+      ctx.strokeStyle = '#D4AF37';
+      ctx.fillRect(scrollX, scrollY, scrollW, scrollH);
+      ctx.strokeRect(scrollX, scrollY, scrollW, scrollH);
+
+      ctx.fillStyle = '#D4AF37';
+      ctx.font = 'bold 8px monospace';
+      ctx.fillText('C. PLINIUS SECUNDUS — EPISTULAE VI.16', scrollX + 8, scrollY + 12);
+
+      ctx.fillStyle = '#F5E6C8';
+      ctx.font = 'italic 9px serif';
+      ctx.fillText(`"${config.excerpt}"`, scrollX + 8, scrollY + 28);
+
+      let totalRescued = 0;
       for (const g of this.fleet) totalRescued += Math.floor(g.rescuedCount);
+      ctx.fillStyle = '#72D572';
+      ctx.font = '8px monospace';
+      ctx.fillText(`FLEET RESCUED: ${totalRescued} ROMAN CITIZENS | FLEET: ${this.fleet.length} GALLEYS`, scrollX + 8, scrollY + 54);
+    } else {
+      this.renderLandingMarks(ctx, w, h);
     }
-    const living = this.fleet.filter((g) => g.alive !== false).length;
-    ctx.fillStyle = '#72D572';
-    ctx.font = '8px monospace';
-    ctx.fillText(`RESCUED ${totalRescued} / ${gameplayHud ? this.mission.quota : '—'} CITIZENS | FLEET: ${living}/${this.fleet.length} GALLEYS`, scrollX + 8, scrollY + 54);
 
     if (gameplayHud) this.renderMissionOverlay(ctx, w, h);
 
+    ctx.restore();
+  }
+
+  renderLandingMarks(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    const n = MISSION_NUMBERS;
+    const waterY = (this.simHeight - 28) * scaleY;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.arc(n.stabiaeX * scaleX, waterY, 16 * scaleX, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(n.offloadX * scaleX, waterY, 14 * scaleX, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = '9px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('LAND · STABIAE', n.stabiaeX * scaleX, waterY + 28);
+    ctx.fillText('OFFLOAD · MISENUM', n.offloadX * scaleX, waterY + 28);
     ctx.restore();
   }
 
