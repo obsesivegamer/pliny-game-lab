@@ -531,7 +531,7 @@ test('on-canvas coach names the next click: galley, then Stabiae', () => {
   const idle = ctx.texts.join(' | ');
   assert.match(idle, /CLICK A GALLEY/i);
   assert.doesNotMatch(idle, /right beach/i);
-  assert.match(idle, missionCoachCopy(false).sub);
+  assert.ok(idle.includes(missionCoachCopy(false).sub));
   engine.selectShip(0);
   ctx.texts = [];
   engine.render(ctx);
