@@ -328,6 +328,8 @@ async function runSuite() {
       if (engine.onKeyUp) engine.onKeyUp(' ', {});
 
       if (key === 'vesuvius') {
+        assert.equal(engine.mission.mode, 'gameplay', 'Vesuvius must boot into Evacuate Stabiae gameplay');
+        assert.match(engine.mission.objective, /Stabiae/);
         canvas.engineKey = key;
         canvas.getBoundingClientRect = () => ({ left: 20, top: 30, width: 400, height: 300 });
         engine.grid.fill(mod.ELEMENT.EMPTY);
