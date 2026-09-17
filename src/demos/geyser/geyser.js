@@ -3,6 +3,8 @@
 // Grounded in classical geothermal physics, hydrostatic boiling point curves,
 // explosive steam-flashing eruption cycles, and mineral sinter (geyserite) accretion.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class GeyserEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -84,6 +86,7 @@ export class GeyserEngine {
 
     // Build UI Controls
     this.buildControls();
+    attachTouchBridge(this, canvas);
   }
 
   // --- Initializers ---
@@ -297,6 +300,7 @@ export class GeyserEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     // Clean up timers or references if any
     this.particlePool = [];
     this.nodes = [];

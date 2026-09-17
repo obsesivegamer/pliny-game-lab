@@ -3,6 +3,8 @@
 // Simulates elastodynamic P/S-wave propagation, stick-slip tectonic fault slip,
 // and resonance collapse of monumental Roman architecture.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class TerraeMotusEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -77,6 +79,7 @@ export class TerraeMotusEngine {
     // Initialize simulation & DOM controls
     this.initControls();
     this.buildPreset(this.activePreset);
+    attachTouchBridge(this, canvas);
   }
 
   // ==========================================
@@ -1670,6 +1673,7 @@ export class TerraeMotusEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.blocks = [];
     this.dustParticles = [];
     if (this.controlsContainer) {

@@ -88,6 +88,8 @@
 // SECTION 1: SIMULATION CONSTANTS, ELEMENT TAXONOMY & THERMODYNAMICS
 // ============================================================================
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const ELEMENT = {
   EMPTY: 0,
   STONE: 1,
@@ -1519,6 +1521,11 @@ export class VesuviusEngine {
     this.initControls();
     this.buildVolcanoTerrain();
     this.initFleet();
+    this.initTouchInput();
+  }
+
+  initTouchInput() {
+    attachTouchBridge(this, this.canvas);
   }
 
   // ==========================================================================
@@ -2956,6 +2963,7 @@ export class VesuviusEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }

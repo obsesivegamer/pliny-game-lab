@@ -1,6 +1,8 @@
 // Aurum: Hydraulic Alluvial Mining & Roman Sluice Box Physics
 // Grounded in Pliny the Elder's Naturalis Historia (Book XXXIII: Ruina Montium & Gold Washing)
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const SEDIMENT_TYPE = {
   GOLD: 0,
   BLACK_SAND: 1,
@@ -60,6 +62,7 @@ export class AurumEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Active Mode: 'sluice' (Roman Sluice Box) or 'batea' (Batea Gold Pan)
     this.mode = 'sluice';
@@ -327,6 +330,7 @@ export class AurumEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.sediment = [];
     this.waterParticles = [];
     this.foamParticles = [];

@@ -1,6 +1,8 @@
 // Caverna: Karst Limestone Dissolution, Speleothems & Hydrogeology Engine
 // Grounded in Pliny the Elder's Naturalis Historia (Book XXXVI: Subterranean Stone, Stalactites & Mineral Springs)
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const CAVERNA_PRESETS = {
   CATHEDRAL: 'Limestone Cathedral',
   RIVER: 'Underground River',
@@ -64,6 +66,7 @@ export class CavernaEngine {
     // Initialize UI and Simulation
     this.initControls();
     this.loadPreset(this.currentPreset);
+    attachTouchBridge(this, canvas);
   }
 
   // -------------------------------------------------------------------------
@@ -1343,6 +1346,7 @@ export class CavernaEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     // Clean up simulation arrays
     this.droplets = [];
     this.splashes = [];

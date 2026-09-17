@@ -1,5 +1,55 @@
 // Universal Headless Test & Verification Suite for Pliny Game Lab Engines
 import fs from 'fs';
+import assert from 'node:assert/strict';
+
+const TOUCH_ENGINES = {
+  vesuvius: { mod: 'ELEMENT', paint: 'WATER', cell: (x) => 36 * 280 + x,
+    probe: (e) => e.isDrawing },
+  geyser: { state: 'mouse', probe: (e, m) => m.isDown },
+  caverna: { state: 'isMouseDown', probe: (e, m) => m },
+  terrae_motus: { state: 'isDragging', probe: (e, m) => m },
+  aurum: { state: 'mouse', probe: (e, m) => m.isDown }
+};
+
+function makeTouch(canvas, engine, cfg) {
+  const finger = { identifier: 7, clientX: 120, clientY: 90 };
+  const second = { identifier: 8, clientX: 320, clientY: 90 };
+  const engaged = () => cfg.probe(engine, engine[cfg.state] ?? engine);
+  const touch = (type, changedTouches, touches) => {
+    let prevented = false;
+    canvas.dispatchEvent({ type, changedTouches, touches, cancelable: true,
+      preventDefault() { prevented = true; } });
+    return prevented;
+  };
+  assert.equal(touch('touchstart', [finger], [finger]), true, `${canvas.engineKey}: touch must prevent scrolling`);
+  assert.ok(engaged(), `${canvas.engineKey}: primary touch must engage the engine's drag state`);
+  touch('touchstart', [second], [finger, second]);
+  assert.ok(engaged(), `${canvas.engineKey}: a second finger must not hijack the drag`);
+  touch('touchmove', [second], [finger, second]);
+  assert.ok(engaged(), `${canvas.engineKey}: a second finger must not move the drag`);
+  touch('touchend', [second], [finger]);
+  finger.clientX = 220;
+  touch('touchmove', [finger], [finger]);
+  assert.ok(engaged(), `${canvas.engineKey}: primary finger must keep the drag active`);
+  touch('touchcancel', [finger], []);
+  assert.equal(engaged(), false, `${canvas.engineKey}: cancellation must release the drag`);
+  finger.clientX = 320;
+  touch('touchmove', [finger], [finger]);
+  assert.equal(engaged(), false, `${canvas.engineKey}: movement after cancellation must stay released`);
+  touch('touchstart', [finger], [finger]);
+  assert.ok(engaged(), `${canvas.engineKey}: a new touch must engage again`);
+  touch('touchend', [finger], []);
+  assert.equal(engaged(), false, `${canvas.engineKey}: lifting the finger must release the drag`);
+  return finger;
+}
+
+function touch(canvas, changedTouches, touches) {
+  let prevented = false;
+  const type = canvas.nextTouchType || 'touchstart';
+  canvas.dispatchEvent({ type, changedTouches, touches, cancelable: true,
+    preventDefault() { prevented = true; } });
+  return prevented;
+}
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -11,12 +61,21 @@ class MockCanvas {
     this.width = w;
     this.height = h;
     this.style = {};
+    this.listeners = new Map();
   }
   getContext() {
     return new MockContext(this);
   }
-  addEventListener() {}
-  removeEventListener() {}
+  addEventListener(type, handler) {
+    if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+    this.listeners.get(type).add(handler);
+  }
+  removeEventListener(type, handler) {
+    this.listeners.get(type)?.delete(handler);
+  }
+  dispatchEvent(event) {
+    for (const handler of this.listeners.get(event.type) || []) handler(event);
+  }
   getBoundingClientRect() {
     return { left: 0, top: 0, width: this.width, height: this.height };
   }
@@ -267,6 +326,40 @@ async function runSuite() {
       if (engine.onMouseUp) engine.onMouseUp({ x: 410, y: 310, rawX: 410, rawY: 310, button: 0 });
       if (engine.onKeyDown) engine.onKeyDown(' ', {});
       if (engine.onKeyUp) engine.onKeyUp(' ', {});
+
+      if (key === 'vesuvius') {
+        canvas.engineKey = key;
+        canvas.getBoundingClientRect = () => ({ left: 20, top: 30, width: 400, height: 300 });
+        engine.grid.fill(mod.ELEMENT.EMPTY);
+        engine.selectedElement = mod.ELEMENT.WATER;
+        const finger = makeTouch(canvas, engine, TOUCH_ENGINES[key]);
+        const cell = TOUCH_ENGINES[key].cell;
+        assert.equal(engine.grid[cell(70)], mod.ELEMENT.WATER, 'Touch must paint at scaled canvas coordinates');
+        assert.ok(!engine.isDrawing, 'Cancellation must release the brush');
+        engine.grid.fill(mod.ELEMENT.EMPTY);
+        canvas.nextTouchType = 'touchstart';
+        touch(canvas, [finger], [finger]);
+        canvas.nextTouchType = 'touchmove';
+        touch(canvas, [finger], [finger]);
+        canvas.nextTouchType = undefined;
+        assert.equal(engine.grid[cell(210)], mod.ELEMENT.WATER, 'Touch must keep painting across moves');
+        engine.destroy();
+        assert.ok(!engine.isDrawing, 'Destroy must stop an active drag');
+        engine.grid.fill(mod.ELEMENT.EMPTY);
+        canvas.nextTouchType = 'touchstart';
+        touch(canvas, [finger], [finger]);
+        canvas.nextTouchType = 'touchmove';
+        touch(canvas, [finger], [finger]);
+        canvas.nextTouchType = undefined;
+        assert.equal(engine.grid[cell(210)], mod.ELEMENT.EMPTY, 'Destroyed engines must not receive touch input');
+        assert.equal(canvas.style.touchAction, undefined, 'Destroy must restore canvas touch behavior');
+      }
+
+      if (TOUCH_ENGINES[key] && key !== 'vesuvius') {
+        canvas.engineKey = key;
+        canvas.getBoundingClientRect = () => ({ left: 20, top: 30, width: 400, height: 300 });
+        makeTouch(canvas, engine, TOUCH_ENGINES[key]);
+      }
 
       console.log(`[${i + 1}/50] ✓ ${key} (${demo.exportName}) OK — Entities: ${count}`);
       passed++;
