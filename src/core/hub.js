@@ -700,7 +700,10 @@ class PlinyHub {
     if (this.togglePanelBtn && this.controlsPanel) {
       this.togglePanelBtn.addEventListener("click", () => {
         this.controlsPanel.classList.toggle("collapsed");
-        this.togglePanelBtn.textContent = this.controlsPanel.classList.contains("collapsed") ? "+" : "−";
+        const collapsed = this.controlsPanel.classList.contains("collapsed");
+        this.togglePanelBtn.textContent = collapsed ? "+" : "−";
+        this.togglePanelBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        this.togglePanelBtn.setAttribute("aria-label", collapsed ? "Expand controls" : "Collapse controls");
       });
     }
 

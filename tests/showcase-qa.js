@@ -3,6 +3,7 @@ import puppeteer from 'puppeteer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import assert from 'node:assert/strict';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -182,7 +183,33 @@ async function verifyShowcase() {
   console.log(`   URL Hash: ${returnState.hash}`);
   if (!returnState.showcaseVisible) throw new Error('Failed to return to showcase');
 
-  await browser.close();
+  try {
+    await page.setViewport({ width: 375, height: 667, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    await page.goto(`${BASE_URL}/#game=vesuvius`, { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => window.__hub?.currentEngine?.constructor.name === 'VesuviusEngine');
+    const geometry = await page.evaluate(() => {
+      const canvas = document.getElementById('main-canvas').getBoundingClientRect();
+      const panel = document.getElementById('controls-panel').getBoundingClientRect();
+      const target = document.elementFromPoint(canvas.left + canvas.width / 2, canvas.top + canvas.height * 0.3);
+      return { canvas: canvas.toJSON(), panel: panel.toJSON(), target: target?.id };
+    });
+    console.log('Mobile panel geometry:', JSON.stringify(geometry));
+    assert.equal(geometry.target, 'main-canvas', 'The upper phone canvas must receive touches');
+    assert.ok(geometry.panel.top >= geometry.canvas.top + geometry.canvas.height * 0.6, 'Controls must leave at least 60% of the canvas exposed');
+    for (let i = 0; i < 2; i++) {
+      await page.tap('#toggle-panel');
+      await new Promise(r => setTimeout(r, 300));
+      const accessible = await page.$eval('#toggle-panel', button => {
+        const r = button.getBoundingClientRect();
+        return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth &&
+          r.top >= 0 && r.bottom <= innerHeight && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === button;
+      });
+      assert.ok(accessible, 'The panel toggle must remain a reachable 44px touch target');
+    }
+    await page.screenshot({ path: path.join(AUDIT_DIR, '06_mobile_panel.png') });
+  } finally {
+    await browser.close();
+  }
 
   console.log('\n════════════════════════════════════════════════════════');
   console.log(`SHOWCASE VERIFICATION: ALL 5 PHASES PASSED CLEANLY`);
