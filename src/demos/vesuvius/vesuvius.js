@@ -96,6 +96,7 @@ import {
   TOOL,
   MISSION_NUMBERS,
   OBJECTIVE,
+  READABILITY,
   createMission,
   scheduledPhase,
   tryVent,
@@ -104,7 +105,8 @@ import {
   resolveMission,
   threatMeter,
   clampShipX,
-  pdcHitsX
+  pdcHitsX,
+  galleyDrawScale
 } from './mission.js';
 
 export const ELEMENT = {
@@ -1219,12 +1221,14 @@ export class RomanGalley {
     }
   }
 
-  render(ctx, scaleX, scaleY) {
+  render(ctx, scaleX, scaleY, spriteScale = 1) {
     const px = this.x * scaleX;
     const py = this.y * scaleY;
+    const k = Math.max(0.001, spriteScale);
 
     ctx.save();
     ctx.translate(px, py);
+    ctx.scale(k, k);
 
     if (!this.alive) {
       ctx.globalAlpha = 0.55;
@@ -1248,18 +1252,28 @@ export class RomanGalley {
     ctx.translate(0, bob);
 
     if (this.selected) {
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.9)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = 'rgba(255, 220, 90, 0.95)';
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([5, 3]);
       ctx.beginPath();
-      ctx.ellipse(0, 4, 28, 10, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 4, 30, 12, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(212, 175, 55, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 30, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Hull dimensions
     const hullLen = this.isFlagship ? 48 : 38;
     const hullH = 9;
+
+    // Pale wake so the hull reads against dark water and ash
+    ctx.fillStyle = 'rgba(190, 225, 255, 0.38)';
+    ctx.beginPath();
+    ctx.ellipse(0, hullH + 3, hullLen * 0.52, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
 
     // Bronze underwater ram (Rostrum)
     ctx.fillStyle = '#C29B38';
@@ -1281,8 +1295,9 @@ export class RomanGalley {
     ctx.quadraticCurveTo(-hullLen * 0.54, hullH * 0.2, -hullLen * 0.5, -hullH * 0.4);
     ctx.closePath();
     ctx.fill();
-
-    // Red Roman trim stripe
+    ctx.strokeStyle = '#F0E2C0';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
     ctx.strokeStyle = '#8B1E2D';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -1940,11 +1955,14 @@ export class VesuviusEngine {
 
   initFleet() {
     if (this.mission && this.mission.mode === MODE.GAMEPLAY) {
-      const west = this.waterlineX + 2;
+      // Park the fleet in open water east of Stabiae so hulls are not
+      // stacked on the beach and the Stabiae ring stays clickable.
+      const last = this.simWidth - READABILITY.galleyBayMargin;
+      const gap = READABILITY.galleyBayGap;
       this.fleet = [
-        new RomanGalley(west, this.simHeight - 31, 'Minerva (Flagship)', true),
-        new RomanGalley(west + 6, this.simHeight - 29, 'Victoria (Liburnian)', false),
-        new RomanGalley(west + 11, this.simHeight - 30, 'Neptunus (Quadrireme)', false)
+        new RomanGalley(last - gap * 2, this.simHeight - 31, 'Minerva (Flagship)', true),
+        new RomanGalley(last - gap, this.simHeight - 29, 'Victoria (Liburnian)', false),
+        new RomanGalley(last, this.simHeight - 30, 'Neptunus (Quadrireme)', false)
       ];
       for (const galley of this.fleet) {
         galley.state = 'idle';
@@ -2177,6 +2195,17 @@ export class VesuviusEngine {
     return best;
   }
 
+  isMissionLandingClick(gx, gy) {
+    const n = MISSION_NUMBERS;
+    const waterY = this.simHeight - 28;
+    if (Math.abs(gy - waterY) > 24) return false;
+    const dStabiae = Math.abs(gx - n.stabiaeX);
+    const dOffload = Math.abs(gx - n.offloadX);
+    if (dStabiae <= n.pickupRadius + 8 && dStabiae <= dOffload) return true;
+    if (dOffload <= n.offloadRadius + 6) return true;
+    return false;
+  }
+
   selectShip(index) {
     if (index == null || index < 0 || index >= this.fleet.length) {
       this.mission.selectedShip = null;
@@ -2227,7 +2256,7 @@ export class VesuviusEngine {
     const ship = m.selectedShip != null ? this.fleet[m.selectedShip] : null;
     let selected = 'Click a galley, then click Stabiae or the western bay.';
     if (m.tool === TOOL.BARRIER) selected = 'Berm tool armed — click the east flank to raise a stone wall.';
-    else if (ship) selected = `Selected: ${ship.name}  cargo ${Math.floor(ship.cargo)} / ${MISSION_NUMBERS.shipCapacity}`;
+    else if (ship) selected = `Selected: ${ship.name} — now click Stabiae (gold ring) to land`;
     if (m.status === STATUS.WON) selected = 'Victory — Stabiae lives. Restart to sail again.';
     if (m.status === STATUS.LOST) selected = 'The bay is lost. Restart the mission.';
     set('#mission-selected', selected);
@@ -2745,7 +2774,14 @@ export class VesuviusEngine {
     }
 
     // 2. Spawn Convective Plume Column Particles
-    const plumeSpawnRate = Math.floor(this.plumeHeightKm * 1.8);
+    const gameplayPlume = this.mission && this.mission.mode === MODE.GAMEPLAY;
+    const spawnPerKm = gameplayPlume ? READABILITY.plumeSpawnPerKm : 1.8;
+    const plumeCap = gameplayPlume ? READABILITY.plumeCap : 8000;
+    let plumeSpawnRate = Math.floor(this.plumeHeightKm * spawnPerKm);
+    if (gameplayPlume && this.plumeHeightKm >= 2) {
+      plumeSpawnRate = Math.max(2, plumeSpawnRate);
+    }
+    plumeSpawnRate = Math.min(plumeSpawnRate, Math.max(0, plumeCap - this.plumeParticles.length));
     for (let p = 0; p < plumeSpawnRate; p++) {
       const vx = (Math.random() - 0.5) * 3.0 + this.windSpeed * 0.4;
       const vy = -(6.0 + this.plumeHeightKm * 0.85 + Math.random() * 4.0);
@@ -2776,6 +2812,9 @@ export class VesuviusEngine {
         this.excavateCrater(bx, by, bomb.radius * 1.5, bomb.isPumice ? ELEMENT.PUMICE : ELEMENT.BASALT);
         const frags = bomb.createFragments();
         this.bombFragments.push(...frags);
+        if (this.mission && this.mission.mode === MODE.GAMEPLAY && this.bombFragments.length > READABILITY.fragmentCap) {
+          this.bombFragments.splice(0, this.bombFragments.length - READABILITY.fragmentCap);
+        }
         this.audio.playExplosion(0.35);
       }
 
@@ -2824,9 +2863,13 @@ export class VesuviusEngine {
 
     // 6. Update Convective Plume Column
     const neutralBuoyancyY = Math.max(8, ventY - this.plumeHeightKm * 3.8);
+    const bayCullX = this.waterlineX - READABILITY.bayCullMargin;
+    const bayCullY = this.simHeight * READABILITY.bayCullYFrac;
+    const gameplayPlumeUpdate = this.mission && this.mission.mode === MODE.GAMEPLAY;
     for (let i = this.plumeParticles.length - 1; i >= 0; i--) {
       const p = this.plumeParticles[i];
       p.update(dt, this.windSpeed, neutralBuoyancyY);
+      if (gameplayPlumeUpdate && p.x > bayCullX && p.y > bayCullY) p.alive = false;
       if (!p.alive) {
         this.plumeParticles.splice(i, 1);
       }
@@ -2910,23 +2953,24 @@ export class VesuviusEngine {
     // Layer 4: Roman Coastal Settlements & Umbrella Pines
     this.renderSettlementsAndFlora(ctx, w, h);
 
-    // Layer 5: Roman Naval Evacuation Fleet
-    this.renderFleet(ctx, w, h);
+    const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY;
 
-    // Layer 6: Pyroclastic Density Currents (PDCs)
-    this.renderPyroclasticCurrents(ctx, w, h);
-
-    // Layer 7: Convective Plume & Umbrella Pine Canopy
-    this.renderPlumeCanopy(ctx, w, h);
-
-    // Layer 8: Ballistic Volcanic Bombs & Shrapnel
-    this.renderVolcanicBombs(ctx, w, h);
-
-    // Layer 9: Volcanic Lightning Corona Flashes
-    this.renderVolcanicLightning(ctx, w, h);
-
-    // Layer 10: Shockwave Wavefronts
-    this.renderShockwaves(ctx, w, h);
+    // Layer 5–8: kinematics. In mission mode the fleet is drawn last so ash cannot bury the boats.
+    if (gameplay) {
+      this.renderPyroclasticCurrents(ctx, w, h);
+      this.renderPlumeCanopy(ctx, w, h);
+      this.renderVolcanicBombs(ctx, w, h);
+      this.renderVolcanicLightning(ctx, w, h);
+      this.renderShockwaves(ctx, w, h);
+      this.renderFleet(ctx, w, h);
+    } else {
+      this.renderFleet(ctx, w, h);
+      this.renderPyroclasticCurrents(ctx, w, h);
+      this.renderPlumeCanopy(ctx, w, h);
+      this.renderVolcanicBombs(ctx, w, h);
+      this.renderVolcanicLightning(ctx, w, h);
+      this.renderShockwaves(ctx, w, h);
+    }
 
     // Layer 11: Canvas Telemetry HUD & Historical Plinian Epigraphy
     if (this.showHUD) {
@@ -3138,20 +3182,28 @@ export class VesuviusEngine {
     const scaleY = h / this.simHeight;
     const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY;
     for (const galley of this.fleet) {
-      galley.render(ctx, scaleX, scaleY);
+      const spriteScale = galleyDrawScale(scaleX, galley.isFlagship, gameplay);
+      galley.render(ctx, scaleX, scaleY, spriteScale);
       if (gameplay && galley.alive) {
         ctx.save();
-        ctx.fillStyle = galley.selected ? '#FFD700' : '#E5DAC4';
-        ctx.font = '8px serif';
+        ctx.fillStyle = galley.selected ? '#FFD54A' : '#F5E6C8';
+        ctx.strokeStyle = 'rgba(10, 14, 22, 0.75)';
+        ctx.lineWidth = 3;
+        ctx.font = `bold ${Math.max(12, Math.round(4.2 * scaleX))}px serif`;
         ctx.textAlign = 'center';
-        ctx.fillText(galley.isFlagship ? 'MINERVA' : galley.name.split(' ')[0], galley.x * scaleX, galley.y * scaleY + 18);
+        const lx = galley.x * scaleX;
+        const ly = galley.y * scaleY + 16 * spriteScale;
+        const label = galley.isFlagship ? 'MINERVA' : galley.name.split(' ')[0].toUpperCase();
+        ctx.strokeText(label, lx, ly);
+        ctx.fillText(label, lx, ly);
         if (galley.cargo > 0) {
           ctx.fillStyle = '#72D572';
-          ctx.fillText(`${Math.floor(galley.cargo)} aboard`, galley.x * scaleX, galley.y * scaleY + 28);
+          ctx.fillText(`${Math.floor(galley.cargo)} aboard`, lx, ly + Math.max(12, 3 * scaleX));
         }
         ctx.restore();
       }
     }
+    if (gameplay) this.renderMissionCoach(ctx, w, h);
   }
 
   renderPyroclasticCurrents(ctx, w, h) {
@@ -3165,7 +3217,11 @@ export class VesuviusEngine {
   renderPlumeCanopy(ctx, w, h) {
     const scaleX = w / this.simWidth;
     const scaleY = h / this.simHeight;
+    const hideBay = this.mission && this.mission.mode === MODE.GAMEPLAY;
+    const bayX = this.waterlineX - READABILITY.bayCullMargin;
+    const bayY = this.simHeight * READABILITY.bayCullYFrac;
     for (const p of this.plumeParticles) {
+      if (hideBay && p.x > bayX && p.y > bayY) continue;
       p.render(ctx, scaleX, scaleY);
     }
   }
@@ -3225,7 +3281,7 @@ export class VesuviusEngine {
       ctx.fillText(this.mission.objective, 22, 43);
       const threat = threatMeter(this.mission, this.currentPhase, pdcHitsX(this.pdcs, MISSION_NUMBERS.stabiaeX, MISSION_NUMBERS.pdcTownRadius));
       ctx.fillStyle = '#72D572';
-      ctx.fillText(`RESCUED ${Math.floor(this.mission.rescued)} / ${this.mission.quota} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}%`, 22, 60);
+      ctx.fillText(`RESCUED ${Math.floor(this.mission.rescued)} / ${this.mission.quota} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}% · ASH ${this.plumeParticles.length}`, 22, 60);
     } else {
       ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 43);
     }
@@ -3283,22 +3339,92 @@ export class VesuviusEngine {
     const scaleY = h / this.simHeight;
     const n = MISSION_NUMBERS;
     const waterY = (this.simHeight - 28) * scaleY;
+    const selected = this.mission.selectedShip != null ? this.fleet[this.mission.selectedShip] : null;
+    const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.55)';
-    ctx.setLineDash([5, 4]);
+    const stabR = (selected ? 20 : 16) * scaleX;
+    ctx.strokeStyle = selected ? `rgba(255, 213, 74, ${0.55 + 0.4 * pulse})` : 'rgba(212, 175, 55, 0.55)';
+    ctx.lineWidth = selected ? 3 : 1.5;
+    ctx.setLineDash(selected ? [7, 4] : [5, 4]);
     ctx.beginPath();
-    ctx.arc(n.stabiaeX * scaleX, waterY, 16 * scaleX, 0, Math.PI * 2);
+    ctx.arc(n.stabiaeX * scaleX, waterY, stabR, 0, Math.PI * 2);
     ctx.stroke();
+    if (selected) {
+      ctx.fillStyle = `rgba(255, 213, 74, ${0.12 + 0.1 * pulse})`;
+      ctx.beginPath();
+      ctx.arc(n.stabiaeX * scaleX, waterY, stabR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(n.offloadX * scaleX, waterY, 14 * scaleX, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = '#D4AF37';
-    ctx.font = '9px serif';
+    ctx.fillStyle = selected ? '#FFD54A' : '#D4AF37';
+    ctx.font = `bold ${Math.max(11, Math.round(3.2 * scaleX))}px serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('LAND · STABIAE', n.stabiaeX * scaleX, waterY + 28);
-    ctx.fillText('OFFLOAD · MISENUM', n.offloadX * scaleX, waterY + 28);
+    ctx.fillText(selected ? 'CLICK HERE · STABIAE' : 'LAND · STABIAE', n.stabiaeX * scaleX, waterY + 22 + 4 * scaleX);
+    ctx.fillStyle = '#D4AF37';
+    ctx.fillText('OFFLOAD · MISENUM', n.offloadX * scaleX, waterY + 22 + 4 * scaleX);
+    ctx.restore();
+  }
+
+  renderMissionCoach(ctx, w, h) {
+    if (!this.mission || this.mission.status !== STATUS.PLAYING) return;
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    const selected = this.mission.selectedShip != null ? this.fleet[this.mission.selectedShip] : null;
+    const hasShip = selected && selected.alive;
+    const prompt = hasShip ? 'CLICK STABIAE TO LAND' : 'CLICK A GALLEY';
+    const sub = hasShip ? 'Gold ring on the right beach — then send her west to offload' : 'Then click the Stabiae ring to order the rescue';
+
+    const font = Math.max(18, Math.round(w * 0.02));
+    const boxW = Math.min(w - 40, Math.max(360, w * 0.52));
+    const boxH = font * 2.55;
+    const boxX = (w - boxW) / 2;
+    const boxY = 74;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(12, 10, 8, 0.82)';
+    ctx.strokeStyle = '#D4AF37';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+    ctx.fillStyle = '#FFD54A';
+    ctx.font = `bold ${font}px serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(prompt, w / 2, boxY + font + 4);
+    ctx.fillStyle = '#E5DAC4';
+    ctx.font = `${Math.max(11, Math.round(font * 0.55))}px serif`;
+    ctx.fillText(sub, w / 2, boxY + font * 2.05);
+    ctx.textAlign = 'left';
+
+    if (!hasShip) {
+      const pulse = 0.4 + 0.6 * Math.abs(Math.sin(this.time * 3.4));
+      for (const galley of this.fleet) {
+        if (!galley.alive) continue;
+        const spr = galleyDrawScale(scaleX, galley.isFlagship, true);
+        ctx.strokeStyle = `rgba(255, 213, 74, ${pulse})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(galley.x * scaleX, galley.y * scaleY, 28 * spr, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else {
+      const n = MISSION_NUMBERS;
+      const tx = n.stabiaeX * scaleX;
+      const ty = (this.simHeight - 28) * scaleY;
+      ctx.strokeStyle = 'rgba(255, 213, 74, 0.85)';
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(selected.x * scaleX, selected.y * scaleY);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     ctx.restore();
   }
 
@@ -3364,14 +3490,39 @@ export class VesuviusEngine {
 
   renderBrushCursor(ctx, w, h) {
     if (!this.mousePos) return;
+    const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY && this.mission.status === STATUS.PLAYING;
+    const selected = gameplay && this.mission.selectedShip != null;
     const scaleX = w / this.simWidth;
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.75)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(this.mousePos.x, this.mousePos.y, Math.max(0, this.brushSize * scaleX), 0, Math.PI * 2);
-    ctx.stroke();
+    if (selected) {
+      ctx.strokeStyle = '#FFD54A';
+      ctx.lineWidth = 2;
+      const r = Math.max(12, 4 * scaleX);
+      ctx.beginPath();
+      ctx.moveTo(this.mousePos.x - r, this.mousePos.y);
+      ctx.lineTo(this.mousePos.x + r, this.mousePos.y);
+      ctx.moveTo(this.mousePos.x, this.mousePos.y - r);
+      ctx.lineTo(this.mousePos.x, this.mousePos.y + r);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(this.mousePos.x, this.mousePos.y, r * 0.7, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (gameplay) {
+      ctx.strokeStyle = 'rgba(255, 213, 74, 0.85)';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(this.mousePos.x, this.mousePos.y, Math.max(14, 5 * scaleX), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(this.mousePos.x, this.mousePos.y, Math.max(0, this.brushSize * scaleX), 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
   // ==========================================================================
@@ -3396,7 +3547,15 @@ export class VesuviusEngine {
         return;
       }
 
-      const shipHit = this.hitShipIndex(gx, gy, 8);
+      // Landmark rings beat hull hits so "click Stabiae" still works when
+      // a large galley is parked near the beach.
+      if (this.mission.selectedShip != null && this.isMissionLandingClick(gx, gy)) {
+        this.orderSelectedShip(gx);
+        this.isDrawing = false;
+        return;
+      }
+
+      const shipHit = this.hitShipIndex(gx, gy, READABILITY.galleyHitRadius);
       if (shipHit >= 0) {
         this.selectShip(shipHit);
         this.isDrawing = false;

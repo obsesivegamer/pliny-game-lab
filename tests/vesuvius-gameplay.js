@@ -9,13 +9,15 @@ import {
   OBJECTIVE,
   MISSION_NUMBERS,
   PHASE_SCHEDULE,
+  READABILITY,
   createMission,
   scheduledPhase,
   tryVent,
   trySpendBarrier,
   applyWorldHazards,
   resolveMission,
-  threatMeter
+  threatMeter,
+  galleyDrawScale
 } from '../src/demos/vesuvius/mission.js';
 
 function test(name, fn) {
@@ -338,6 +340,7 @@ test('click a galley then click Stabiae issues a sailing order', () => {
     x: (sx / engine.simWidth) * 800,
     y: (sy / engine.simHeight) * 600
   });
+  assert.ok(ship.x > MISSION_NUMBERS.stabiaeX + 8, `fleet should sit in open water, got x=${ship.x}`);
   engine.onMouseDown(toCanvas(ship.x, ship.y));
   engine.onMouseUp(toCanvas(ship.x, ship.y));
   assert.equal(engine.mission.selectedShip, 0);
@@ -345,6 +348,21 @@ test('click a galley then click Stabiae issues a sailing order', () => {
   engine.onMouseUp(toCanvas(MISSION_NUMBERS.stabiaeX, ship.y));
   assert.ok(Math.abs(ship.orderedX - MISSION_NUMBERS.stabiaeX) < 2);
   assert.ok(ship.state === 'sailing' || ship.state === 'rescuing');
+  engine.destroy();
+});
+
+test('Stabiae ring still issues an order when a large hull sits nearby', () => {
+  const { engine } = makeEngine();
+  const ship = engine.fleet[0];
+  ship.x = MISSION_NUMBERS.stabiaeX - 10;
+  engine.selectShip(0);
+  const toCanvas = (sx, sy) => ({
+    x: (sx / engine.simWidth) * 800,
+    y: (sy / engine.simHeight) * 600
+  });
+  engine.onMouseDown(toCanvas(MISSION_NUMBERS.stabiaeX, engine.simHeight - 28));
+  engine.onMouseUp();
+  assert.ok(Math.abs(ship.orderedX - MISSION_NUMBERS.stabiaeX) < 2);
   engine.destroy();
 });
 
@@ -486,6 +504,64 @@ test('any canvas click after victory restarts the mission', () => {
   engine.onMouseDown({ x: 12, y: 12 });
   assert.equal(engine.mission.status, STATUS.PLAYING);
   assert.equal(engine.mission.rescued, 0);
+  engine.destroy();
+});
+
+test('gameplay galleys draw larger than the 48px sprite at canvas scale', () => {
+  const scaleX = 1600 / 280;
+  const play = galleyDrawScale(scaleX, true, true);
+  const sand = galleyDrawScale(scaleX, true, false);
+  assert.ok(play > sand, `gameplay scale ${play} should exceed sandbox ${sand}`);
+  assert.ok(play * 48 > 90, `flagship pixels ${play * 48} should beat the unscaled 48px hull`);
+});
+
+test('on-canvas coach names the next click: galley, then Stabiae', () => {
+  const { engine, ctx } = makeEngine();
+  engine.render(ctx);
+  assert.match(ctx.texts.join(' | '), /CLICK A GALLEY/i);
+  engine.selectShip(0);
+  ctx.texts = [];
+  engine.render(ctx);
+  assert.match(ctx.texts.join(' | '), /STABIAE/i);
+  engine.destroy();
+});
+
+test('mission-mode plume budget stays under the ash-soup baseline', () => {
+  const { engine } = makeEngine();
+  // Gameplay update() follows the mission clock, so jump to Ultra-Plinian
+  // rather than calling setEruptionPhase and watching tickGameplay revert it.
+  engine.mission.time = 38;
+  engine.setEruptionPhase(PHASE.ULTRA_PLINIAN);
+  engine.plumeHeightKm = 32;
+  engine.targetPlumeKm = 32;
+  for (let i = 0; i < 180; i++) engine.update(0.016);
+  const plume = engine.plumeParticles.length;
+  const overBay = engine.plumeParticles.filter((p) => p.x > engine.waterlineX - 4 && p.y > engine.simHeight * READABILITY.bayCullYFrac).length;
+  const entities = engine.getEntityCount();
+  const ca = engine.activeParticles;
+  const kinematic = entities - ca;
+  console.log(`  ↳ ultra-plinian gameplay: entities=${entities} ca=${ca} plume=${plume} bayAsh=${overBay} kinematic=${kinematic}`);
+  assert.ok(plume > 80, `mission still needs an eruptive column, got plume ${plume}`);
+  assert.ok(plume <= READABILITY.plumeCap, `plume ${plume} exceeded cap ${READABILITY.plumeCap}`);
+  assert.ok(overBay <= 40, `bay ash ${overBay} still burying the fleet`);
+  assert.ok(kinematic < 1200, `kinematic entities ${kinematic} should be far below the ~13k ash-soup surplus`);
+  engine.destroy();
+});
+
+test('sandbox plume is allowed to run richer than the mission budget', () => {
+  const { engine } = makeEngine();
+  engine.setPlayMode(MODE.SANDBOX);
+  engine.setEruptionPhase(PHASE.ULTRA_PLINIAN);
+  engine.plumeHeightKm = 32;
+  engine.targetPlumeKm = 32;
+  for (let i = 0; i < 90; i++) engine.update(0.016);
+  const plume = engine.plumeParticles.length;
+  const entities = engine.getEntityCount();
+  console.log(`  ↳ ultra-plinian sandbox: entities=${entities} ca=${engine.activeParticles} plume=${plume}`);
+  assert.ok(
+    plume > READABILITY.plumeCap,
+    `sandbox plume ${plume} should exceed the mission cap`
+  );
   engine.destroy();
 });
 

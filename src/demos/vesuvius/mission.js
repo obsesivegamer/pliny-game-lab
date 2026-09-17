@@ -41,6 +41,29 @@ export const TOOL = {
 export const OBJECTIVE =
   'Rescue 90 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.';
 
+export const READABILITY = {
+  galleySimLengthFlagship: 21,
+  galleySimLength: 17,
+  galleyDesignedFlagship: 48,
+  galleyDesigned: 38,
+  galleyHitRadius: 18,
+  galleyBayGap: 24,
+  galleyBayMargin: 8,
+  plumeCap: 720,
+  plumeSpawnPerKm: 0.38,
+  fragmentCap: 70,
+  bayCullMargin: 10,
+  bayCullYFrac: 0.62
+};
+
+export function galleyDrawScale(scaleX, isFlagship, gameplay) {
+  if (!gameplay) return 1;
+  const designed = isFlagship ? READABILITY.galleyDesignedFlagship : READABILITY.galleyDesigned;
+  const simLen = isFlagship ? READABILITY.galleySimLengthFlagship : READABILITY.galleySimLength;
+  const world = (simLen / designed) * Math.max(0.001, scaleX);
+  return Math.max(world, scaleX * 0.42);
+}
+
 export const MISSION_NUMBERS = {
   rescueQuota: 90,
   startingCivilians: 160,
