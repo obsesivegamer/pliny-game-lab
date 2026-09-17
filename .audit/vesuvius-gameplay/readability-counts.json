@@ -1,0 +1,14 @@
+{
+  "baseline": {
+    "source": "Jeremy demo screenshot",
+    "entities": 27718
+  },
+  "liveUltraPlinian": {
+    "entities": 15511,
+    "ca": 14751,
+    "plume": 720,
+    "bayAsh": 0,
+    "kinematic": 760,
+    "hudEntities": "14756"
+  }
+}

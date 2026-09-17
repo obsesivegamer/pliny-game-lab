@@ -1825,6 +1825,14 @@ export class VesuviusEngine {
     if (btnSandbox) btnSandbox.addEventListener('click', () => this.setPlayMode(MODE.SANDBOX));
 
     this.syncMissionHud();
+    this.syncGameplayChrome();
+  }
+
+  syncGameplayChrome() {
+    if (typeof document === 'undefined') return;
+    const hideHint = this.mission && this.mission.mode === MODE.GAMEPLAY;
+    const hint = document.getElementById('hint-overlay');
+    if (hint && hint.style) hint.style.visibility = hideHint ? 'hidden' : '';
   }
 
   // ==========================================================================
@@ -1955,15 +1963,13 @@ export class VesuviusEngine {
 
   initFleet() {
     if (this.mission && this.mission.mode === MODE.GAMEPLAY) {
-      // Park the fleet in open water east of Stabiae so hulls are not
-      // stacked on the beach and the Stabiae ring stays clickable.
-      const last = this.simWidth - READABILITY.galleyBayMargin;
-      const gap = READABILITY.galleyBayGap;
-      this.fleet = [
-        new RomanGalley(last - gap * 2, this.simHeight - 31, 'Minerva (Flagship)', true),
-        new RomanGalley(last - gap, this.simHeight - 29, 'Victoria (Liburnian)', false),
-        new RomanGalley(last, this.simHeight - 30, 'Neptunus (Quadrireme)', false)
-      ];
+      // Park in the bay, east of the waterline, with spacing for the larger
+      // gameplay hulls. The hub side panel covers the far-right water at 1280px.
+      const names = ['Minerva (Flagship)', 'Victoria (Liburnian)', 'Neptunus (Quadrireme)'];
+      const ys = [this.simHeight - 31, this.simHeight - 29, this.simHeight - 30];
+      this.fleet = READABILITY.galleyHomeOffset.map((ox, i) =>
+        new RomanGalley(this.waterlineX + ox, ys[i], names[i], i === 0)
+      );
       for (const galley of this.fleet) {
         galley.state = 'idle';
         galley.orderedX = null;
@@ -2003,6 +2009,7 @@ export class VesuviusEngine {
       const sandbox = this.controlsContainer.querySelector('#sandbox-tools');
       if (sandbox && mode === MODE.SANDBOX) sandbox.open = true;
     }
+    this.syncGameplayChrome();
   }
 
   requestManualPhase(phaseIndex) {
@@ -2196,14 +2203,28 @@ export class VesuviusEngine {
   }
 
   isMissionLandingClick(gx, gy) {
+    return this.missionLandmark(gx, gy) != null;
+  }
+
+  missionLandmark(gx, gy) {
     const n = MISSION_NUMBERS;
     const waterY = this.simHeight - 28;
-    if (Math.abs(gy - waterY) > 24) return false;
-    const dStabiae = Math.abs(gx - n.stabiaeX);
-    const dOffload = Math.abs(gx - n.offloadX);
-    if (dStabiae <= n.pickupRadius + 8 && dStabiae <= dOffload) return true;
-    if (dOffload <= n.offloadRadius + 6) return true;
-    return false;
+    const villaY = this.elevationMap[n.stabiaeX] || waterY;
+    const spots = [
+      { x: n.stabiaeX, y: villaY, r: 18 },
+      { x: n.stabiaeX, y: waterY, r: n.pickupRadius + 8 },
+      { x: n.offloadX, y: waterY, r: n.offloadRadius + 6 }
+    ];
+    let best = null;
+    let bestD = Infinity;
+    for (const spot of spots) {
+      const d = (gx - spot.x) * (gx - spot.x) + (gy - spot.y) * (gy - spot.y);
+      if (d <= spot.r * spot.r && d < bestD) {
+        bestD = d;
+        best = { dist2: d };
+      }
+    }
+    return best;
   }
 
   selectShip(index) {
@@ -3091,8 +3112,10 @@ export class VesuviusEngine {
     // 3. Stabiae (Villa of Pomponianus, east bay — the evacuation objective)
     const stabX = MISSION_NUMBERS.stabiaeX;
     const stabY = (this.elevationMap[stabX] || (this.simHeight - 28)) * scaleY;
-    this.drawRomanVilla(ctx, stabX * scaleX, stabY, 'Stabiae');
-    if (this.mission && this.mission.mode === MODE.GAMEPLAY) {
+    const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY;
+    const stabTarget = gameplay && this.mission.selectedShip != null;
+    this.drawRomanVilla(ctx, stabX * scaleX, stabY, 'Stabiae', stabTarget);
+    if (gameplay) {
       this.drawStabiaeRefugees(ctx, stabX * scaleX, stabY);
     }
 
@@ -3106,9 +3129,22 @@ export class VesuviusEngine {
     ctx.restore();
   }
 
-  drawRomanVilla(ctx, x, y, name) {
+  drawRomanVilla(ctx, x, y, name, highlight = false) {
     ctx.save();
     ctx.translate(x, y);
+    if (highlight) {
+      ctx.strokeStyle = 'rgba(255, 213, 74, 0.95)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.arc(0, -8, 28, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255, 213, 74, 0.16)';
+      ctx.beginPath();
+      ctx.arc(0, -8, 28, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Stone podium
     ctx.fillStyle = '#C8BCA6';
@@ -3130,10 +3166,10 @@ export class VesuviusEngine {
     ctx.fill();
 
     // Latin Settlement Marker
-    ctx.fillStyle = '#D4AF37';
-    ctx.font = '8px serif';
+    ctx.fillStyle = highlight ? '#FFD54A' : '#D4AF37';
+    ctx.font = highlight ? 'bold 12px serif' : '8px serif';
     ctx.textAlign = 'center';
-    ctx.fillText(name, 0, 10);
+    ctx.fillText(highlight ? `CLICK · ${name.toUpperCase()}` : name, 0, 10);
 
     ctx.restore();
   }
@@ -3189,7 +3225,7 @@ export class VesuviusEngine {
         ctx.fillStyle = galley.selected ? '#FFD54A' : '#F5E6C8';
         ctx.strokeStyle = 'rgba(10, 14, 22, 0.75)';
         ctx.lineWidth = 3;
-        ctx.font = `bold ${Math.max(12, Math.round(4.2 * scaleX))}px serif`;
+        ctx.font = `bold ${Math.max(13, Math.round(2.6 * scaleX))}px serif`;
         ctx.textAlign = 'center';
         const lx = galley.x * scaleX;
         const ly = galley.y * scaleY + 16 * spriteScale;
@@ -3415,7 +3451,7 @@ export class VesuviusEngine {
     } else {
       const n = MISSION_NUMBERS;
       const tx = n.stabiaeX * scaleX;
-      const ty = (this.simHeight - 28) * scaleY;
+      const ty = (this.elevationMap[n.stabiaeX] || (this.simHeight - 28)) * scaleY;
       ctx.strokeStyle = 'rgba(255, 213, 74, 0.85)';
       ctx.lineWidth = 2.2;
       ctx.setLineDash([8, 6]);
@@ -3547,15 +3583,25 @@ export class VesuviusEngine {
         return;
       }
 
-      // Landmark rings beat hull hits so "click Stabiae" still works when
-      // a large galley is parked near the beach.
-      if (this.mission.selectedShip != null && this.isMissionLandingClick(gx, gy)) {
-        this.orderSelectedShip(gx);
-        this.isDrawing = false;
-        return;
+      const shipHit = this.hitShipIndex(gx, gy, READABILITY.galleyHitRadius);
+      const landmark = this.missionLandmark(gx, gy);
+      // Landmark wins only when it is at least as close as any hull, so a
+      // second galley can still be selected after the first.
+      if (this.mission.selectedShip != null && landmark) {
+        if (shipHit < 0) {
+          this.orderSelectedShip(gx);
+          this.isDrawing = false;
+          return;
+        }
+        const hull = this.fleet[shipHit];
+        const dShip = (gx - hull.x) * (gx - hull.x) + (gy - hull.y) * (gy - hull.y);
+        if (landmark.dist2 <= dShip) {
+          this.orderSelectedShip(gx);
+          this.isDrawing = false;
+          return;
+        }
       }
 
-      const shipHit = this.hitShipIndex(gx, gy, READABILITY.galleyHitRadius);
       if (shipHit >= 0) {
         this.selectShip(shipHit);
         this.isDrawing = false;
@@ -3746,6 +3792,8 @@ export class VesuviusEngine {
   }
 
   destroy() {
+    this.mission = this.mission ? { ...this.mission, mode: MODE.SANDBOX } : createMission(MODE.SANDBOX);
+    this.syncGameplayChrome();
     detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';

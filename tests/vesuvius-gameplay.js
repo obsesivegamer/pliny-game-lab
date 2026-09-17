@@ -340,7 +340,8 @@ test('click a galley then click Stabiae issues a sailing order', () => {
     x: (sx / engine.simWidth) * 800,
     y: (sy / engine.simHeight) * 600
   });
-  assert.ok(ship.x > MISSION_NUMBERS.stabiaeX + 8, `fleet should sit in open water, got x=${ship.x}`);
+  assert.ok(ship.x > engine.waterlineX, `fleet should sit in the bay, got x=${ship.x}`);
+  assert.ok(ship.x < engine.simWidth - 8, `fleet should not sit on the far clip edge, got x=${ship.x}`);
   engine.onMouseDown(toCanvas(ship.x, ship.y));
   engine.onMouseUp(toCanvas(ship.x, ship.y));
   assert.equal(engine.mission.selectedShip, 0);
