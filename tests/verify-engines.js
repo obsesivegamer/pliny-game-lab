@@ -328,13 +328,23 @@ async function runSuite() {
       if (engine.onKeyUp) engine.onKeyUp(' ', {});
 
       if (key === 'vesuvius') {
+        assert.equal(engine.mission.mode, 'gameplay', 'Vesuvius must boot into Evacuate Stabiae gameplay');
+        assert.match(engine.mission.objective, /Stabiae/);
         canvas.engineKey = key;
         canvas.getBoundingClientRect = () => ({ left: 20, top: 30, width: 400, height: 300 });
         engine.grid.fill(mod.ELEMENT.EMPTY);
         engine.selectedElement = mod.ELEMENT.WATER;
         const finger = makeTouch(canvas, engine, TOUCH_ENGINES[key]);
-        const cell = TOUCH_ENGINES[key].cell;
-        assert.equal(engine.grid[cell(70)], mod.ELEMENT.WATER, 'Touch must paint at scaled canvas coordinates');
+        const simIdx = (clientX, clientY) => {
+          const rect = canvas.getBoundingClientRect();
+          const pos = {
+            x: (clientX - rect.left) * canvas.width / rect.width,
+            y: (clientY - rect.top) * canvas.height / rect.height
+          };
+          const { gx, gy } = engine.toSim(pos);
+          return Math.floor(gy) * engine.simWidth + Math.floor(gx);
+        };
+        assert.equal(engine.grid[simIdx(120, 90)], mod.ELEMENT.WATER, 'Touch must paint at scaled canvas coordinates');
         assert.ok(!engine.isDrawing, 'Cancellation must release the brush');
         engine.grid.fill(mod.ELEMENT.EMPTY);
         canvas.nextTouchType = 'touchstart';
@@ -342,7 +352,7 @@ async function runSuite() {
         canvas.nextTouchType = 'touchmove';
         touch(canvas, [finger], [finger]);
         canvas.nextTouchType = undefined;
-        assert.equal(engine.grid[cell(210)], mod.ELEMENT.WATER, 'Touch must keep painting across moves');
+        assert.equal(engine.grid[simIdx(finger.clientX, finger.clientY)], mod.ELEMENT.WATER, 'Touch must keep painting across moves');
         engine.destroy();
         assert.ok(!engine.isDrawing, 'Destroy must stop an active drag');
         engine.grid.fill(mod.ELEMENT.EMPTY);
@@ -351,7 +361,7 @@ async function runSuite() {
         canvas.nextTouchType = 'touchmove';
         touch(canvas, [finger], [finger]);
         canvas.nextTouchType = undefined;
-        assert.equal(engine.grid[cell(210)], mod.ELEMENT.EMPTY, 'Destroyed engines must not receive touch input');
+        assert.equal(engine.grid[simIdx(finger.clientX, finger.clientY)], mod.ELEMENT.EMPTY, 'Destroyed engines must not receive touch input');
         assert.equal(canvas.style.touchAction, undefined, 'Destroy must restore canvas touch behavior');
       }
 
