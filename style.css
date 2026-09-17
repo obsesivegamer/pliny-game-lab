@@ -280,6 +280,29 @@ html, body {
   transform: translateX(calc(100% + 20px));
 }
 
+/* Desktop: the slide-away transform parks the aside off-screen. Keep a hanging
+   + tab so Expand remains a one-click hit target. overflow-y: auto would clip it. */
+@media (min-width: 769px) {
+  #controls-panel.collapsed {
+    overflow: visible;
+  }
+
+  #controls-panel.collapsed #toggle-panel {
+    position: absolute;
+    top: 8px;
+    right: 100%;
+    width: 44px;
+    height: 44px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    color: var(--accent-gold);
+    box-shadow: -4px 8px 20px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(16px);
+  }
+}
+
 .panel-header {
   display: flex;
   align-items: center;
