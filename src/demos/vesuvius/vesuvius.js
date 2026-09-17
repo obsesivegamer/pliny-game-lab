@@ -1728,7 +1728,7 @@ export class VesuviusEngine {
     this.controlsContainer.querySelectorAll('#phase-selector .sub-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const p = parseInt(btn.dataset.phase, 10);
-        this.setEruptionPhase(p);
+        this.requestManualPhase(p);
       });
     });
 
@@ -1780,10 +1780,10 @@ export class VesuviusEngine {
 
     // Action Triggers
     const btnUltra = this.controlsContainer.querySelector('#btn-ultra');
-    if (btnUltra) btnUltra.addEventListener('click', () => this.setEruptionPhase(PHASE.ULTRA_PLINIAN));
+    if (btnUltra) btnUltra.addEventListener('click', () => this.requestManualPhase(PHASE.ULTRA_PLINIAN));
 
     const btnPdc = this.controlsContainer.querySelector('#btn-pdc');
-    if (btnPdc) btnPdc.addEventListener('click', () => this.setEruptionPhase(PHASE.COLUMN_COLLAPSE));
+    if (btnPdc) btnPdc.addEventListener('click', () => this.requestManualPhase(PHASE.COLUMN_COLLAPSE));
 
     const btnShock = this.controlsContainer.querySelector('#btn-shock');
     if (btnShock) btnShock.addEventListener('click', () => this.triggerShockwave(this.ventX, this.ventY, 85));
@@ -1987,8 +1987,19 @@ export class VesuviusEngine {
     }
   }
 
+  requestManualPhase(phaseIndex) {
+    if (this.mission && this.mission.mode === MODE.GAMEPLAY && this.mission.status === STATUS.PLAYING) {
+      return false;
+    }
+    this.setEruptionPhase(phaseIndex);
+    return true;
+  }
+
   tickGameplay(dt) {
     if (this.mission.status !== STATUS.PLAYING) {
+      this.screenShake = 0;
+      this.shakeOffsetX = 0;
+      this.shakeOffsetY = 0;
       for (const galley of this.fleet) {
         if (galley.alive) {
           galley.oarPhase += (galley.oarCadence / 60) * Math.PI * 2 * dt;
@@ -2010,6 +2021,7 @@ export class VesuviusEngine {
       phase: this.currentPhase
     }, dt);
     resolveMission(this.mission, { ships: this.fleet, phase: this.currentPhase });
+    if (this.mission.status !== STATUS.PLAYING) this.screenShake = 0;
     this.syncMissionHud();
   }
 
@@ -2919,6 +2931,8 @@ export class VesuviusEngine {
     // Layer 11: Canvas Telemetry HUD & Historical Plinian Epigraphy
     if (this.showHUD) {
       this.renderHUD(ctx, w, h);
+    } else if (this.mission && this.mission.mode === MODE.GAMEPLAY && this.mission.status !== STATUS.PLAYING) {
+      this.renderMissionOverlay(ctx, w, h);
     }
 
     // Layer 12: Interactive Brush Cursor Indicator
@@ -3370,10 +3384,7 @@ export class VesuviusEngine {
 
     if (this.mission && this.mission.mode === MODE.GAMEPLAY) {
       if (this.mission.status !== STATUS.PLAYING) {
-        const hit = this.overlayButton;
-        if (hit && pos.x >= hit.x && pos.x <= hit.x + hit.w && pos.y >= hit.y && pos.y <= hit.y + hit.h) {
-          this.reset();
-        }
+        this.reset();
         this.isDrawing = false;
         return;
       }

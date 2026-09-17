@@ -467,4 +467,26 @@ test('doing nothing loses the bay before the quota', () => {
   engine.destroy();
 });
 
+test('sandbox catastrophe buttons cannot skip the mission clock', () => {
+  const { engine } = makeEngine();
+  assert.equal(engine.requestManualPhase(PHASE.CALDERA_COLLAPSE), false);
+  assert.equal(engine.currentPhase, PHASE.DORMANT);
+  assert.equal(engine.mission.status, STATUS.PLAYING);
+  engine.setPlayMode(MODE.SANDBOX);
+  assert.equal(engine.requestManualPhase(PHASE.CALDERA_COLLAPSE), true);
+  assert.equal(engine.currentPhase, PHASE.CALDERA_COLLAPSE);
+  engine.destroy();
+});
+
+test('any canvas click after victory restarts the mission', () => {
+  const { engine } = makeEngine();
+  engine.mission.rescued = MISSION_NUMBERS.rescueQuota;
+  engine.update(0.016);
+  assert.equal(engine.mission.status, STATUS.WON);
+  engine.onMouseDown({ x: 12, y: 12 });
+  assert.equal(engine.mission.status, STATUS.PLAYING);
+  assert.equal(engine.mission.rescued, 0);
+  engine.destroy();
+});
+
 console.log('\nVESUVIUS GAMEPLAY — all checks passed');
