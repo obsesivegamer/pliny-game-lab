@@ -17,7 +17,10 @@ import {
   applyWorldHazards,
   resolveMission,
   threatMeter,
-  galleyDrawScale
+  galleyDrawScale,
+  missionWorldView,
+  missionQuota,
+  missionCoachCopy
 } from '../src/demos/vesuvius/mission.js';
 
 function test(name, fn) {
@@ -96,6 +99,22 @@ test('win when rescued quota is met before catastrophe', () => {
   resolveMission(m, { ships: [{ alive: true, health: 40 }], phase: 4 });
   assert.equal(m.status, STATUS.WON);
   assert.equal(m.loseReason, null);
+});
+
+test('stale mission.quota cannot keep 71/50 playing (Jeremy HUD desync)', () => {
+  const m = createMission();
+  m.quota = 90;
+  m.rescued = 71;
+  resolveMission(m, { ships: [{ alive: true, health: 80, cargo: 0 }], phase: 4 });
+  assert.equal(m.status, STATUS.WON);
+  assert.equal(m.quota, missionQuota());
+  assert.equal(m.quota, 50);
+  assert.ok(m.rescued >= m.quota);
+});
+
+test('displayed quota and win check share missionQuota()', () => {
+  assert.equal(missionQuota(), MISSION_NUMBERS.rescueQuota);
+  assert.equal(OBJECTIVE.includes(String(missionQuota())), true);
 });
 
 test('lose when the fleet is destroyed before the quota', () => {
@@ -312,6 +331,12 @@ function makeEngine() {
   return { canvas, ctx, engine };
 }
 
+function clickSim(engine, sx, sy) {
+  const p = engine.toCanvas(sx, sy);
+  engine.onMouseDown(p);
+  engine.onMouseUp(p);
+}
+
 test('opening Vesuvius launches gameplay mode with objective text', () => {
   const { engine, ctx } = makeEngine();
   assert.equal(engine.mission.mode, MODE.GAMEPLAY);
@@ -336,17 +361,11 @@ test('galleys start idle in gameplay until the player orders them', () => {
 test('click a galley then click Stabiae issues a sailing order', () => {
   const { engine } = makeEngine();
   const ship = engine.fleet[0];
-  const toCanvas = (sx, sy) => ({
-    x: (sx / engine.simWidth) * 800,
-    y: (sy / engine.simHeight) * 600
-  });
   assert.ok(ship.x > engine.waterlineX, `fleet should sit in the bay, got x=${ship.x}`);
   assert.ok(ship.x < engine.simWidth - 8, `fleet should not sit on the far clip edge, got x=${ship.x}`);
-  engine.onMouseDown(toCanvas(ship.x, ship.y));
-  engine.onMouseUp(toCanvas(ship.x, ship.y));
+  clickSim(engine, ship.x, ship.y);
   assert.equal(engine.mission.selectedShip, 0);
-  engine.onMouseDown(toCanvas(MISSION_NUMBERS.stabiaeX, ship.y));
-  engine.onMouseUp(toCanvas(MISSION_NUMBERS.stabiaeX, ship.y));
+  clickSim(engine, MISSION_NUMBERS.stabiaeX, ship.y);
   assert.ok(Math.abs(ship.orderedX - MISSION_NUMBERS.stabiaeX) < 2);
   assert.ok(ship.state === 'sailing' || ship.state === 'rescuing');
   engine.destroy();
@@ -357,12 +376,7 @@ test('Stabiae ring still issues an order when a large hull sits nearby', () => {
   const ship = engine.fleet[0];
   ship.x = MISSION_NUMBERS.stabiaeX - 10;
   engine.selectShip(0);
-  const toCanvas = (sx, sy) => ({
-    x: (sx / engine.simWidth) * 800,
-    y: (sy / engine.simHeight) * 600
-  });
-  engine.onMouseDown(toCanvas(MISSION_NUMBERS.stabiaeX, engine.simHeight - 28));
-  engine.onMouseUp();
+  clickSim(engine, MISSION_NUMBERS.stabiaeX, engine.simHeight - 28);
   assert.ok(Math.abs(ship.orderedX - MISSION_NUMBERS.stabiaeX) < 2);
   engine.destroy();
 });
@@ -418,9 +432,8 @@ test('empty-canvas clicks still paint so the touch harness keeps working', () =>
   const { engine } = makeEngine();
   engine.selectedElement = ELEMENT.WATER;
   engine.onMouseDown({ x: 80, y: 40 });
-  const gx = Math.floor((80 / 800) * engine.simWidth);
-  const gy = Math.floor((40 / 600) * engine.simHeight);
-  assert.equal(engine.grid[gy * engine.simWidth + gx], ELEMENT.WATER);
+  const { gx, gy } = engine.toSim({ x: 80, y: 40 });
+  assert.equal(engine.grid[Math.floor(gy) * engine.simWidth + Math.floor(gx)], ELEMENT.WATER);
   assert.equal(engine.isDrawing, true);
   engine.onMouseUp();
   engine.destroy();
@@ -439,16 +452,10 @@ test('restart overlay path returns a playable fleet', () => {
 
 test('a commanded fleet can meet the quota before caldera (winnable loop)', () => {
   const { engine } = makeEngine();
-  const toCanvas = (sx, sy) => ({
-    x: (sx / engine.simWidth) * 800,
-    y: (sy / engine.simHeight) * 600
-  });
   for (let i = 0; i < engine.fleet.length; i++) {
     const ship = engine.fleet[i];
-    engine.onMouseDown(toCanvas(ship.x, ship.y));
-    engine.onMouseUp(toCanvas(ship.x, ship.y));
-    engine.onMouseDown(toCanvas(MISSION_NUMBERS.stabiaeX, ship.y));
-    engine.onMouseUp(toCanvas(MISSION_NUMBERS.stabiaeX, ship.y));
+    clickSim(engine, ship.x, ship.y);
+    clickSim(engine, MISSION_NUMBERS.stabiaeX, ship.y);
   }
 
   let frames = 0;
@@ -512,18 +519,62 @@ test('gameplay galleys draw larger than the 48px sprite at canvas scale', () => 
   const scaleX = 1600 / 280;
   const play = galleyDrawScale(scaleX, true, true);
   const sand = galleyDrawScale(scaleX, true, false);
+  const view = missionWorldView(MODE.GAMEPLAY, 280, 180);
+  const zoom = 280 / view.w;
   assert.ok(play > sand, `gameplay scale ${play} should exceed sandbox ${sand}`);
-  assert.ok(play * 48 > 90, `flagship pixels ${play * 48} should beat the unscaled 48px hull`);
+  assert.ok(play * 48 * zoom > 90, `flagship pixels ${play * 48 * zoom} should beat the unscaled 48px hull`);
 });
 
 test('on-canvas coach names the next click: galley, then Stabiae', () => {
   const { engine, ctx } = makeEngine();
   engine.render(ctx);
-  assert.match(ctx.texts.join(' | '), /CLICK A GALLEY/i);
+  const idle = ctx.texts.join(' | ');
+  assert.match(idle, /CLICK A GALLEY/i);
+  assert.doesNotMatch(idle, /right beach/i);
+  assert.match(idle, missionCoachCopy(false).sub);
   engine.selectShip(0);
   ctx.texts = [];
   engine.render(ctx);
-  assert.match(ctx.texts.join(' | '), /STABIAE/i);
+  const next = ctx.texts.join(' | ');
+  assert.match(next, /STABIAE/i);
+  assert.doesNotMatch(next, /right beach/i);
+  assert.match(next, /east gold/i);
+  assert.match(next, /west teal/i);
+  engine.destroy();
+});
+
+test('mission camera frames Stabiae and OFFLOAD as distinct bay targets', () => {
+  const { engine } = makeEngine();
+  const v = engine.worldView();
+  const n = MISSION_NUMBERS;
+  assert.ok(v.x > engine.ventX, `camera should pan east of the crater (vent ${engine.ventX}, view.x ${v.x})`);
+  assert.ok(n.stabiaeX > v.x && n.stabiaeX < v.x + v.w, 'Stabiae must sit inside the bay crop');
+  assert.ok(n.offloadX > v.x && n.offloadX < v.x + v.w, 'offload must sit inside the bay crop');
+  const sep = Math.abs(n.stabiaeX - n.offloadX) / v.w;
+  assert.ok(sep > 0.35, `Stabiae/offload only ${sep.toFixed(2)} of the crop apart`);
+  const stab = engine.toCanvas(n.stabiaeX, engine.simHeight - 28);
+  const off = engine.toCanvas(n.offloadX, engine.simHeight - 28);
+  assert.ok(off.x / 800 < 0.4, `offload should read west, canvas x=${off.x}`);
+  assert.ok(stab.x / 800 > 0.6, `Stabiae should read east, canvas x=${stab.x}`);
+  assert.ok(stab.x - off.x > 180, `targets too close on canvas: ${off.x} vs ${stab.x}`);
+  const back = engine.toSim(stab);
+  assert.ok(Math.abs(back.gx - n.stabiaeX) < 0.6, 'toCanvas/toSim must invert');
+  engine.destroy();
+});
+
+test('71 rescued against a stale 90 quota still resolves WON on the engine', () => {
+  const { engine, ctx } = makeEngine();
+  engine.mission.quota = 90;
+  engine.mission.rescued = 71;
+  engine.update(0.016);
+  assert.equal(engine.mission.status, STATUS.WON);
+  assert.equal(engine.mission.quota, missionQuota());
+  engine.mission.status = STATUS.PLAYING;
+  engine.mission.quota = 90;
+  engine.mission.rescued = 71;
+  ctx.texts = [];
+  engine.render(ctx);
+  assert.match(ctx.texts.join(' | '), /RESCUED 71 \/ 50/);
   engine.destroy();
 });
 

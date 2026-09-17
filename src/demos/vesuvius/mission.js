@@ -39,7 +39,7 @@ export const TOOL = {
 };
 
 export const OBJECTIVE =
-  'Rescue 90 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.';
+  'Rescue 50 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.';
 
 export const READABILITY = {
   galleySimLengthFlagship: 16,
@@ -48,24 +48,49 @@ export const READABILITY = {
   galleyDesigned: 38,
   galleyScaleFloor: 0.34,
   galleyHitRadius: 18,
-  galleyHomeOffset: [16, 44, 72],
+  galleyHomeOffset: [28, 40, 52],
   plumeCap: 720,
   plumeSpawnPerKm: 0.38,
   fragmentCap: 70,
   bayCullMargin: 10,
-  bayCullYFrac: 0.62
+  bayCullYFrac: 0.62,
+  // Mission camera: crop the crater and fill the frame with the eastern bay
+  // so Stabiae (east gold) and Misenum offload (west teal) read as two targets.
+  bayView: { x: 174, y: 76, w: 106, h: 104 }
 };
 
 export function galleyDrawScale(scaleX, isFlagship, gameplay) {
   if (!gameplay) return 1;
-  const designed = isFlagship ? READABILITY.galleyDesignedFlagship : READABILITY.galleyDesigned;
-  const simLen = isFlagship ? READABILITY.galleySimLengthFlagship : READABILITY.galleySimLength;
-  const world = (simLen / designed) * Math.max(0.001, scaleX);
-  return Math.max(world, scaleX * READABILITY.galleyScaleFloor);
+  return 1.25;
+}
+
+export function missionWorldView(mode, simWidth, simHeight) {
+  if (mode === MODE.GAMEPLAY) {
+    const v = READABILITY.bayView;
+    return { x: v.x, y: v.y, w: v.w, h: v.h };
+  }
+  return { x: 0, y: 0, w: simWidth, h: simHeight };
+}
+
+export function missionQuota() {
+  return MISSION_NUMBERS.rescueQuota;
+}
+
+export function missionCoachCopy(hasShip) {
+  if (hasShip) {
+    return {
+      prompt: 'CLICK STABIAE TO LAND',
+      sub: 'East gold ring is Stabiae — west teal ring is Misenum offload'
+    };
+  }
+  return {
+    prompt: 'CLICK A GALLEY',
+    sub: 'Then the east gold STABIAE ring — west teal is OFFLOAD'
+  };
 }
 
 export const MISSION_NUMBERS = {
-  rescueQuota: 90,
+  rescueQuota: 50,
   startingCivilians: 160,
   ventCharges: 3,
   barrierCharges: 4,
@@ -79,8 +104,8 @@ export const MISSION_NUMBERS = {
   ventPressureBleed: 18,
   pickupRadius: 16,
   offloadRadius: 18,
-  stabiaeX: 215,
-  offloadX: 198,
+  stabiaeX: 252,
+  offloadX: 202,
   shipHitRadius: 14,
   pdcTownRadius: 22,
   pdcShipRadius: 14,
@@ -184,6 +209,8 @@ export function applyWorldHazards(mission, world, dt) {
 export function resolveMission(mission, world) {
   if (mission.mode !== MODE.GAMEPLAY || mission.status !== STATUS.PLAYING) return mission;
 
+  // HUD and win check share this constant so a stale mission.quota cannot desync.
+  mission.quota = MISSION_NUMBERS.rescueQuota;
   if (mission.rescued >= mission.quota) {
     mission.status = STATUS.WON;
     mission.loseReason = null;

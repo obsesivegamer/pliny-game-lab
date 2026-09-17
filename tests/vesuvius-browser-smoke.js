@@ -61,15 +61,25 @@ assert.equal(ui.sandboxClosed, true);
 const entry = await page.evaluate(() => {
   const e = window.__hub.currentEngine;
   const c = e.canvas;
+  const v = e.worldView();
+  const stab = e.toCanvas(252, e.simHeight - 28);
+  const off = e.toCanvas(202, e.simHeight - 28);
   return {
     ships: e.fleet.map((g) => ({ name: g.name, x: g.x, y: g.y })),
     canvas: { w: c.width, h: c.height },
     entities: e.getEntityCount(),
-    plume: e.plumeParticles.length
+    plume: e.plumeParticles.length,
+    view: v,
+    ventX: e.ventX,
+    stabCanvasX: stab.x,
+    offCanvasX: off.x
   };
 });
 console.log('   entry', JSON.stringify(entry));
 assert.ok(entry.ships.every((s) => s.x > 190 && s.x < 270), 'galleys should sit in the bay, not on the far clip edge');
+assert.ok(entry.view.x > entry.ventX, 'live camera must pan off the crater');
+assert.ok(entry.offCanvasX / entry.canvas.w < 0.4, 'OFFLOAD should sit in the west of the frame');
+assert.ok(entry.stabCanvasX / entry.canvas.w > 0.6, 'Stabiae should sit in the east of the frame');
 
 await page.screenshot({ path: path.join(OUT, '01_mission_entry.png') });
 console.log('   captured 01_mission_entry.png');
@@ -78,11 +88,7 @@ console.log('2. Select galley (coach should name Stabiae) then order');
 await page.evaluate(() => {
   const engine = window.__hub.currentEngine;
   const ship = engine.fleet[0];
-  const c = engine.canvas;
-  const toPos = (sx, sy) => ({
-    x: (sx / engine.simWidth) * c.width,
-    y: (sy / engine.simHeight) * c.height
-  });
+  const toPos = (sx, sy) => engine.toCanvas(sx, sy);
   engine.onMouseMove(toPos(ship.x, ship.y));
   engine.onMouseDown(toPos(ship.x, ship.y));
   engine.onMouseUp(toPos(ship.x, ship.y));
@@ -105,13 +111,8 @@ assert.match(afterVent, /Vents 2/);
 await page.evaluate(() => {
   const engine = window.__hub.currentEngine;
   const ship = engine.fleet[0];
-  const c = engine.canvas;
-  const toPos = (sx, sy) => ({
-    x: (sx / engine.simWidth) * c.width,
-    y: (sy / engine.simHeight) * c.height
-  });
-  engine.onMouseDown(toPos(215, ship.y));
-  engine.onMouseUp(toPos(215, ship.y));
+  engine.onMouseDown(engine.toCanvas(252, ship.y));
+  engine.onMouseUp(engine.toCanvas(252, ship.y));
 });
 await new Promise((r) => setTimeout(r, 400));
 const ordered = await page.evaluate(() => {
@@ -121,7 +122,7 @@ const ordered = await page.evaluate(() => {
 console.log('   order', ordered);
 assert.equal(ordered.selected, 0);
 assert.ok(ordered.state === 'sailing' || ordered.state === 'rescuing');
-assert.ok(Math.abs(ordered.orderedX - 215) < 2);
+assert.ok(Math.abs(ordered.orderedX - 252) < 2);
 
 await page.screenshot({ path: path.join(OUT, '02_ship_ordered.png') });
 
@@ -142,18 +143,20 @@ assert.equal(afterReset.rescued, 0);
 assert.equal(afterReset.vents, 3);
 assert.equal(afterReset.shipsIdle, true);
 
-console.log('4. Win overlay with Restart');
+console.log('4. Win overlay with Restart (71/50 stale-quota case)');
 await page.evaluate(() => {
   const e = window.__hub.currentEngine;
-  e.mission.rescued = e.mission.quota;
+  e.mission.quota = 90;
+  e.mission.rescued = 71;
   e.update(0.016);
   e.render(e.ctx);
 });
 const overlay = await page.evaluate(() => {
   const e = window.__hub.currentEngine;
-  return { status: e.mission.status, hasButton: !!e.overlayButton };
+  return { status: e.mission.status, quota: e.mission.quota, hasButton: !!e.overlayButton };
 });
 assert.equal(overlay.status, 'won');
+assert.equal(overlay.quota, 50);
 assert.equal(overlay.hasButton, true);
 await page.screenshot({ path: path.join(OUT, '03_win_overlay.png') });
 console.log('   captured 03_win_overlay.png');

@@ -106,7 +106,10 @@ import {
   threatMeter,
   clampShipX,
   pdcHitsX,
-  galleyDrawScale
+  galleyDrawScale,
+  missionWorldView,
+  missionQuota,
+  missionCoachCopy
 } from './mission.js';
 
 export const ELEMENT = {
@@ -2178,10 +2181,35 @@ export class VesuviusEngine {
   toSim(pos) {
     const cw = this.canvas ? this.canvas.width : this.width;
     const ch = this.canvas ? this.canvas.height : this.height;
+    const v = this.worldView();
     return {
-      gx: (pos.x / (cw || 1)) * this.simWidth,
-      gy: (pos.y / (ch || 1)) * this.simHeight
+      gx: v.x + (pos.x / (cw || 1)) * v.w,
+      gy: v.y + (pos.y / (ch || 1)) * v.h
     };
+  }
+
+  toCanvas(sx, sy) {
+    const cw = this.canvas ? this.canvas.width : this.width;
+    const ch = this.canvas ? this.canvas.height : this.height;
+    const v = this.worldView();
+    return {
+      x: ((sx - v.x) / v.w) * cw,
+      y: ((sy - v.y) / v.h) * ch
+    };
+  }
+
+  worldView() {
+    return missionWorldView(this.mission && this.mission.mode, this.simWidth, this.simHeight);
+  }
+
+  applyWorldCamera(ctx, w, h) {
+    const v = this.worldView();
+    // World drawers use (simX * w/simWidth). Scale-after-translate in canvas
+    // terms is last-specified-first-applied: zoom the sim-pixel draw, then
+    // shift so view.x maps to canvas 0. Translate must use w/view.w, not
+    // w/simWidth, or the crop slides off the bay.
+    ctx.translate(-v.x * (w / v.w), -v.y * (h / v.h));
+    ctx.scale(this.simWidth / v.w, this.simHeight / v.h);
   }
 
   hitShipIndex(gx, gy, radius = 9) {
@@ -2266,7 +2294,7 @@ export class VesuviusEngine {
       if (el) el.textContent = text;
     };
     set('#mission-objective', m.objective);
-    set('#mission-rescued', `${Math.floor(m.rescued)} / ${m.quota}`);
+    set('#mission-rescued', `${Math.floor(m.rescued)} / ${missionQuota()}`);
     set('#mission-civilians', `${Math.ceil(m.civiliansAtStabiae)}`);
     const threat = threatMeter(m, this.currentPhase, pdcHitsX(this.pdcs, MISSION_NUMBERS.stabiaeX, MISSION_NUMBERS.pdcTownRadius));
     set('#mission-threat', `${Math.round(threat * 100)}%`);
@@ -2275,9 +2303,9 @@ export class VesuviusEngine {
     set('#mission-vents', `Vents ${m.ventCharges}`);
     set('#mission-barriers', `Berms ${m.barrierCharges}`);
     const ship = m.selectedShip != null ? this.fleet[m.selectedShip] : null;
-    let selected = 'Click a galley, then click Stabiae or the western bay.';
+    let selected = 'Click a galley, then the east Stabiae ring or the west offload ring.';
     if (m.tool === TOOL.BARRIER) selected = 'Berm tool armed — click the east flank to raise a stone wall.';
-    else if (ship) selected = `Selected: ${ship.name} — now click Stabiae (gold ring) to land`;
+    else if (ship) selected = `Selected: ${ship.name} — east gold ring is Stabiae, west teal is offload`;
     if (m.status === STATUS.WON) selected = 'Victory — Stabiae lives. Restart to sail again.';
     if (m.status === STATUS.LOST) selected = 'The bay is lost. Restart the mission.';
     set('#mission-selected', selected);
@@ -2962,8 +2990,13 @@ export class VesuviusEngine {
       ctx.translate(this.shakeOffsetX, this.shakeOffsetY);
     }
 
-    // Layer 1: Atmospheric Sky & Bay Backdrop
+    // Layer 1: Atmospheric Sky (screen space so it always fills the canvas)
     this.renderAtmosphericSky(ctx, w, h);
+
+    const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY;
+
+    ctx.save();
+    this.applyWorldCamera(ctx, w, h);
 
     // Layer 2: Distant Capri & Gulf Silhouette
     this.renderDistantIslands(ctx, w, h);
@@ -2974,8 +3007,6 @@ export class VesuviusEngine {
     // Layer 4: Roman Coastal Settlements & Umbrella Pines
     this.renderSettlementsAndFlora(ctx, w, h);
 
-    const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY;
-
     // Layer 5–8: kinematics. In mission mode the fleet is drawn last so ash cannot bury the boats.
     if (gameplay) {
       this.renderPyroclasticCurrents(ctx, w, h);
@@ -2984,6 +3015,7 @@ export class VesuviusEngine {
       this.renderVolcanicLightning(ctx, w, h);
       this.renderShockwaves(ctx, w, h);
       this.renderFleet(ctx, w, h);
+      this.renderLandingMarks(ctx, w, h);
     } else {
       this.renderFleet(ctx, w, h);
       this.renderPyroclasticCurrents(ctx, w, h);
@@ -2992,6 +3024,7 @@ export class VesuviusEngine {
       this.renderVolcanicLightning(ctx, w, h);
       this.renderShockwaves(ctx, w, h);
     }
+    ctx.restore();
 
     // Layer 11: Canvas Telemetry HUD & Historical Plinian Epigraphy
     if (this.showHUD) {
@@ -2999,6 +3032,8 @@ export class VesuviusEngine {
     } else if (this.mission && this.mission.mode === MODE.GAMEPLAY && this.mission.status !== STATUS.PLAYING) {
       this.renderMissionOverlay(ctx, w, h);
     }
+
+    if (gameplay) this.renderMissionCoachBanner(ctx, w, h);
 
     // Layer 12: Interactive Brush Cursor Indicator
     this.renderBrushCursor(ctx, w, h);
@@ -3117,6 +3152,14 @@ export class VesuviusEngine {
     this.drawRomanVilla(ctx, stabX * scaleX, stabY, 'Stabiae', stabTarget);
     if (gameplay) {
       this.drawStabiaeRefugees(ctx, stabX * scaleX, stabY);
+      const ox = MISSION_NUMBERS.offloadX * scaleX;
+      const oy = (this.simHeight - 28) * scaleY;
+      ctx.fillStyle = '#C8BCA6';
+      ctx.fillRect(ox - 12, oy - 5, 24, 7);
+      ctx.fillStyle = '#7EE0D6';
+      ctx.font = 'bold 9px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Misenum quay', ox, oy + 16);
     }
 
     // 4. Umbrella Pines (Pinus Pinea) on the peaceful mountain slopes
@@ -3239,7 +3282,7 @@ export class VesuviusEngine {
         ctx.restore();
       }
     }
-    if (gameplay) this.renderMissionCoach(ctx, w, h);
+    if (gameplay) this.renderMissionCoachWorld(ctx, w, h);
   }
 
   renderPyroclasticCurrents(ctx, w, h) {
@@ -3317,7 +3360,7 @@ export class VesuviusEngine {
       ctx.fillText(this.mission.objective, 22, 43);
       const threat = threatMeter(this.mission, this.currentPhase, pdcHitsX(this.pdcs, MISSION_NUMBERS.stabiaeX, MISSION_NUMBERS.pdcTownRadius));
       ctx.fillStyle = '#72D572';
-      ctx.fillText(`RESCUED ${Math.floor(this.mission.rescued)} / ${this.mission.quota} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}% · ASH ${this.plumeParticles.length}`, 22, 60);
+      ctx.fillText(`RESCUED ${Math.floor(this.mission.rescued)} / ${missionQuota()} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}% · ASH ${this.plumeParticles.length}`, 22, 60);
     } else {
       ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 43);
     }
@@ -3361,8 +3404,6 @@ export class VesuviusEngine {
       ctx.fillStyle = '#72D572';
       ctx.font = '8px monospace';
       ctx.fillText(`FLEET RESCUED: ${totalRescued} ROMAN CITIZENS | FLEET: ${this.fleet.length} GALLEYS`, scrollX + 8, scrollY + 54);
-    } else {
-      this.renderLandingMarks(ctx, w, h);
     }
 
     if (gameplayHud) this.renderMissionOverlay(ctx, w, h);
@@ -3380,8 +3421,8 @@ export class VesuviusEngine {
 
     ctx.save();
     const stabR = (selected ? 20 : 16) * scaleX;
-    ctx.strokeStyle = selected ? `rgba(255, 213, 74, ${0.55 + 0.4 * pulse})` : 'rgba(212, 175, 55, 0.55)';
-    ctx.lineWidth = selected ? 3 : 1.5;
+    ctx.strokeStyle = selected ? `rgba(255, 213, 74, ${0.55 + 0.4 * pulse})` : 'rgba(212, 175, 55, 0.85)';
+    ctx.lineWidth = selected ? 3 : 2;
     ctx.setLineDash(selected ? [7, 4] : [5, 4]);
     ctx.beginPath();
     ctx.arc(n.stabiaeX * scaleX, waterY, stabR, 0, Math.PI * 2);
@@ -3392,32 +3433,32 @@ export class VesuviusEngine {
       ctx.arc(n.stabiaeX * scaleX, waterY, stabR, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
-    ctx.lineWidth = 1.5;
+
+    ctx.strokeStyle = 'rgba(80, 200, 190, 0.9)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
     ctx.beginPath();
     ctx.arc(n.offloadX * scaleX, waterY, 14 * scaleX, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = selected ? '#FFD54A' : '#D4AF37';
+
     ctx.font = `bold ${Math.max(11, Math.round(3.2 * scaleX))}px serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(selected ? 'CLICK HERE · STABIAE' : 'LAND · STABIAE', n.stabiaeX * scaleX, waterY + 22 + 4 * scaleX);
-    ctx.fillStyle = '#D4AF37';
-    ctx.fillText('OFFLOAD · MISENUM', n.offloadX * scaleX, waterY + 22 + 4 * scaleX);
+    ctx.fillStyle = selected ? '#FFD54A' : '#D4AF37';
+    ctx.fillText(selected ? 'CLICK HERE · STABIAE' : 'STABIAE', n.stabiaeX * scaleX, waterY - 10 * scaleX);
+    ctx.fillStyle = '#7EE0D6';
+    ctx.fillText('OFFLOAD', n.offloadX * scaleX, waterY - 10 * scaleX);
     ctx.restore();
   }
 
-  renderMissionCoach(ctx, w, h) {
+  renderMissionCoachBanner(ctx, w, h) {
     if (!this.mission || this.mission.status !== STATUS.PLAYING) return;
-    const scaleX = w / this.simWidth;
-    const scaleY = h / this.simHeight;
     const selected = this.mission.selectedShip != null ? this.fleet[this.mission.selectedShip] : null;
-    const hasShip = selected && selected.alive;
-    const prompt = hasShip ? 'CLICK STABIAE TO LAND' : 'CLICK A GALLEY';
-    const sub = hasShip ? 'Gold ring on the right beach — then send her west to offload' : 'Then click the Stabiae ring to order the rescue';
+    const hasShip = !!(selected && selected.alive);
+    const { prompt, sub } = missionCoachCopy(hasShip);
 
     const font = Math.max(18, Math.round(w * 0.02));
-    const boxW = Math.min(w - 40, Math.max(360, w * 0.52));
+    const boxW = Math.min(w - 40, Math.max(360, w * 0.62));
     const boxH = font * 2.55;
     const boxX = (w - boxW) / 2;
     const boxY = 74;
@@ -3436,7 +3477,17 @@ export class VesuviusEngine {
     ctx.font = `${Math.max(11, Math.round(font * 0.55))}px serif`;
     ctx.fillText(sub, w / 2, boxY + font * 2.05);
     ctx.textAlign = 'left';
+    ctx.restore();
+  }
 
+  renderMissionCoachWorld(ctx, w, h) {
+    if (!this.mission || this.mission.status !== STATUS.PLAYING) return;
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
+    const selected = this.mission.selectedShip != null ? this.fleet[this.mission.selectedShip] : null;
+    const hasShip = selected && selected.alive;
+
+    ctx.save();
     if (!hasShip) {
       const pulse = 0.4 + 0.6 * Math.abs(Math.sin(this.time * 3.4));
       for (const galley of this.fleet) {
@@ -3646,10 +3697,9 @@ export class VesuviusEngine {
 
   onContextMenu(pos) {
     // Localized Phreatomagmatic blast trigger on right click
-    const gx = Math.floor((pos.x / (this.canvas ? this.canvas.width : this.width)) * this.simWidth);
-    const gy = Math.floor((pos.y / (this.canvas ? this.canvas.height : this.height)) * this.simHeight);
-    this.triggerShockwave(gx, gy, 45);
-    this.excavateCrater(gx, gy, 6, ELEMENT.FIRE);
+    const { gx, gy } = this.toSim(pos);
+    this.triggerShockwave(Math.floor(gx), Math.floor(gy), 45);
+    this.excavateCrater(Math.floor(gx), Math.floor(gy), 6, ELEMENT.FIRE);
   }
 
   onKeyDown(key) {
@@ -3740,10 +3790,9 @@ export class VesuviusEngine {
   paint(pos) {
     const w = this.simWidth;
     const h = this.simHeight;
-    const cw = this.canvas ? this.canvas.width : this.width;
-    const ch = this.canvas ? this.canvas.height : this.height;
-    const gx = Math.floor((pos.x / (cw || 1)) * w);
-    const gy = Math.floor((pos.y / (ch || 1)) * h);
+    const { gx: sgx, gy: sgy } = this.toSim(pos);
+    const gx = Math.floor(sgx);
+    const gy = Math.floor(sgy);
     const r = this.brushSize;
 
     for (let dy = -r; dy <= r; dy++) {
