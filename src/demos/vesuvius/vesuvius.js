@@ -3416,14 +3416,17 @@ export class VesuviusEngine {
     const scaleY = h / this.simHeight;
     const n = MISSION_NUMBERS;
     const waterY = (this.simHeight - 28) * scaleY;
+    const villaY = (this.elevationMap[n.stabiaeX] || (this.simHeight - 28)) * scaleY;
     const selected = this.mission.selectedShip != null ? this.fleet[this.mission.selectedShip] : null;
     const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
 
     ctx.save();
-    const stabR = (selected ? 20 : 16) * scaleX;
-    ctx.strokeStyle = selected ? `rgba(255, 213, 74, ${0.55 + 0.4 * pulse})` : 'rgba(212, 175, 55, 0.85)';
-    ctx.lineWidth = selected ? 3 : 2;
-    ctx.setLineDash(selected ? [7, 4] : [5, 4]);
+    // Rings are in sim cells; the bay camera already zooms them. Keep them
+    // beach-sized so they do not swallow the galleys as sea clutter.
+    const stabR = (selected ? 8 : 6.5) * scaleX;
+    ctx.strokeStyle = selected ? `rgba(255, 213, 74, ${0.55 + 0.4 * pulse})` : 'rgba(212, 175, 55, 0.9)';
+    ctx.lineWidth = selected ? 2.4 : 1.8;
+    ctx.setLineDash(selected ? [6, 4] : [4, 3]);
     ctx.beginPath();
     ctx.arc(n.stabiaeX * scaleX, waterY, stabR, 0, Math.PI * 2);
     ctx.stroke();
@@ -3434,20 +3437,20 @@ export class VesuviusEngine {
       ctx.fill();
     }
 
-    ctx.strokeStyle = 'rgba(80, 200, 190, 0.9)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = 'rgba(80, 200, 190, 0.95)';
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([4, 3]);
     ctx.beginPath();
-    ctx.arc(n.offloadX * scaleX, waterY, 14 * scaleX, 0, Math.PI * 2);
+    ctx.arc(n.offloadX * scaleX, waterY, 6 * scaleX, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.font = `bold ${Math.max(11, Math.round(3.2 * scaleX))}px serif`;
+    ctx.font = `bold ${Math.max(10, Math.round(2.6 * scaleX))}px serif`;
     ctx.textAlign = 'center';
     ctx.fillStyle = selected ? '#FFD54A' : '#D4AF37';
-    ctx.fillText(selected ? 'CLICK HERE · STABIAE' : 'STABIAE', n.stabiaeX * scaleX, waterY - 10 * scaleX);
+    ctx.fillText(selected ? 'CLICK · STABIAE' : 'STABIAE', n.stabiaeX * scaleX, villaY - 28);
     ctx.fillStyle = '#7EE0D6';
-    ctx.fillText('OFFLOAD', n.offloadX * scaleX, waterY - 10 * scaleX);
+    ctx.fillText('OFFLOAD', n.offloadX * scaleX, waterY - 16);
     ctx.restore();
   }
 
