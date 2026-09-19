@@ -77,7 +77,12 @@ export function missionWorldView(mode, simWidth, simHeight, canvasAspect = 0) {
   const wantH = v.w / canvasAspect;
   if (wantH <= simHeight) {
     const h = wantH;
-    return { x: v.x, y: Math.max(0, v.y + v.h - h), w: v.w, h };
+    // Centre on the waterline band the mission is played on rather than
+    // anchoring to the world's bottom row. A short landscape canvas gets a crop
+    // only ~23 rows tall, and bottom-anchored that band starts below the fleet.
+    const focus = simHeight - 24;
+    const y = Math.max(0, Math.min(simHeight - h, focus - h / 2));
+    return { x: v.x, y, w: v.w, h };
   }
   const h = simHeight;
   const w = Math.min(simWidth, h * canvasAspect);

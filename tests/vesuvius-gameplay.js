@@ -565,11 +565,14 @@ test('mission camera matches the canvas aspect instead of stretching the bay', (
   const holdsBothMarks = (v) => n.offloadX > v.x && n.stabiaeX < v.x + v.w;
   // 0.46 is a 390x844 phone; 1.78 a desktop frame; 0.86 the phone once the
   // controls sheet takes its 40%.
-  for (const aspect of [0.46, 0.58, 0.86, 1.33, 1.78, 2.4]) {
+  for (const aspect of [0.46, 0.58, 0.86, 1.33, 1.78, 2.4, 4.6]) {
     const v = missionWorldView(MODE.GAMEPLAY, 280, 180, aspect);
     assert.ok(Math.abs(v.w / v.h - aspect) < 0.01, `aspect ${aspect}: crop is ${(v.w / v.h).toFixed(2)}`);
     assert.ok(v.x >= 0 && v.y >= 0 && v.x + v.w <= 280.001 && v.y + v.h <= 180.001, `aspect ${aspect}: crop leaves the sim`);
     assert.ok(holdsBothMarks(v), `aspect ${aspect}: crop drops a landing mark`);
+    // The fleet rides the waterline; a crop that misses it frames empty sea.
+    const waterY = 180 - 28;
+    assert.ok(waterY > v.y && waterY < v.y + v.h, `aspect ${aspect}: crop misses the waterline`);
   }
   // No aspect given keeps the tuned rectangle, and sandbox still sees it all.
   assert.deepEqual(missionWorldView(MODE.GAMEPLAY, 280, 180), READABILITY.bayView);

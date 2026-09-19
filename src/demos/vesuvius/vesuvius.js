@@ -3282,9 +3282,12 @@ export class VesuviusEngine {
         ctx.fillStyle = galley.selected ? '#FFD54A' : '#F5E6C8';
         ctx.strokeStyle = 'rgba(10, 14, 22, 0.75)';
         const labelZoom = gameplay ? (this.simWidth / this.worldView().w) : 1;
-        const fontPx = Math.max(8, Math.round((2.4 * scaleX) / labelZoom));
+        // Floors are absolute pixel counts, so they have to be expressed in
+        // backing pixels or the labels shrink by the device pixel ratio.
+        const ui = this.uiScale();
+        const fontPx = Math.max(8 * ui, Math.round((2.4 * scaleX) / labelZoom));
         ctx.font = `bold ${fontPx}px serif`;
-        ctx.lineWidth = Math.max(1, 2 / labelZoom);
+        ctx.lineWidth = Math.max(1, 2 * ui / labelZoom);
         ctx.textAlign = 'center';
         const lx = galley.x * scaleX;
         const ly = galley.y * scaleY + 16 * spriteScale;
@@ -3293,7 +3296,7 @@ export class VesuviusEngine {
         ctx.fillText(label, lx, ly);
         if (galley.cargo > 0) {
           ctx.fillStyle = '#72D572';
-          ctx.fillText(`${Math.floor(galley.cargo)} aboard`, lx, ly + Math.max(10, 2.5 * scaleX / labelZoom));
+          ctx.fillText(`${Math.floor(galley.cargo)} aboard`, lx, ly + Math.max(10 * ui, 2.5 * scaleX / labelZoom));
         }
         ctx.restore();
       }
@@ -3485,7 +3488,7 @@ export class VesuviusEngine {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    const fontPx = Math.max(8, Math.round((2.4 * scaleX) / zoom));
+    const fontPx = Math.max(8 * this.uiScale(), Math.round((2.4 * scaleX) / zoom));
     ctx.font = `bold ${fontPx}px serif`;
     ctx.textAlign = 'center';
     ctx.fillStyle = selected ? '#FFD54A' : '#D4AF37';

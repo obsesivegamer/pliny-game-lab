@@ -9,7 +9,7 @@ const BASE_URL = 'http://localhost:8000';
 
 const VIEWPORTS = [
   { name: 'phone portrait', width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
-  { name: 'phone landscape', width: 844, height: 390, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+  { name: 'phone landscape', width: 740, height: 360, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
   { name: 'small tablet', width: 768, height: 1024, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
   { name: 'desktop', width: 1440, height: 900, deviceScaleFactor: 2 }
 ];
@@ -32,7 +32,7 @@ async function openSimulator(page) {
       && viewport
       && !viewport.classList.contains('view-hidden');
   }, { timeout: 15000 });
-  // Let the ResizeObserver settle after the engine injects its controls.
+  // Let the layout settle after the engine injects its controls.
   await new Promise((r) => setTimeout(r, 1200));
 }
 
@@ -70,8 +70,27 @@ async function measure(page) {
       fleetClear: engine.fleet.every((g) => clear(toPage(g.x, g.y))),
       stabiaeClear: clear(toPage(252, waterY)),
       offloadClear: clear(toPage(202, waterY)),
-      // 11px is the HUD title; it is drawn through uiScale() so it stays 11 CSS px.
-      hudTitleCssPx: 11 * (typeof engine.uiScale === 'function' ? engine.uiScale() : 1) / canvas.width * cr.width,
+      // Measure the painted HUD bar, not the arithmetic that positions it. The
+      // bar is stroked gold (#D4AF37) along its top and bottom; the gap between
+      // those lines is its height, which must come back as the 46/56 CSS px the
+      // code asks for. Deriving this from uiScale() would be circular:
+      // 11 * dpr / (cssWidth * dpr) * cssWidth is 11 at every dpr, so that form
+      // of the assert still passes with the scaling deleted.
+      hudBarCssPx: (() => {
+        const ictx = canvas.getContext('2d');
+        const scale = canvas.width / cr.width;
+        // Stop above the coach banner at y=74, whose gold border shares this column.
+        const depth = Math.min(canvas.height, Math.round(70 * scale));
+        const px = ictx.getImageData(Math.round(20 * scale), 0, 1, depth).data;
+        const gold = [];
+        for (let y = 0; y < depth; y++) {
+          const r = px[y * 4], g = px[y * 4 + 1], b = px[y * 4 + 2];
+          // Tight match: the ash sky gradient carries gold-ish tones that a loose
+          // tolerance picks up above the bar.
+          if (Math.abs(r - 212) < 18 && Math.abs(g - 175) < 18 && Math.abs(b - 55) < 22) gold.push(y);
+        }
+        return gold.length < 2 ? null : (gold[gold.length - 1] - gold[0]) / scale;
+      })(),
       hintToastVisible: getComputedStyle(document.getElementById('hint-overlay')).display !== 'none',
       hintInlineText: (document.getElementById('hint-inline')?.textContent || '').trim().length
     };
@@ -93,7 +112,11 @@ async function run() {
       assert.ok(m.fleetClear, `${vp.name}: at least one galley is hidden behind the controls sheet`);
       assert.ok(m.stabiaeClear, `${vp.name}: the Stabiae landing mark is hidden behind the controls sheet`);
       assert.ok(m.offloadClear, `${vp.name}: the OFFLOAD landing mark is hidden behind the controls sheet`);
-      assert.ok(m.hudTitleCssPx >= 10, `${vp.name}: HUD title renders at ${m.hudTitleCssPx.toFixed(1)} CSS px`);
+      // 46 narrow / 56 wide, per renderHUD. Without the CSS-pixel transform the
+      // painted bar comes back dpr times smaller.
+      const expectedBar = m.canvas.width < 560 ? 46 : 56;
+      assert.ok(m.hudBarCssPx !== null, `${vp.name}: could not find the HUD bar's gold border`);
+      assert.ok(Math.abs(m.hudBarCssPx - expectedBar) <= 4, `${vp.name}: HUD bar paints ${m.hudBarCssPx.toFixed(1)} CSS px, expected ~${expectedBar}`);
 
       const mobile = vp.width <= 768;
       assert.equal(m.hintToastVisible, !mobile, `${vp.name}: hint toast visibility should be ${!mobile}`);
@@ -101,7 +124,19 @@ async function run() {
         assert.ok(m.hintInlineText > 0, `${vp.name}: the sheet must carry the hint text the toast drops`);
       }
 
-      console.log(`  ✓ ${vp.name} (${vp.width}x${vp.height}@${vp.deviceScaleFactor}x) — canvas ${Math.round(m.canvas.width)}x${Math.round(m.canvas.height)}, stretch ${m.worldStretch.toFixed(2)}, HUD ${m.hudTitleCssPx.toFixed(1)}px`);
+      // Collapsing the sheet hands its height back to the canvas; the loop has
+      // to pick that up without leaving the backing store stale.
+      if (mobile) {
+        await page.click('#toggle-panel');
+        await new Promise((r) => setTimeout(r, 700));
+        const c = await measure(page);
+        assert.ok(c.canvas.height > m.canvas.height + 20, `${vp.name}: collapsing the sheet did not grow the canvas (${Math.round(m.canvas.height)} -> ${Math.round(c.canvas.height)})`);
+        assert.ok(c.backingMatchesBox, `${vp.name}: backing store went stale after collapse`);
+        assert.ok(Math.abs(c.worldStretch - 1) < 0.05, `${vp.name}: world stretched ${c.worldStretch.toFixed(2)}:1 after collapse`);
+        assert.equal(c.sheetOverlap, 0, `${vp.name}: collapsed sheet still covers the canvas`);
+      }
+
+      console.log(`  ✓ ${vp.name} (${vp.width}x${vp.height}@${vp.deviceScaleFactor}x) — canvas ${Math.round(m.canvas.width)}x${Math.round(m.canvas.height)}, stretch ${m.worldStretch.toFixed(2)}, HUD bar ${m.hudBarCssPx.toFixed(1)}px`);
       await page.close();
     }
     console.log('\nMOBILE LAYOUT QA: PASSED (playfield clear of the controls sheet, world unstretched, HUD legible)');

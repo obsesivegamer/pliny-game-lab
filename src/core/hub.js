@@ -631,14 +631,6 @@ class PlinyHub {
     this.handleResize();
     if (typeof window !== "undefined") {
       window.addEventListener("resize", () => this.handleResize());
-      // The mobile sheet is in flow, so the canvas box also changes when an
-      // engine injects its controls or the sheet collapses — neither fires a
-      // window resize. Without this the backing store keeps a stale shape and
-      // the browser stretches the bitmap into the new box.
-      if (typeof ResizeObserver !== "undefined" && this.canvas) {
-        this.canvasObserver = new ResizeObserver(() => this.handleResize());
-        this.canvasObserver.observe(this.canvas);
-      }
     }
 
     // Selector events
@@ -713,10 +705,8 @@ class PlinyHub {
         this.togglePanelBtn.textContent = collapsed ? "+" : "−";
         this.togglePanelBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
         this.togglePanelBtn.setAttribute("aria-label", collapsed ? "Expand controls" : "Collapse controls");
-        // The mobile sheet is in flow, so collapsing hands its height back to
-        // the canvas. Resize once now and once the slide finishes.
-        this.handleResize();
-        setTimeout(() => this.handleResize(), 280);
+        // No resize call here: collapsing hands the sheet's height back to the
+        // canvas, and loop() picks that up on the next frame.
       });
     }
 
@@ -1310,22 +1300,42 @@ class PlinyHub {
     });
   }
 
-  handleResize() {
-    const container = document.getElementById("viewport-container");
-    if (!container) return;
-    // Measure the canvas box itself, not the container. On mobile the controls
-    // panel is a bottom sheet in normal flow, so the canvas is shorter than the
-    // container; sizing from the container drew the engine behind the panel.
-    const rect = this.canvas.getBoundingClientRect();
-    const width = Math.round(rect.width) || container.clientWidth;
-    const height = Math.round(rect.height) || container.clientHeight;
-    const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = width * dpr;
-    this.canvas.height = height * dpr;
+  /**
+   * Match the backing store to the canvas box, and only when it actually
+   * changed. Assigning canvas.width blanks the bitmap and engine.resize() is
+   * expensive in several engines (aurora rebuilds its starfield, colosseum its
+   * sand texture), so an unconditional call costs a black frame and real work.
+   *
+   * Measures the canvas box rather than #viewport-container: on mobile the
+   * controls sheet is in normal flow, so the canvas is shorter than the
+   * container and sizing from the container drew the engine behind the sheet.
+   * clientWidth/clientHeight, not getBoundingClientRect, because the rect
+   * follows the visual viewport under pinch-zoom.
+   *
+   * Returns true when the canvas was resized.
+   */
+  syncCanvasSize() {
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
+    // Hidden (showcase view) reports 0x0; a 0-wide canvas is not worth telling
+    // an engine about, and several would rebuild their world at that size.
+    if (width <= 0 || height <= 0) return false;
 
+    const dpr = window.devicePixelRatio || 1;
+    const backingW = Math.max(1, Math.round(width * dpr));
+    const backingH = Math.max(1, Math.round(height * dpr));
+    if (this.canvas.width === backingW && this.canvas.height === backingH) return false;
+
+    this.canvas.width = backingW;
+    this.canvas.height = backingH;
     if (this.currentEngine && this.currentEngine.resize) {
-      this.currentEngine.resize(this.canvas.width, this.canvas.height, dpr);
+      this.currentEngine.resize(backingW, backingH, dpr);
     }
+    return true;
+  }
+
+  handleResize() {
+    this.syncCanvasSize();
   }
 
   async switchDemo(key) {
@@ -1482,6 +1492,11 @@ class PlinyHub {
 
     if (this.currentEngine && this.currentView === "simulator") {
       try {
+        // Resize inside the frame that redraws it. A ResizeObserver runs after
+        // rAF and before paint, so clearing the bitmap there showed a black
+        // playfield for every frame of a window drag, rotation, or iOS URL-bar
+        // animation. Here the clear and the redraw land in the same turn.
+        this.syncCanvasSize();
         if (!this.isPaused && this.currentEngine.update) {
           this.currentEngine.update(dt);
         }
