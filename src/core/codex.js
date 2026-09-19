@@ -10,7 +10,7 @@ export const CODEX_DATA = {
     latinQuote: "Cuius similitudinem et formam non alia magis arbor quam pinus expresserit. Nam longissimo velut trunco elata in altum quibusdam ramis diffundebatur.",
     translation: "Its general appearance can best be expressed as being like an umbrella pine, for it rose to a great height on a sort of trunk and then split off into branches.",
     science: "Thermodynamic Rayleigh-Taylor instability, buoyant convective plume dynamics, pyroclastic density currents (PDCs), and phreatomagmatic steam detonations.",
-    controlsGuide: "Paint magma, water, basalt, or pumice with brush. Adjust chamber pressure and wind drift. Trigger Ultra-Plinian eruption, column collapse surges, and launch Roman rescue fleet from Misenum."
+    controlsGuide: "Evacuate Stabiae: Select Roman galleys and order them to Stabiae to rescue citizens before pyroclastic surges arrive. Vent magma chamber (V) to delay eruption phases, and build berms (B) to shield the bay. Switch to Sandbox mode to paint elements and trigger manual eruption phases."
   },
   geyser: {
     title: "Geyser (Aqua Calida & Fumarola)",

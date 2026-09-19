@@ -26,8 +26,8 @@ export const DEMOS = {
     pavilionName: "Pavilion I: Ignis & Terra",
     path: "../demos/vesuvius/vesuvius.js",
     exportName: "VesuviusEngine",
-    desc: "Thermodynamic cellular automata falling-sand and magma simulation with Plinian eruption dynamics.",
-    hint: "L-Click: Deposit material | R-Click: Detonate/Heat | Scroll: Brush Size"
+    desc: "Evacuate Stabiae: command the Classis Misenensis through a Plinian eruption. Thermodynamic CA, PDCs, and a timed rescue quota.",
+    hint: "Click a galley, then click Stabiae to order the rescue. V: controlled vent. B: stone berm. R: restart. Beat the PDC."
   },
   geyser: {
     id: "geyser",
