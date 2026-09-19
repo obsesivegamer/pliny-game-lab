@@ -39,7 +39,7 @@ export const TOOL = {
 };
 
 export const OBJECTIVE =
-  'Rescue 70 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.';
+  'Rescue 80 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.';
 
 export const READABILITY = {
   galleyHitRadius: 18,
@@ -56,9 +56,8 @@ export const READABILITY = {
 
 export const GALLEY_SPRITE_SCALE = 1.25;
 
-export function galleyDrawScale(scaleX, isFlagship, gameplay) {
-  const isGame = typeof scaleX === 'boolean' ? scaleX : Boolean(gameplay);
-  return isGame ? GALLEY_SPRITE_SCALE : 1;
+export function galleyDrawScale(isGameplay) {
+  return isGameplay ? GALLEY_SPRITE_SCALE : 1;
 }
 
 export function missionWorldView(mode, simWidth, simHeight) {
@@ -87,17 +86,17 @@ export function missionCoachCopy(hasShip) {
 }
 
 export const MISSION_NUMBERS = {
-  rescueQuota: 70,
+  rescueQuota: 80,
   startingCivilians: 160,
   ventCharges: 3,
   barrierCharges: 4,
-  shipCapacity: 20,
+  shipCapacity: 18,
   pickupRate: 7.5,
   offloadRate: 14,
   pdcCivilianKillRate: 22,
   pdcShipDamageRate: 32,
   pumiceShipDamageRate: 6,
-  ventDelaySec: 10,
+  ventDelaySec: 9,
   ventPressureBleed: 18,
   pickupRadius: 16,
   offloadRadius: 18,
@@ -111,12 +110,12 @@ export const MISSION_NUMBERS = {
 
 export const PHASE_SCHEDULE = [
   { at: 0, phase: 0 },
-  { at: 7, phase: 1 },
-  { at: 16, phase: 2 },
-  { at: 26, phase: 3 },
-  { at: 38, phase: 4 },
-  { at: 52, phase: 5 },
-  { at: 72, phase: 6 }
+  { at: 4, phase: 1 },
+  { at: 9, phase: 2 },
+  { at: 15, phase: 3 },
+  { at: 24, phase: 4 },
+  { at: 33, phase: 5 },
+  { at: 55, phase: 6 }
 ];
 
 export function createMission(mode = MODE.GAMEPLAY) {

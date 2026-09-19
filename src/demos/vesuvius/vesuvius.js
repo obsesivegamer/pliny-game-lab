@@ -1830,11 +1830,6 @@ export class VesuviusEngine {
     if (btnSandbox) btnSandbox.addEventListener('click', () => this.setPlayMode(MODE.SANDBOX));
 
     this.syncMissionHud();
-    this.syncGameplayChrome();
-  }
-
-  syncGameplayChrome() {
-    // Hint overlay is managed by hub.js and displays gameplay keybindings.
   }
 
   // ==========================================================================
@@ -2011,7 +2006,6 @@ export class VesuviusEngine {
       const sandbox = this.controlsContainer.querySelector('#sandbox-tools');
       if (sandbox && mode === MODE.SANDBOX) sandbox.open = true;
     }
-    this.syncGameplayChrome();
   }
 
   requestManualPhase(phaseIndex) {
@@ -2346,15 +2340,13 @@ export class VesuviusEngine {
     this.audio.ensureContext();
     this.audio.setRumbleIntensity(config.seismicTremor);
 
-    if (phaseIndex > oldPhase) {
-      if (phaseIndex === PHASE.PHREATOMAGMATIC || phaseIndex === PHASE.ULTRA_PLINIAN) {
-        this.triggerShockwave(this.ventX, this.ventY, 95);
-        this.audio.playExplosion(1.2);
-      } else if (phaseIndex === PHASE.COLUMN_COLLAPSE) {
-        this.triggerColumnCollapseSurges();
-      } else if (phaseIndex === PHASE.CALDERA_COLLAPSE) {
-        this.triggerCalderaCollapse();
-      }
+    if (phaseIndex === PHASE.PHREATOMAGMATIC || phaseIndex === PHASE.ULTRA_PLINIAN) {
+      this.triggerShockwave(this.ventX, this.ventY, 95);
+      this.audio.playExplosion(1.2);
+    } else if (phaseIndex === PHASE.COLUMN_COLLAPSE) {
+      this.triggerColumnCollapseSurges();
+    } else if (phaseIndex === PHASE.CALDERA_COLLAPSE) {
+      this.triggerCalderaCollapse();
     }
 
     // Update UI button states if container exists
@@ -3275,7 +3267,7 @@ export class VesuviusEngine {
     const scaleY = h / this.simHeight;
     const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY;
     for (const galley of this.fleet) {
-      const spriteScale = galleyDrawScale(scaleX, galley.isFlagship, gameplay);
+      const spriteScale = galleyDrawScale(gameplay);
       galley.render(ctx, scaleX, scaleY, spriteScale);
       if (gameplay && galley.alive) {
         ctx.save();
@@ -3333,14 +3325,18 @@ export class VesuviusEngine {
   }
 
   renderVolcanicLightning(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
     for (const bolt of this.lightningBolts) {
-      bolt.render(ctx);
+      bolt.render(ctx, scaleX, scaleY);
     }
   }
 
   renderShockwaves(ctx, w, h) {
+    const scaleX = w / this.simWidth;
+    const scaleY = h / this.simHeight;
     for (const s of this.shockwaves) {
-      s.render(ctx);
+      s.render(ctx, scaleX, scaleY);
     }
   }
 
@@ -3355,19 +3351,27 @@ export class VesuviusEngine {
     ctx.save();
 
     // 1. Top Bar: Title & Eruption Status
-    ctx.fillStyle = 'rgba(10, 14, 22, 0.82)';
-    ctx.fillRect(12, 10, w - 24, 40);
+    ctx.fillStyle = 'rgba(10, 14, 22, 0.85)';
+    const barH = gameplayHud ? 56 : 40;
+    ctx.fillRect(12, 10, w - 24, barH);
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 1;
-    ctx.strokeRect(12, 10, w - 24, 40);
+    ctx.strokeRect(12, 10, w - 24, barH);
 
     ctx.fillStyle = '#D4AF37';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText('MONS VESUVIUS AD 79 — PLINIAN VOLCANOLOGY SIMULATOR', 22, 26);
+    ctx.font = 'bold 11px serif';
+    ctx.fillText(gameplayHud ? 'EVACUATE STABIAE — CLASSIS MISENENSIS, AD 79' : 'MONS VESUVIUS AD 79 — PLINIAN VOLCANOLOGY SIMULATOR', 22, 26);
 
     ctx.fillStyle = '#E5DAC4';
     ctx.font = '9px monospace';
-    ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 40);
+    if (gameplayHud) {
+      ctx.fillText(this.mission.objective, 22, 40);
+      const threat = threatMeter(this.mission, this.currentPhase, pdcHitsX(this.pdcs, MISSION_NUMBERS.stabiaeX, MISSION_NUMBERS.pdcTownRadius));
+      ctx.fillStyle = '#72D572';
+      ctx.fillText(`RESCUED ${Math.floor(this.mission.rescued)} / ${this.mission.quota} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}%`, 22, 54);
+    } else {
+      ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 40);
+    }
 
     // Top Bar Right: VEI & Plume Telemetry
     ctx.textAlign = 'right';
@@ -3722,6 +3726,7 @@ export class VesuviusEngine {
   }
 
   onContextMenu(pos) {
+    if (this.mission && this.mission.mode === MODE.GAMEPLAY) return;
     // Localized Phreatomagmatic blast trigger on right click
     const { gx, gy } = this.toSim(pos);
     this.triggerShockwave(Math.floor(gx), Math.floor(gy), 45);
@@ -3868,8 +3873,6 @@ export class VesuviusEngine {
   }
 
   destroy() {
-    this.mission = this.mission ? { ...this.mission, mode: MODE.SANDBOX } : createMission(MODE.SANDBOX);
-    this.syncGameplayChrome();
     detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';

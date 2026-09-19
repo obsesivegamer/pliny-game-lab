@@ -155,7 +155,7 @@ const overlay = await page.evaluate(() => {
   return { status: e.mission.status, quota: e.mission.quota, hasButton: !!e.overlayButton };
 });
 assert.equal(overlay.status, 'won');
-assert.equal(overlay.quota, 70);
+assert.equal(overlay.quota, 80);
 assert.equal(overlay.hasButton, true);
 await page.screenshot({ path: path.join(OUT, '03_win_overlay.png') });
 console.log('   captured 03_win_overlay.png');

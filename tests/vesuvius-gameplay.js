@@ -103,12 +103,12 @@ test('win when rescued quota is met before catastrophe', () => {
 
 test('meeting mission.quota resolves WON', () => {
   const m = createMission();
-  assert.equal(m.quota, 70);
+  assert.equal(m.quota, 80);
   m.rescued = m.quota;
   resolveMission(m, { ships: [{ alive: true, health: 80, cargo: 0 }], phase: 4 });
   assert.equal(m.status, STATUS.WON);
   assert.equal(m.quota, missionQuota());
-  assert.equal(m.quota, 70);
+  assert.equal(m.quota, 80);
   assert.ok(m.rescued >= m.quota);
 });
 
@@ -321,7 +321,7 @@ global.window = {
   }
 };
 
-const { VesuviusEngine, ELEMENT, PHASE } = await import('../src/demos/vesuvius/vesuvius.js');
+const { VesuviusEngine, ELEMENT, PHASE, VolcanicLightning } = await import('../src/demos/vesuvius/vesuvius.js');
 
 function makeEngine() {
   const canvas = new MockCanvas(800, 600);
@@ -534,9 +534,8 @@ test('any canvas click after victory restarts the mission', () => {
 });
 
 test('gameplay galleys draw larger than the 48px sprite at canvas scale', () => {
-  const scaleX = 1600 / 280;
-  const play = galleyDrawScale(scaleX, true, true);
-  const sand = galleyDrawScale(scaleX, true, false);
+  const play = galleyDrawScale(true);
+  const sand = galleyDrawScale(false);
   const view = missionWorldView(MODE.GAMEPLAY, 280, 180);
   const zoom = 280 / view.w;
   assert.ok(play > sand, `gameplay scale ${play} should exceed sandbox ${sand}`);
@@ -589,20 +588,20 @@ test('reaching quota resolves WON on engine and renders victory overlay', () => 
   ctx.texts = [];
   engine.render(ctx);
   assert.match(ctx.texts.join(' | '), /STABIAE SERVED/);
-  assert.match(ctx.texts.join(' | '), /Rescued 70 citizens/);
+  assert.match(ctx.texts.join(' | '), /Rescued 80 citizens/);
   engine.destroy();
 });
 
 test('venting does not rewind eruption phase or re-trigger entry effects', () => {
   const { engine } = makeEngine();
-  engine.mission.time = 40;
+  engine.mission.time = 26;
   engine.update(0.016);
   assert.equal(engine.currentPhase, PHASE.ULTRA_PLINIAN);
 
   const initialShockwaves = engine.shockwaves.length;
   const vented = engine.ventChamber();
   assert.equal(vented, true);
-  assert.equal(engine.mission.ventDelay, 10);
+  assert.equal(engine.mission.ventDelay, MISSION_NUMBERS.ventDelaySec);
   engine.update(0.016);
 
   assert.ok(engine.currentPhase >= PHASE.ULTRA_PLINIAN, `phase should not rewind, got ${engine.currentPhase}`);
@@ -610,11 +609,84 @@ test('venting does not rewind eruption phase or re-trigger entry effects', () =>
   engine.destroy();
 });
 
+test('volcanic lightning and shockwaves render with finite coordinates (no NaN)', () => {
+  const { engine, ctx } = makeEngine();
+  engine.triggerShockwave(100, 100, 50);
+  assert.ok(engine.shockwaves.length > 0);
+
+  const bolt = new VolcanicLightning(100, 100, 120, 150);
+  engine.lightningBolts.push(bolt);
+
+  const calls = [];
+  ctx.arc = (x, y, r) => {
+    assert.ok(Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(r), `arc coords must be finite, got x=${x}, y=${y}, r=${r}`);
+    calls.push({ type: 'arc', x, y, r });
+  };
+  ctx.moveTo = (x, y) => {
+    assert.ok(Number.isFinite(x) && Number.isFinite(y), `moveTo coords must be finite, got x=${x}, y=${y}`);
+    calls.push({ type: 'moveTo', x, y });
+  };
+  ctx.lineTo = (x, y) => {
+    assert.ok(Number.isFinite(x) && Number.isFinite(y), `lineTo coords must be finite, got x=${x}, y=${y}`);
+    calls.push({ type: 'lineTo', x, y });
+  };
+
+  engine.renderVolcanicLightning(ctx, 800, 600);
+  engine.renderShockwaves(ctx, 800, 600);
+  assert.ok(calls.length > 0, 'lightning and shockwave path calls should execute');
+  engine.destroy();
+});
+
+test('sandbox phase buttons can be triggered repeatedly in any order', () => {
+  const { engine } = makeEngine();
+  engine.setPlayMode(MODE.SANDBOX);
+
+  const initialSurges = engine.pdcs.length;
+  engine.requestManualPhase(PHASE.COLUMN_COLLAPSE);
+  const surgesAfter1 = engine.pdcs.length;
+  assert.ok(surgesAfter1 > initialSurges, 'first column collapse triggers surges');
+
+  engine.requestManualPhase(PHASE.COLUMN_COLLAPSE);
+  const surgesAfter2 = engine.pdcs.length;
+  assert.ok(surgesAfter2 > surgesAfter1, 'second column collapse also triggers surges (not one-shot)');
+
+  const initialShock = engine.shockwaves.length;
+  engine.requestManualPhase(PHASE.ULTRA_PLINIAN);
+  assert.ok(engine.shockwaves.length > initialShock, 'ultra-plinian after collapse fires shockwaves');
+  engine.destroy();
+});
+
+test('right click context menu is disabled in gameplay mode but active in sandbox', () => {
+  const { engine } = makeEngine();
+  const { gx, gy } = engine.toSim({ x: 100, y: 100 });
+  const cellIdx = Math.floor(gy) * engine.simWidth + Math.floor(gx);
+  const origElem = engine.grid[cellIdx];
+  const initialShocks = engine.shockwaves.length;
+
+  engine.onContextMenu({ x: 100, y: 100 });
+  assert.equal(engine.grid[cellIdx], origElem, 'right-click in gameplay mode must not excavate crater');
+  assert.equal(engine.shockwaves.length, initialShocks, 'right-click in gameplay mode must not trigger shockwave');
+
+  engine.setPlayMode(MODE.SANDBOX);
+  engine.onContextMenu({ x: 100, y: 100 });
+  assert.ok(engine.shockwaves.length > initialShocks, 'right-click in sandbox mode triggers shockwave');
+  engine.destroy();
+});
+
+test('on-canvas HUD displays Evacuate Stabiae title, objective, and progress in gameplay mode', () => {
+  const { engine, ctx } = makeEngine();
+  ctx.texts = [];
+  engine.render(ctx);
+  const hud = ctx.texts.join(' | ');
+  assert.match(hud, /EVACUATE STABIAE — CLASSIS MISENENSIS/);
+  assert.match(hud, /Rescue 80 citizens/);
+  assert.match(hud, /RESCUED 0 \/ 80 CITIZENS/);
+  engine.destroy();
+});
+
 test('mission-mode plume budget stays under the ash-soup baseline', () => {
   const { engine } = makeEngine();
-  // Gameplay update() follows the mission clock, so jump to Ultra-Plinian
-  // rather than calling setEruptionPhase and watching tickGameplay revert it.
-  engine.mission.time = 38;
+  engine.mission.time = 26;
   engine.setEruptionPhase(PHASE.ULTRA_PLINIAN);
   engine.plumeHeightKm = 32;
   engine.targetPlumeKm = 32;
