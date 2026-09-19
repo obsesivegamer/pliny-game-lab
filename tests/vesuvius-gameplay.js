@@ -101,14 +101,14 @@ test('win when rescued quota is met before catastrophe', () => {
   assert.equal(m.loseReason, null);
 });
 
-test('stale mission.quota cannot keep 71/50 playing (Jeremy HUD desync)', () => {
+test('meeting mission.quota resolves WON', () => {
   const m = createMission();
-  m.quota = 90;
-  m.rescued = 71;
+  assert.equal(m.quota, 70);
+  m.rescued = m.quota;
   resolveMission(m, { ships: [{ alive: true, health: 80, cargo: 0 }], phase: 4 });
   assert.equal(m.status, STATUS.WON);
   assert.equal(m.quota, missionQuota());
-  assert.equal(m.quota, 50);
+  assert.equal(m.quota, 70);
   assert.ok(m.rescued >= m.quota);
 });
 
@@ -428,12 +428,27 @@ test('placing a berm spends a charge and marks barrier cells', () => {
   engine.destroy();
 });
 
-test('empty-canvas clicks still paint so the touch harness keeps working', () => {
+test('gameplay clicks do not paint elements, while sandbox mode allows painting', () => {
   const { engine } = makeEngine();
   engine.selectedElement = ELEMENT.WATER;
-  engine.onMouseDown({ x: 80, y: 40 });
   const { gx, gy } = engine.toSim({ x: 80, y: 40 });
-  assert.equal(engine.grid[Math.floor(gy) * engine.simWidth + Math.floor(gx)], ELEMENT.WATER);
+  const cellIdx = Math.floor(gy) * engine.simWidth + Math.floor(gx);
+  const origElem = engine.grid[cellIdx];
+
+  // In gameplay mode: missed clicks should not paint
+  engine.onMouseDown({ x: 80, y: 40 });
+  assert.equal(engine.grid[cellIdx], origElem, 'gameplay clicks must not paint into the bay');
+  assert.equal(engine.isDrawing, false);
+  engine.onMouseUp();
+
+  // In sandbox mode: brush painting works
+  engine.setPlayMode(MODE.SANDBOX);
+  engine.grid.fill(ELEMENT.EMPTY);
+  engine.selectedElement = ELEMENT.WATER;
+  engine.onMouseDown({ x: 80, y: 40 });
+  const sandSim = engine.toSim({ x: 80, y: 40 });
+  const sandIdx = Math.floor(sandSim.gy) * engine.simWidth + Math.floor(sandSim.gx);
+  assert.equal(engine.grid[sandIdx], ELEMENT.WATER, 'sandbox mode allows painting');
   assert.equal(engine.isDrawing, true);
   engine.onMouseUp();
   engine.destroy();
@@ -459,12 +474,15 @@ test('a commanded fleet can meet the quota before caldera (winnable loop)', () =
   }
 
   let frames = 0;
-  const limit = Math.ceil(70 / 0.05);
+  const limit = Math.ceil(80 / 0.05);
   while (engine.mission.status === STATUS.PLAYING && frames < limit) {
-    const threat = engine.currentPhase >= 4 && engine.mission.ventCharges > 0;
-    if (threat) engine.ventChamber();
+    const threat = engine.currentPhase >= 3 && engine.mission.ventCharges > 0;
+    if (threat && frames % 100 === 0) engine.ventChamber();
     for (const ship of engine.fleet) {
       if (!ship.alive) continue;
+      if (ship.state === 'idle' && engine.mission.rescued < engine.mission.quota) {
+        ship.orderedX = MISSION_NUMBERS.stabiaeX;
+      }
       if (ship.cargo > 1 && engine.currentPhase >= 5) {
         ship.orderedX = MISSION_NUMBERS.offloadX;
       }
@@ -562,19 +580,33 @@ test('mission camera frames Stabiae and OFFLOAD as distinct bay targets', () => 
   engine.destroy();
 });
 
-test('71 rescued against a stale 90 quota still resolves WON on the engine', () => {
+test('reaching quota resolves WON on engine and renders victory overlay', () => {
   const { engine, ctx } = makeEngine();
-  engine.mission.quota = 90;
-  engine.mission.rescued = 71;
+  engine.mission.rescued = engine.mission.quota;
   engine.update(0.016);
   assert.equal(engine.mission.status, STATUS.WON);
   assert.equal(engine.mission.quota, missionQuota());
-  engine.mission.status = STATUS.PLAYING;
-  engine.mission.quota = 90;
-  engine.mission.rescued = 71;
   ctx.texts = [];
   engine.render(ctx);
-  assert.match(ctx.texts.join(' | '), /RESCUED 71 \/ 50/);
+  assert.match(ctx.texts.join(' | '), /STABIAE SERVED/);
+  assert.match(ctx.texts.join(' | '), /Rescued 70 citizens/);
+  engine.destroy();
+});
+
+test('venting does not rewind eruption phase or re-trigger entry effects', () => {
+  const { engine } = makeEngine();
+  engine.mission.time = 40;
+  engine.update(0.016);
+  assert.equal(engine.currentPhase, PHASE.ULTRA_PLINIAN);
+
+  const initialShockwaves = engine.shockwaves.length;
+  const vented = engine.ventChamber();
+  assert.equal(vented, true);
+  assert.equal(engine.mission.ventDelay, 10);
+  engine.update(0.016);
+
+  assert.ok(engine.currentPhase >= PHASE.ULTRA_PLINIAN, `phase should not rewind, got ${engine.currentPhase}`);
+  assert.equal(engine.shockwaves.length, initialShockwaves + 1, 'vent shockwave fired, but phase entry effects did not re-fire');
   engine.destroy();
 });
 

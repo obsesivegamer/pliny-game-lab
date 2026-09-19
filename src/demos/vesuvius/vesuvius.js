@@ -112,6 +112,8 @@ import {
   missionCoachCopy
 } from './mission.js';
 
+export { MODE, STATUS, TOOL, LOSE_REASON };
+
 export const ELEMENT = {
   EMPTY: 0,
   STONE: 1,
@@ -1832,10 +1834,7 @@ export class VesuviusEngine {
   }
 
   syncGameplayChrome() {
-    if (typeof document === 'undefined') return;
-    const hideHint = this.mission && this.mission.mode === MODE.GAMEPLAY;
-    const hint = document.getElementById('hint-overlay');
-    if (hint && hint.style) hint.style.visibility = hideHint ? 'hidden' : '';
+    // Hint overlay is managed by hub.js and displays gameplay keybindings.
   }
 
   // ==========================================================================
@@ -2038,8 +2037,9 @@ export class VesuviusEngine {
     }
 
     this.mission.time += dt;
-    const next = scheduledPhase(this.mission.time, this.mission.ventDelay);
-    if (next !== this.currentPhase) {
+    const target = scheduledPhase(this.mission.time, this.mission.ventDelay);
+    const next = Math.max(this.currentPhase, target);
+    if (next > this.currentPhase) {
       this.setEruptionPhase(next);
     }
     this.updateGameplayFleet(dt);
@@ -2138,6 +2138,7 @@ export class VesuviusEngine {
   ventChamber() {
     const result = tryVent(this.mission);
     if (!result.ok) return false;
+    this.ventedPressureRelief = (this.ventedPressureRelief || 0) + result.bleed;
     this.chamberPressure = Math.max(4, this.chamberPressure - result.bleed);
     this.triggerShockwave(this.ventX, this.ventY, 42);
     this.syncMissionHud();
@@ -2151,11 +2152,23 @@ export class VesuviusEngine {
   }
 
   placeBarrier(gx, gy) {
-    const spend = trySpendBarrier(this.mission);
-    if (!spend.ok) return false;
+    if (this.mission.barrierCharges <= 0) {
+      this.mission.tool = TOOL.ORDER;
+      this.syncMissionHud();
+      return false;
+    }
     const w = this.simWidth;
     const h = this.simHeight;
     const cx = Math.max(0, Math.min(w - 1, Math.floor(gx)));
+    if (cx > this.waterlineX + 10 || cx < this.ventX - 20) {
+      return false;
+    }
+    const spend = trySpendBarrier(this.mission);
+    if (!spend.ok) {
+      this.mission.tool = TOOL.ORDER;
+      this.syncMissionHud();
+      return false;
+    }
     for (let dx = -4; dx <= 4; dx++) {
       const x = cx + dx;
       if (x < 0 || x >= w) continue;
@@ -2230,10 +2243,6 @@ export class VesuviusEngine {
     return best;
   }
 
-  isMissionLandingClick(gx, gy) {
-    return this.missionLandmark(gx, gy) != null;
-  }
-
   missionLandmark(gx, gy) {
     const n = MISSION_NUMBERS;
     const waterY = this.simHeight - 28;
@@ -2294,7 +2303,7 @@ export class VesuviusEngine {
       if (el) el.textContent = text;
     };
     set('#mission-objective', m.objective);
-    set('#mission-rescued', `${Math.floor(m.rescued)} / ${missionQuota()}`);
+    set('#mission-rescued', `${Math.floor(m.rescued)} / ${m.quota}`);
     set('#mission-civilians', `${Math.ceil(m.civiliansAtStabiae)}`);
     const threat = threatMeter(m, this.currentPhase, pdcHitsX(this.pdcs, MISSION_NUMBERS.stabiaeX, MISSION_NUMBERS.pdcTownRadius));
     set('#mission-threat', `${Math.round(threat * 100)}%`);
@@ -2321,6 +2330,7 @@ export class VesuviusEngine {
   // ==========================================================================
 
   setEruptionPhase(phaseIndex) {
+    const oldPhase = this.currentPhase;
     this.currentPhase = phaseIndex;
     const config = PHASE_CONFIG[phaseIndex];
     if (!config) return;
@@ -2328,19 +2338,23 @@ export class VesuviusEngine {
     this.vei = config.vei;
     this.targetPlumeKm = config.plumeTargetKm;
     this.massEruptionRate = config.massRateKgS;
-    this.chamberPressure = Math.min(100, 20 + phaseIndex * 13);
+    const basePressure = 20 + phaseIndex * 13;
+    const relief = this.ventedPressureRelief || 0;
+    this.chamberPressure = Math.max(4, Math.min(100, basePressure - relief));
 
     // Audio cues
     this.audio.ensureContext();
     this.audio.setRumbleIntensity(config.seismicTremor);
 
-    if (phaseIndex === PHASE.PHREATOMAGMATIC || phaseIndex === PHASE.ULTRA_PLINIAN) {
-      this.triggerShockwave(this.ventX, this.ventY, 95);
-      this.audio.playExplosion(1.2);
-    } else if (phaseIndex === PHASE.COLUMN_COLLAPSE) {
-      this.triggerColumnCollapseSurges();
-    } else if (phaseIndex === PHASE.CALDERA_COLLAPSE) {
-      this.triggerCalderaCollapse();
+    if (phaseIndex > oldPhase) {
+      if (phaseIndex === PHASE.PHREATOMAGMATIC || phaseIndex === PHASE.ULTRA_PLINIAN) {
+        this.triggerShockwave(this.ventX, this.ventY, 95);
+        this.audio.playExplosion(1.2);
+      } else if (phaseIndex === PHASE.COLUMN_COLLAPSE) {
+        this.triggerColumnCollapseSurges();
+      } else if (phaseIndex === PHASE.CALDERA_COLLAPSE) {
+        this.triggerCalderaCollapse();
+      }
     }
 
     // Update UI button states if container exists
@@ -3267,8 +3281,10 @@ export class VesuviusEngine {
         ctx.save();
         ctx.fillStyle = galley.selected ? '#FFD54A' : '#F5E6C8';
         ctx.strokeStyle = 'rgba(10, 14, 22, 0.75)';
-        ctx.lineWidth = 3;
-        ctx.font = `bold ${Math.max(13, Math.round(2.6 * scaleX))}px serif`;
+        const labelZoom = gameplay ? (this.simWidth / READABILITY.bayView.w) : 1;
+        const fontPx = Math.max(8, Math.round((2.4 * scaleX) / labelZoom));
+        ctx.font = `bold ${fontPx}px serif`;
+        ctx.lineWidth = Math.max(1, 2 / labelZoom);
         ctx.textAlign = 'center';
         const lx = galley.x * scaleX;
         const ly = galley.y * scaleY + 16 * spriteScale;
@@ -3277,7 +3293,7 @@ export class VesuviusEngine {
         ctx.fillText(label, lx, ly);
         if (galley.cargo > 0) {
           ctx.fillStyle = '#72D572';
-          ctx.fillText(`${Math.floor(galley.cargo)} aboard`, lx, ly + Math.max(12, 3 * scaleX));
+          ctx.fillText(`${Math.floor(galley.cargo)} aboard`, lx, ly + Math.max(10, 2.5 * scaleX / labelZoom));
         }
         ctx.restore();
       }
@@ -3308,27 +3324,23 @@ export class VesuviusEngine {
   renderVolcanicBombs(ctx, w, h) {
     const scaleX = w / this.simWidth;
     const scaleY = h / this.simHeight;
-    for (const bomb of this.bombs) {
-      bomb.render(ctx, scaleX, scaleY);
+    for (const b of this.bombs) {
+      b.render(ctx, scaleX, scaleY);
     }
-    for (const frag of this.bombFragments) {
-      frag.render(ctx, scaleX, scaleY);
+    for (const f of this.bombFragments) {
+      f.render(ctx, scaleX, scaleY);
     }
   }
 
   renderVolcanicLightning(ctx, w, h) {
-    const scaleX = w / this.simWidth;
-    const scaleY = h / this.simHeight;
     for (const bolt of this.lightningBolts) {
-      bolt.render(ctx, scaleX, scaleY);
+      bolt.render(ctx);
     }
   }
 
   renderShockwaves(ctx, w, h) {
-    const scaleX = w / this.simWidth;
-    const scaleY = h / this.simHeight;
-    for (const sw of this.shockwaves) {
-      sw.render(ctx, scaleX, scaleY);
+    for (const s of this.shockwaves) {
+      s.render(ctx);
     }
   }
 
@@ -3338,45 +3350,36 @@ export class VesuviusEngine {
 
   renderHUD(ctx, w, h) {
     const config = PHASE_CONFIG[this.currentPhase] || PHASE_CONFIG[0];
+    const gameplayHud = this.mission && this.mission.mode === MODE.GAMEPLAY;
 
     ctx.save();
 
-    const gameplayHud = this.mission && this.mission.mode === MODE.GAMEPLAY;
-
     // 1. Top Bar: Title & Eruption Status
-    ctx.fillStyle = 'rgba(10, 14, 22, 0.85)';
+    ctx.fillStyle = 'rgba(10, 14, 22, 0.82)';
+    ctx.fillRect(12, 10, w - 24, 40);
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 1;
-    ctx.fillRect(12, 12, w - 24, gameplayHud ? 56 : 38);
-    ctx.strokeRect(12, 12, w - 24, gameplayHud ? 56 : 38);
+    ctx.strokeRect(12, 10, w - 24, 40);
 
     ctx.fillStyle = '#D4AF37';
-    ctx.font = 'bold 12px serif';
-    ctx.fillText(gameplayHud ? 'EVACUATE STABIAE — CLASSIS MISENENSIS, AD 79' : 'MONS VESUVIUS AD 79 — PLINIAN VOLCANOLOGY SIMULATOR', 22, 28);
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('MONS VESUVIUS AD 79 — PLINIAN VOLCANOLOGY SIMULATOR', 22, 26);
 
     ctx.fillStyle = '#E5DAC4';
-    ctx.font = '10px monospace';
-    if (gameplayHud) {
-      ctx.fillText(this.mission.objective, 22, 43);
-      const threat = threatMeter(this.mission, this.currentPhase, pdcHitsX(this.pdcs, MISSION_NUMBERS.stabiaeX, MISSION_NUMBERS.pdcTownRadius));
-      ctx.fillStyle = '#72D572';
-      ctx.fillText(`RESCUED ${Math.floor(this.mission.rescued)} / ${missionQuota()} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}% · ASH ${this.plumeParticles.length}`, 22, 60);
-    } else {
-      ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 43);
-    }
+    ctx.font = '9px monospace';
+    ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 40);
 
-    // VEI Badge on Right
-    ctx.fillStyle = config.vei >= 4 ? '#FF3B30' : '#FFA500';
-    ctx.font = 'bold 11px monospace';
+    // Top Bar Right: VEI & Plume Telemetry
     ctx.textAlign = 'right';
-    ctx.fillText(`VEI INDEX: ${this.vei} / 8`, w - 24, 28);
-
-    ctx.fillStyle = '#B0BEC5';
-    ctx.font = '10px monospace';
-    ctx.fillText(`PLUME: ${this.plumeHeightKm.toFixed(1)} KM | MASS: ${(this.massEruptionRate / 1e6).toFixed(1)} MT/S`, w - 24, 43);
+    ctx.fillStyle = '#FFB300';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(`VEI INDEX: ${this.vei} / 8`, w - 24, 26);
+    ctx.fillStyle = '#A0AEC0';
+    ctx.font = '9px monospace';
+    ctx.fillText(`PLUME: ${this.plumeHeightKm.toFixed(1)} KM | MASS: ${(this.massEruptionRate / 1e6).toFixed(1)} MT/S`, w - 24, 40);
     ctx.textAlign = 'left';
 
-    // 2. Seismograph Oscilloscope Box (Bottom Left)
+    // 2. Seismograph Graph Widget (Bottom-Left)
     this.seismograph.render(ctx, 12, h - 85, 175, 68);
 
     // 3. Eyewitness Latin Scroll — sandbox only. In mission mode it covered the bay fleet.
@@ -3419,13 +3422,14 @@ export class VesuviusEngine {
     const villaY = (this.elevationMap[n.stabiaeX] || (this.simHeight - 28)) * scaleY;
     const selected = this.mission.selectedShip != null ? this.fleet[this.mission.selectedShip] : null;
     const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
+    const zoom = this.simWidth / READABILITY.bayView.w;
 
     ctx.save();
     // Rings are in sim cells; the bay camera already zooms them. Keep them
     // beach-sized so they do not swallow the galleys as sea clutter.
     const stabR = (selected ? 8 : 6.5) * scaleX;
     ctx.strokeStyle = selected ? `rgba(255, 213, 74, ${0.55 + 0.4 * pulse})` : 'rgba(212, 175, 55, 0.9)';
-    ctx.lineWidth = selected ? 2.4 : 1.8;
+    ctx.lineWidth = Math.max(1, (selected ? 2.4 : 1.8) / zoom);
     ctx.setLineDash(selected ? [6, 4] : [4, 3]);
     ctx.beginPath();
     ctx.arc(n.stabiaeX * scaleX, waterY, stabR, 0, Math.PI * 2);
@@ -3438,14 +3442,15 @@ export class VesuviusEngine {
     }
 
     ctx.strokeStyle = 'rgba(80, 200, 190, 0.95)';
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = Math.max(1, 1.8 / zoom);
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
     ctx.arc(n.offloadX * scaleX, waterY, 6 * scaleX, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.font = `bold ${Math.max(10, Math.round(2.6 * scaleX))}px serif`;
+    const fontPx = Math.max(8, Math.round((2.4 * scaleX) / zoom));
+    ctx.font = `bold ${fontPx}px serif`;
     ctx.textAlign = 'center';
     ctx.fillStyle = selected ? '#FFD54A' : '#D4AF37';
     ctx.fillText(selected ? 'CLICK · STABIAE' : 'STABIAE', n.stabiaeX * scaleX, villaY - 28);
@@ -3493,24 +3498,29 @@ export class VesuviusEngine {
     ctx.save();
     if (!hasShip) {
       const pulse = 0.4 + 0.6 * Math.abs(Math.sin(this.time * 3.4));
-      for (const galley of this.fleet) {
-        if (!galley.alive) continue;
-        const spr = galleyDrawScale(scaleX, galley.isFlagship, true);
-        ctx.strokeStyle = `rgba(255, 213, 74, ${pulse})`;
-        ctx.lineWidth = 2.5;
+      for (let i = 0; i < this.fleet.length; i++) {
+        const g = this.fleet[i];
+        if (!g.alive) continue;
+        const cx = g.x * scaleX;
+        const cy = g.y * scaleY;
+        const r = (11 + i * 1.5) * scaleX * 0.5;
+        ctx.strokeStyle = `rgba(255, 213, 74, ${0.45 * pulse})`;
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.arc(galley.x * scaleX, galley.y * scaleY, 28 * spr, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
       }
     } else {
       const n = MISSION_NUMBERS;
+      const cx = selected.x * scaleX;
+      const cy = selected.y * scaleY;
       const tx = n.stabiaeX * scaleX;
-      const ty = (this.elevationMap[n.stabiaeX] || (this.simHeight - 28)) * scaleY;
-      ctx.strokeStyle = 'rgba(255, 213, 74, 0.85)';
-      ctx.lineWidth = 2.2;
-      ctx.setLineDash([8, 6]);
+      const ty = (this.simHeight - 28) * scaleY;
+      ctx.strokeStyle = 'rgba(255, 213, 74, 0.45)';
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.moveTo(selected.x * scaleX, selected.y * scaleY);
+      ctx.moveTo(cx, cy);
       ctx.lineTo(tx, ty);
       ctx.stroke();
       ctx.setLineDash([]);
@@ -3520,28 +3530,26 @@ export class VesuviusEngine {
 
   renderMissionOverlay(ctx, w, h) {
     this.overlayButton = null;
-    if (this.mission.status === STATUS.PLAYING) return;
-
-    ctx.fillStyle = 'rgba(8, 8, 12, 0.55)';
-    ctx.fillRect(0, 0, w, h);
-
-    const boxW = Math.min(520, w - 80);
+    if (!this.mission || this.mission.status === STATUS.PLAYING) return;
+    const won = this.mission.status === STATUS.WON;
+    const boxW = Math.min(420, w * 0.72);
     const boxH = 168;
     const boxX = (w - boxW) / 2;
     const boxY = (h - boxH) / 2;
-    ctx.fillStyle = 'rgba(18, 16, 12, 0.94)';
-    ctx.strokeStyle = '#D4AF37';
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(8, 10, 16, 0.9)';
+    ctx.strokeStyle = won ? '#D4AF37' : '#E57373';
     ctx.lineWidth = 2;
     ctx.fillRect(boxX, boxY, boxW, boxH);
     ctx.strokeRect(boxX, boxY, boxW, boxH);
 
-    const won = this.mission.status === STATUS.WON;
-    let title = 'FORTES FORTUNA IUVAT';
-    let body = `The Classis Misenensis rescued ${Math.floor(this.mission.rescued)} citizens of Stabiae.`;
+    let title = 'STABIAE SERVED';
+    let body = `Rescued ${Math.floor(this.mission.rescued)} citizens. The fleet made port.`;
     if (!won) {
       if (this.mission.loseReason === LOSE_REASON.FLEET) {
-        title = 'CLASSIS PERIIT';
-        body = 'Fire and pumice took the galleys. The quota was unmet.';
+        title = 'CLASSIS AMISSA';
+        body = 'All rescue galleys were sunk by pyroclastic density currents.';
       } else if (this.mission.loseReason === LOSE_REASON.TOWN) {
         title = 'STABIAE DELETA';
         body = 'The villa and its people were buried before the fleet could save them.';
@@ -3575,12 +3583,14 @@ export class VesuviusEngine {
     ctx.font = 'bold 12px serif';
     ctx.fillText('Restart', w / 2, btnY + 21);
     ctx.textAlign = 'left';
+    ctx.restore();
     this.overlayButton = { x: btnX, y: btnY, w: btnW, h: btnH };
   }
 
   renderBrushCursor(ctx, w, h) {
     if (!this.mousePos) return;
     const gameplay = this.mission && this.mission.mode === MODE.GAMEPLAY && this.mission.status === STATUS.PLAYING;
+    if (gameplay && this.mission.tool !== TOOL.PAINT && this.mission.selectedShip == null) return;
     const selected = gameplay && this.mission.selectedShip != null;
     const scaleX = w / this.simWidth;
 
@@ -3625,15 +3635,22 @@ export class VesuviusEngine {
 
     if (this.mission && this.mission.mode === MODE.GAMEPLAY) {
       if (this.mission.status !== STATUS.PLAYING) {
-        this.reset();
+        const btn = this.overlayButton;
+        if (!btn || (pos.x >= btn.x && pos.x <= btn.x + btn.w && pos.y >= btn.y && pos.y <= btn.y + btn.h)) {
+          this.reset();
+        }
         this.isDrawing = false;
         return;
       }
 
       const { gx, gy } = this.toSim(pos);
       if (this.mission.tool === TOOL.BARRIER) {
-        this.placeBarrier(gx, gy);
+        const placed = this.placeBarrier(gx, gy);
         this.isDrawing = false;
+        if (!placed) {
+          this.mission.tool = TOOL.ORDER;
+          this.syncMissionHud();
+        }
         return;
       }
 
@@ -3664,6 +3681,12 @@ export class VesuviusEngine {
 
       if (this.mission.selectedShip != null) {
         this.orderSelectedShip(gx);
+        this.isDrawing = false;
+        return;
+      }
+
+      // Mission gameplay with ORDER tool: missed click is a no-op — do not paint lava into the bay!
+      if (this.mission.tool === TOOL.ORDER) {
         this.isDrawing = false;
         return;
       }
@@ -3828,6 +3851,7 @@ export class VesuviusEngine {
     const mode = this.mission ? this.mission.mode : MODE.GAMEPLAY;
     this.mission = createMission(mode);
     this.barrierMask = new Uint8Array(this.simWidth);
+    this.ventedPressureRelief = 0;
     this.overlayButton = null;
     this.buildVolcanoTerrain();
     this.initFleet();

@@ -143,11 +143,10 @@ assert.equal(afterReset.rescued, 0);
 assert.equal(afterReset.vents, 3);
 assert.equal(afterReset.shipsIdle, true);
 
-console.log('4. Win overlay with Restart (71/50 stale-quota case)');
+console.log('4. Win overlay with Restart');
 await page.evaluate(() => {
   const e = window.__hub.currentEngine;
-  e.mission.quota = 90;
-  e.mission.rescued = 71;
+  e.mission.rescued = e.mission.quota;
   e.update(0.016);
   e.render(e.ctx);
 });
@@ -156,7 +155,7 @@ const overlay = await page.evaluate(() => {
   return { status: e.mission.status, quota: e.mission.quota, hasButton: !!e.overlayButton };
 });
 assert.equal(overlay.status, 'won');
-assert.equal(overlay.quota, 50);
+assert.equal(overlay.quota, 70);
 assert.equal(overlay.hasButton, true);
 await page.screenshot({ path: path.join(OUT, '03_win_overlay.png') });
 console.log('   captured 03_win_overlay.png');

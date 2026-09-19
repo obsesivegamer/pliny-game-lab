@@ -332,6 +332,7 @@ async function runSuite() {
         assert.match(engine.mission.objective, /Stabiae/);
         canvas.engineKey = key;
         canvas.getBoundingClientRect = () => ({ left: 20, top: 30, width: 400, height: 300 });
+        engine.setPlayMode(mod.MODE.SANDBOX);
         engine.grid.fill(mod.ELEMENT.EMPTY);
         engine.selectedElement = mod.ELEMENT.WATER;
         const finger = makeTouch(canvas, engine, TOUCH_ENGINES[key]);

@@ -4,11 +4,11 @@
     "entities": 27718
   },
   "liveUltraPlinian": {
-    "entities": 15511,
-    "ca": 14751,
+    "entities": 15501,
+    "ca": 14752,
     "plume": 720,
     "bayAsh": 0,
-    "kinematic": 760,
-    "hudEntities": "14756"
+    "kinematic": 749,
+    "hudEntities": "14754"
   }
 }

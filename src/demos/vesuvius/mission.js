@@ -39,14 +39,9 @@ export const TOOL = {
 };
 
 export const OBJECTIVE =
-  'Rescue 50 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.';
+  'Rescue 70 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.';
 
 export const READABILITY = {
-  galleySimLengthFlagship: 16,
-  galleySimLength: 13,
-  galleyDesignedFlagship: 48,
-  galleyDesigned: 38,
-  galleyScaleFloor: 0.34,
   galleyHitRadius: 18,
   galleyHomeOffset: [28, 40, 52],
   plumeCap: 720,
@@ -59,9 +54,11 @@ export const READABILITY = {
   bayView: { x: 174, y: 76, w: 106, h: 104 }
 };
 
+export const GALLEY_SPRITE_SCALE = 1.25;
+
 export function galleyDrawScale(scaleX, isFlagship, gameplay) {
-  if (!gameplay) return 1;
-  return 1.25;
+  const isGame = typeof scaleX === 'boolean' ? scaleX : Boolean(gameplay);
+  return isGame ? GALLEY_SPRITE_SCALE : 1;
 }
 
 export function missionWorldView(mode, simWidth, simHeight) {
@@ -90,11 +87,11 @@ export function missionCoachCopy(hasShip) {
 }
 
 export const MISSION_NUMBERS = {
-  rescueQuota: 50,
+  rescueQuota: 70,
   startingCivilians: 160,
   ventCharges: 3,
   barrierCharges: 4,
-  shipCapacity: 36,
+  shipCapacity: 20,
   pickupRate: 7.5,
   offloadRate: 14,
   pdcCivilianKillRate: 22,
@@ -169,10 +166,14 @@ export function trySpendBarrier(mission) {
     return { ok: false, reason: 'inactive' };
   }
   if (mission.barrierCharges <= 0) {
+    mission.tool = TOOL.ORDER;
     return { ok: false, reason: 'no-charges' };
   }
   mission.barrierCharges -= 1;
-  return { ok: true };
+  if (mission.barrierCharges === 0) {
+    mission.tool = TOOL.ORDER;
+  }
+  return { ok: true, remaining: mission.barrierCharges };
 }
 
 export function pdcHitsX(pdcs, x, radius) {
@@ -209,9 +210,8 @@ export function applyWorldHazards(mission, world, dt) {
 export function resolveMission(mission, world) {
   if (mission.mode !== MODE.GAMEPLAY || mission.status !== STATUS.PLAYING) return mission;
 
-  // HUD and win check share this constant so a stale mission.quota cannot desync.
-  mission.quota = MISSION_NUMBERS.rescueQuota;
-  if (mission.rescued >= mission.quota) {
+  const quota = mission.quota ?? missionQuota();
+  if (mission.rescued >= quota) {
     mission.status = STATUS.WON;
     mission.loseReason = null;
     return mission;
