@@ -6,7 +6,8 @@
 - Browser QA needs `npm ci` and Puppeteer's browser installation. The locked Puppeteer version requires Node >=22.12.0. Running the app itself needs no npm install.
 - Headless checks need no HTTP server: `node tests/verify-engines.js` and `node tests/visual-qa.js`. The latter instruments mocked Canvas calls; it is not a real-browser visual test. Neither runner accepts an engine-filter argument.
 - With the server running, `./scripts/verify-all.sh` checks HTTP, syntax-checks selected modules, runs the Vesuvius gameplay smoke (`tests/vesuvius-gameplay.js`), then runs `verify-engines.js`. It appends `.audit/verification.log`; it does not run the other QA suites. Syntax-check changed JavaScript separately with `node --check <file>`.
-- Run browser suites separately against their hardcoded `http://localhost:8000`: `node tests/showcase-qa.js`, `node tests/codex-qa.js`, `node tests/audio-qa.js`, `node tests/vesuvius-browser-smoke.js`, and `node tests/browser-qa.js`. The last visits all 50 engines with a 2.5-second wait per engine.
+- Run browser suites separately against their hardcoded `http://localhost:8000`: `node tests/showcase-qa.js`, `node tests/codex-qa.js`, `node tests/audio-qa.js`, `node tests/vesuvius-browser-smoke.js`, `node tests/panel-toggle-qa.js`, `node tests/mobile-layout-qa.js`, and `node tests/browser-qa.js`. The last visits all 50 engines with a 2.5-second wait per engine.
+- `mobile-layout-qa.js` guards the viewport contract at four sizes: the canvas backing store matches its CSS box, the mission world is not aspect-stretched, and the mobile controls sheet does not cover the canvas. It asserts against Vesuvius because its playfield sits in the bottom rows of the world, which is where the sheet lands.
 
 ## Test results need inspection
 

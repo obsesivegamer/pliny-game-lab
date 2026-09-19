@@ -560,6 +560,66 @@ test('on-canvas coach names the next click: galley, then Stabiae', () => {
   engine.destroy();
 });
 
+test('mission camera matches the canvas aspect instead of stretching the bay', () => {
+  const n = MISSION_NUMBERS;
+  const holdsBothMarks = (v) => n.offloadX > v.x && n.stabiaeX < v.x + v.w;
+  // 0.46 is a 390x844 phone; 1.78 a desktop frame; 0.86 the phone once the
+  // controls sheet takes its 40%.
+  for (const aspect of [0.46, 0.58, 0.86, 1.33, 1.78, 2.4]) {
+    const v = missionWorldView(MODE.GAMEPLAY, 280, 180, aspect);
+    assert.ok(Math.abs(v.w / v.h - aspect) < 0.01, `aspect ${aspect}: crop is ${(v.w / v.h).toFixed(2)}`);
+    assert.ok(v.x >= 0 && v.y >= 0 && v.x + v.w <= 280.001 && v.y + v.h <= 180.001, `aspect ${aspect}: crop leaves the sim`);
+    assert.ok(holdsBothMarks(v), `aspect ${aspect}: crop drops a landing mark`);
+  }
+  // No aspect given keeps the tuned rectangle, and sandbox still sees it all.
+  assert.deepEqual(missionWorldView(MODE.GAMEPLAY, 280, 180), READABILITY.bayView);
+  assert.deepEqual(missionWorldView(MODE.SANDBOX, 280, 180, 0.46), { x: 0, y: 0, w: 280, h: 180 });
+});
+
+test('a tall canvas keeps the world square: one sim cell is as wide as it is high', () => {
+  const { engine, canvas } = makeEngine();
+  canvas.width = 390;
+  canvas.height = 900;
+  engine.resize(390, 900, 1);
+  const v = engine.worldView();
+  const stretch = (390 / v.w) / (900 / v.h);
+  assert.ok(Math.abs(stretch - 1) < 0.02, `portrait canvas stretches the bay ${stretch.toFixed(2)}:1`);
+  const a = engine.toCanvas(200, 100);
+  const b = engine.toCanvas(210, 110);
+  assert.ok(Math.abs((b.x - a.x) - (b.y - a.y)) < 0.5, 'ten cells across must cover the same pixels as ten cells down');
+  engine.destroy();
+});
+
+test('HUD chrome is drawn in CSS pixels, so a 3x screen keeps it legible', () => {
+  const { engine, canvas, ctx } = makeEngine();
+  assert.equal(engine.uiScale(), 1, 'a 1x canvas must not rescale the HUD');
+
+  canvas.width = 1170;
+  canvas.height = 1353;
+  engine.resize(1170, 1353, 3);
+  assert.equal(engine.uiScale(), 3, 'uiScale must follow the device pixel ratio');
+
+  // The overlay is laid out in CSS px but hit-tested against backing-px mouse
+  // coordinates, so the stored rect has to come back scaled.
+  engine.mission.rescued = engine.mission.quota;
+  engine.update(0.016);
+  engine.render(ctx);
+  const btn = engine.overlayButton;
+  assert.ok(btn, 'victory overlay must expose its restart button');
+  assert.ok(btn.x + btn.w <= canvas.width && btn.y + btn.h <= canvas.height, 'button rect must stay on the canvas');
+  engine.onMouseDown({ x: btn.x + btn.w / 2, y: btn.y + btn.h / 2 });
+  assert.equal(engine.mission.status, STATUS.PLAYING, 'restart must be clickable at dpr 3');
+
+  // A click where the unscaled rect would have been must not restart.
+  engine.mission.rescued = engine.mission.quota;
+  engine.update(0.016);
+  engine.render(ctx);
+  const stale = engine.overlayButton;
+  engine.onMouseDown({ x: stale.x / 3, y: stale.y / 3 });
+  assert.equal(engine.mission.status, STATUS.WON, 'CSS-pixel coordinates must not be treated as backing pixels');
+  engine.destroy();
+});
+
 test('mission camera frames Stabiae and OFFLOAD as distinct bay targets', () => {
   const { engine } = makeEngine();
   const v = engine.worldView();

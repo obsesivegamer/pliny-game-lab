@@ -60,12 +60,30 @@ export function galleyDrawScale(isGameplay) {
   return isGameplay ? GALLEY_SPRITE_SCALE : 1;
 }
 
-export function missionWorldView(mode, simWidth, simHeight) {
-  if (mode === MODE.GAMEPLAY) {
-    const v = READABILITY.bayView;
-    return { x: v.x, y: v.y, w: v.w, h: v.h };
+/**
+ * Mission camera. `canvasAspect` (width / height) keeps the crop the same shape
+ * as the canvas, so the bay is never stretched: a wide frame trims sky off the
+ * top, a tall frame gives the sky back. Only when the sim runs out of rows does
+ * the crop narrow, and it stays centred on the bay so both landing marks hold.
+ * Pass 0 to get the untouched `bayView`.
+ */
+export function missionWorldView(mode, simWidth, simHeight, canvasAspect = 0) {
+  if (mode !== MODE.GAMEPLAY) {
+    return { x: 0, y: 0, w: simWidth, h: simHeight };
   }
-  return { x: 0, y: 0, w: simWidth, h: simHeight };
+  const v = READABILITY.bayView;
+  if (!(canvasAspect > 0)) return { x: v.x, y: v.y, w: v.w, h: v.h };
+
+  const wantH = v.w / canvasAspect;
+  if (wantH <= simHeight) {
+    const h = wantH;
+    return { x: v.x, y: Math.max(0, v.y + v.h - h), w: v.w, h };
+  }
+  const h = simHeight;
+  const w = Math.min(simWidth, h * canvasAspect);
+  const centre = v.x + v.w / 2;
+  const x = Math.max(0, Math.min(simWidth - w, centre - w / 2));
+  return { x, y: 0, w, h };
 }
 
 export function missionQuota() {

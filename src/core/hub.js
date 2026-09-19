@@ -560,6 +560,7 @@ class PlinyHub {
     this.demoTitle = document.getElementById("demo-title");
     this.demoDesc = document.getElementById("demo-desc");
     this.hintOverlay = document.getElementById("hint-overlay");
+    this.hintInline = document.getElementById("hint-inline");
     this.fpsVal = document.getElementById("fps-val");
     this.entityVal = document.getElementById("entity-val");
     this.gameNumVal = document.getElementById("game-num-val");
@@ -630,6 +631,14 @@ class PlinyHub {
     this.handleResize();
     if (typeof window !== "undefined") {
       window.addEventListener("resize", () => this.handleResize());
+      // The mobile sheet is in flow, so the canvas box also changes when an
+      // engine injects its controls or the sheet collapses — neither fires a
+      // window resize. Without this the backing store keeps a stale shape and
+      // the browser stretches the bitmap into the new box.
+      if (typeof ResizeObserver !== "undefined" && this.canvas) {
+        this.canvasObserver = new ResizeObserver(() => this.handleResize());
+        this.canvasObserver.observe(this.canvas);
+      }
     }
 
     // Selector events
@@ -704,6 +713,10 @@ class PlinyHub {
         this.togglePanelBtn.textContent = collapsed ? "+" : "−";
         this.togglePanelBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
         this.togglePanelBtn.setAttribute("aria-label", collapsed ? "Expand controls" : "Collapse controls");
+        // The mobile sheet is in flow, so collapsing hands its height back to
+        // the canvas. Resize once now and once the slide finishes.
+        this.handleResize();
+        setTimeout(() => this.handleResize(), 280);
       });
     }
 
@@ -1300,13 +1313,15 @@ class PlinyHub {
   handleResize() {
     const container = document.getElementById("viewport-container");
     if (!container) return;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    // Measure the canvas box itself, not the container. On mobile the controls
+    // panel is a bottom sheet in normal flow, so the canvas is shorter than the
+    // container; sizing from the container drew the engine behind the panel.
+    const rect = this.canvas.getBoundingClientRect();
+    const width = Math.round(rect.width) || container.clientWidth;
+    const height = Math.round(rect.height) || container.clientHeight;
     const dpr = window.devicePixelRatio || 1;
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;
-    this.canvas.style.width = width + "px";
-    this.canvas.style.height = height + "px";
 
     if (this.currentEngine && this.currentEngine.resize) {
       this.currentEngine.resize(this.canvas.width, this.canvas.height, dpr);
@@ -1339,6 +1354,9 @@ class PlinyHub {
     if (this.demoTitle) this.demoTitle.textContent = info.name;
     if (this.demoDesc) this.demoDesc.textContent = info.desc;
     if (this.hintOverlay) this.hintOverlay.textContent = info.hint;
+    // Same text inside the sheet, where mobile reads it — the floating toast is
+    // hidden there because it sits on top of the playfield.
+    if (this.hintInline) this.hintInline.textContent = info.hint;
 
     // Reset controls container
     if (this.controlsContainer) this.controlsContainer.innerHTML = "";

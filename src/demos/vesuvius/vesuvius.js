@@ -2206,7 +2206,10 @@ export class VesuviusEngine {
   }
 
   worldView() {
-    return missionWorldView(this.mission && this.mission.mode, this.simWidth, this.simHeight);
+    const cw = this.canvas ? this.canvas.width : this.width;
+    const ch = this.canvas ? this.canvas.height : this.height;
+    const aspect = cw > 0 && ch > 0 ? cw / ch : 0;
+    return missionWorldView(this.mission && this.mission.mode, this.simWidth, this.simHeight, aspect);
   }
 
   applyWorldCamera(ctx, w, h) {
@@ -3036,7 +3039,12 @@ export class VesuviusEngine {
     if (this.showHUD) {
       this.renderHUD(ctx, w, h);
     } else if (this.mission && this.mission.mode === MODE.GAMEPLAY && this.mission.status !== STATUS.PLAYING) {
-      this.renderMissionOverlay(ctx, w, h);
+      // renderHUD supplies the CSS-pixel transform on the other path.
+      const uiScale = this.uiScale();
+      ctx.save();
+      ctx.scale(uiScale, uiScale);
+      this.renderMissionOverlay(ctx, w / uiScale, h / uiScale);
+      ctx.restore();
     }
 
     if (gameplay) this.renderMissionCoachBanner(ctx, w, h);
@@ -3273,7 +3281,7 @@ export class VesuviusEngine {
         ctx.save();
         ctx.fillStyle = galley.selected ? '#FFD54A' : '#F5E6C8';
         ctx.strokeStyle = 'rgba(10, 14, 22, 0.75)';
-        const labelZoom = gameplay ? (this.simWidth / READABILITY.bayView.w) : 1;
+        const labelZoom = gameplay ? (this.simWidth / this.worldView().w) : 1;
         const fontPx = Math.max(8, Math.round((2.4 * scaleX) / labelZoom));
         ctx.font = `bold ${fontPx}px serif`;
         ctx.lineWidth = Math.max(1, 2 / labelZoom);
@@ -3349,10 +3357,20 @@ export class VesuviusEngine {
     const gameplayHud = this.mission && this.mission.mode === MODE.GAMEPLAY;
 
     ctx.save();
+    // Draw the HUD in CSS pixels. Every size below is a fixed pixel count, so
+    // on a 3x phone an 11px title used to land at 3.7 CSS px — unreadable.
+    const uiScale = this.uiScale();
+    ctx.scale(uiScale, uiScale);
+    w /= uiScale;
+    h /= uiScale;
+
+    // A phone canvas is ~390 CSS px wide: the title and the right-hand
+    // telemetry collide long before that, so drop to the short forms.
+    const narrow = w < 560;
 
     // 1. Top Bar: Title & Eruption Status
     ctx.fillStyle = 'rgba(10, 14, 22, 0.85)';
-    const barH = gameplayHud ? 56 : 40;
+    const barH = gameplayHud ? (narrow ? 46 : 56) : 40;
     ctx.fillRect(12, 10, w - 24, barH);
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 1;
@@ -3360,31 +3378,45 @@ export class VesuviusEngine {
 
     ctx.fillStyle = '#D4AF37';
     ctx.font = 'bold 11px serif';
-    ctx.fillText(gameplayHud ? 'EVACUATE STABIAE — CLASSIS MISENENSIS, AD 79' : 'MONS VESUVIUS AD 79 — PLINIAN VOLCANOLOGY SIMULATOR', 22, 26);
+    let title;
+    if (gameplayHud) {
+      title = narrow ? 'EVACUATE STABIAE' : 'EVACUATE STABIAE — CLASSIS MISENENSIS, AD 79';
+    } else {
+      title = narrow ? 'MONS VESUVIUS AD 79' : 'MONS VESUVIUS AD 79 — PLINIAN VOLCANOLOGY SIMULATOR';
+    }
+    ctx.fillText(title, 22, 26);
 
     ctx.fillStyle = '#E5DAC4';
     ctx.font = '9px monospace';
     if (gameplayHud) {
-      ctx.fillText(this.mission.objective, 22, 40);
       const threat = threatMeter(this.mission, this.currentPhase, pdcHitsX(this.pdcs, MISSION_NUMBERS.stabiaeX, MISSION_NUMBERS.pdcTownRadius));
+      if (!narrow) ctx.fillText(this.mission.objective, 22, 40);
       ctx.fillStyle = '#72D572';
-      ctx.fillText(`RESCUED ${Math.floor(this.mission.rescued)} / ${this.mission.quota} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}%`, 22, 54);
+      const progress = `RESCUED ${Math.floor(this.mission.rescued)} / ${this.mission.quota} CITIZENS · STABIAE ${Math.ceil(this.mission.civiliansAtStabiae)} · THREAT ${Math.round(threat * 100)}%`;
+      ctx.fillText(progress, 22, narrow ? 42 : 54);
     } else {
       ctx.fillText(`PHASE ${this.currentPhase}: ${config.name.toUpperCase()} (${config.latin})`, 22, 40);
     }
 
-    // Top Bar Right: VEI & Plume Telemetry
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#FFB300';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText(`VEI INDEX: ${this.vei} / 8`, w - 24, 26);
-    ctx.fillStyle = '#A0AEC0';
-    ctx.font = '9px monospace';
-    ctx.fillText(`PLUME: ${this.plumeHeightKm.toFixed(1)} KM | MASS: ${(this.massEruptionRate / 1e6).toFixed(1)} MT/S`, w - 24, 40);
-    ctx.textAlign = 'left';
+    // Top Bar Right: VEI & Plume Telemetry. No room for a second column on a
+    // phone — the progress line is what the mission is actually scored on.
+    if (!narrow) {
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#FFB300';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText(`VEI INDEX: ${this.vei} / 8`, w - 24, 26);
+      ctx.fillStyle = '#A0AEC0';
+      ctx.font = '9px monospace';
+      ctx.fillText(`PLUME: ${this.plumeHeightKm.toFixed(1)} KM | MASS: ${(this.massEruptionRate / 1e6).toFixed(1)} MT/S`, w - 24, 40);
+      ctx.textAlign = 'left';
+    }
 
-    // 2. Seismograph Graph Widget (Bottom-Left)
-    this.seismograph.render(ctx, 12, h - 85, 175, 68);
+    // 2. Seismograph Graph Widget (Bottom-Left). The bay sits in the bottom
+    // rows of the world, so on a phone this 175px box lands on the fleet and
+    // the Misenum quay while eating half the width.
+    if (!narrow) {
+      this.seismograph.render(ctx, 12, h - 85, 175, 68);
+    }
 
     // 3. Eyewitness Latin Scroll — sandbox only. In mission mode it covered the bay fleet.
     if (!gameplayHud) {
@@ -3426,7 +3458,7 @@ export class VesuviusEngine {
     const villaY = (this.elevationMap[n.stabiaeX] || (this.simHeight - 28)) * scaleY;
     const selected = this.mission.selectedShip != null ? this.fleet[this.mission.selectedShip] : null;
     const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
-    const zoom = this.simWidth / READABILITY.bayView.w;
+    const zoom = this.simWidth / this.worldView().w;
 
     ctx.save();
     // Rings are in sim cells; the bay camera already zooms them. Keep them
@@ -3469,13 +3501,18 @@ export class VesuviusEngine {
     const hasShip = !!(selected && selected.alive);
     const { prompt, sub } = missionCoachCopy(hasShip);
 
+    ctx.save();
+    const uiScale = this.uiScale();
+    ctx.scale(uiScale, uiScale);
+    w /= uiScale;
+    h /= uiScale;
+
     const font = Math.max(18, Math.round(w * 0.02));
     const boxW = Math.min(w - 40, Math.max(360, w * 0.62));
     const boxH = font * 2.55;
     const boxX = (w - boxW) / 2;
     const boxY = 74;
 
-    ctx.save();
     ctx.fillStyle = 'rgba(12, 10, 8, 0.82)';
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 1.5;
@@ -3588,7 +3625,9 @@ export class VesuviusEngine {
     ctx.fillText('Restart', w / 2, btnY + 21);
     ctx.textAlign = 'left';
     ctx.restore();
-    this.overlayButton = { x: btnX, y: btnY, w: btnW, h: btnH };
+    // Callers draw this in CSS pixels; onMouseDown hit-tests in backing pixels.
+    const s = this.uiScale();
+    this.overlayButton = { x: btnX * s, y: btnY * s, w: btnW * s, h: btnH * s };
   }
 
   renderBrushCursor(ctx, w, h) {
@@ -3850,6 +3889,15 @@ export class VesuviusEngine {
     this.width = width;
     this.height = height;
     this.dpr = dpr;
+  }
+
+  /**
+   * Backing-store pixels per CSS pixel. Screen-space chrome (HUD, coach banner,
+   * result overlay) is drawn through this so its fixed pixel sizes stay the
+   * same physical size on a high-density display.
+   */
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
   }
 
   reset() {

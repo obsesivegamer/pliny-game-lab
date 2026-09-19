@@ -134,8 +134,13 @@
 
     <!-- Main Viewport (Simulator View) -->
     <main id="viewport-container" class="view-hidden">
-      <canvas id="main-canvas"></canvas>
-      
+      <div id="canvas-stage">
+        <canvas id="main-canvas"></canvas>
+
+        <!-- Message / Help Toast -->
+        <div id="hint-overlay">Click and drag to interact</div>
+      </div>
+
       <!-- Interactive Floating Sidebar -->
       <aside id="controls-panel">
         <div class="panel-header">
@@ -146,15 +151,13 @@
           <button id="toggle-panel" aria-label="Collapse controls" aria-expanded="true" aria-controls="dynamic-controls">−</button>
         </div>
         <p id="demo-desc" class="demo-description">Thermodynamic falling-sand & volcanic eruption simulation.</p>
+        <p id="hint-inline" class="demo-hint"></p>
         <div id="dynamic-controls"></div>
         <div class="panel-footer">
           <button id="reset-btn" class="action-btn">Reset</button>
           <button id="pause-btn" class="action-btn">Pause</button>
         </div>
       </aside>
-
-      <!-- Message / Help Toast -->
-      <div id="hint-overlay">Click and drag to interact</div>
     </main>
     
     <!-- Plinius Codex Slide-out Drawer -->
