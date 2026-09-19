@@ -135,7 +135,31 @@ async function runBrowserQA() {
         }
       }, key);
 
-      // Wait for engine to load and render several frames
+      await page.waitForFunction((engineKey) => {
+        const hub = window.__hub;
+        const EngineClass = hub?.engineCache[engineKey];
+        const canvas = document.getElementById('main-canvas');
+        return typeof EngineClass === 'function'
+          && hub.activeKey === engineKey
+          && hub.currentEngine instanceof EngineClass
+          && hub.currentView === 'simulator'
+          && canvas?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+          && canvas.getBoundingClientRect().width > 0
+          && canvas.getBoundingClientRect().height > 0;
+      }, { timeout: 15000 }, key);
+
+      await page.evaluate(() => {
+        const engine = window.__hub.currentEngine;
+        const render = engine.render;
+        window.__qaRenderedFrames = 0;
+        engine.render = function (...args) {
+          const result = render.apply(this, args);
+          window.__qaRenderedFrames++;
+          if (window.__qaRenderedFrames >= 3) this.render = render;
+          return result;
+        };
+      });
+      await page.waitForFunction(() => window.__qaRenderedFrames >= 3, { timeout: 5000 });
       await new Promise(r => setTimeout(r, SETTLE_MS));
 
       // Get telemetry data
