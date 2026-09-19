@@ -248,7 +248,22 @@ html, body {
   background: #050608;
 }
 
+/* Holds the canvas and the hint toast, so the toast stays over the playfield
+   once the mobile controls sheet takes the bottom of the viewport. */
+#canvas-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Absolute inside the stage so the box resolves against the stage's used size.
+   A percentage height against an auto-height flex item falls back to the
+   canvas's own backing size, which feeds back into the layout and leaves the
+   bitmap a different shape from its box — the browser then re-stretches it. */
 #main-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -421,6 +436,11 @@ html, body {
 }
 
 /* Toast */
+/* Only the mobile sheet shows this; the toast covers the playfield there. */
+.demo-hint {
+  display: none;
+}
+
 #hint-overlay {
   position: absolute;
   bottom: 20px;
@@ -1067,13 +1087,39 @@ html, body {
   }
   #viewport-container {
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* The sheet sits below the canvas in normal flow instead of floating over
+     it. Engines that put their playfield near the bottom of the world (the
+     Vesuvius bay, its fleet and both landing rings) were drawn underneath it. */
+  #canvas-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+  }
+  /* The bay and its fleet sit in the bottom rows of the canvas, exactly where
+     a bottom-centred toast lands. Show the same hint inside the sheet. */
+  #hint-overlay {
+    display: none;
+  }
+  .demo-hint {
+    display: block;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: var(--text-muted);
   }
   #controls-panel {
+    position: static;
     top: auto;
     right: 0;
     bottom: 0;
     width: 100%;
     max-height: 40%;
+    flex: 0 0 auto;
     padding: 8px 12px;
     border-radius: 12px 12px 0 0;
     overscroll-behavior: contain;
