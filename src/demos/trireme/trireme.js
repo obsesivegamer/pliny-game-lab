@@ -2023,8 +2023,8 @@ export class TriremeEngine {
       ctx.fillStyle = '#E0FAFF';
       ctx.fillText(`SPEED:   ${speedKnots} kn`, 24, 49);
       ctx.fillText(`CADENCE: ${this.cadence} SPM`, 24, 65);
-      const rudderText = this.rudderAngle > 0.05 ? 'PORT' : (this.rudderAngle < -0.05 ? 'STBD' : 'AHEAD');
-      ctx.fillText(`RUDDER:  ${rudderText}`, 24, 81);
+      const rudderDir = this.rudderAngle < 0 ? 'Port' : (this.rudderAngle > 0 ? 'Stbd' : 'Center');
+      ctx.fillText(`RUDDER:  ${Math.abs(this.rudderAngle).toFixed(0)}° ${rudderDir}`, 24, 81);
     } else {
       ctx.font = '11px monospace';
       ctx.fillStyle = '#FF4444';

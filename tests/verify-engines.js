@@ -92,6 +92,9 @@ class MockContext {
     this.textBaseline = 'top';
     this.imageSmoothingEnabled = false;
     this.globalAlpha = 1;
+    this._m = [1, 1];
+    this._stack = [];
+    this._scaled = false;
   }
   beginPath() {}
   closePath() {}
@@ -103,11 +106,23 @@ class MockContext {
   strokeRect() {}
   stroke() {}
   fill() {}
-  save() {}
-  restore() {}
+  save() {
+    this._stack.push([...this._m]);
+  }
+  restore() {
+    if (this._stack.length > 0) {
+      this._m = this._stack.pop();
+    }
+  }
   translate() {}
   rotate() {}
-  scale() {}
+  scale(x, y = x) {
+    this._m[0] *= x;
+    this._m[1] *= y;
+    if (x !== 1 || y !== 1) {
+      this._scaled = true;
+    }
+  }
   fillText() {}
   strokeText() {}
   createImageData(w, h) {
@@ -378,6 +393,15 @@ async function runSuite() {
       if (engine.resize) {
         engine.resize(2400, 1800, 3);
         assert.equal(engine.uiScale(), 3, `${key}: uiScale() must return 3 when resized with dpr=3`);
+        if (key === 'eratosthenes') engine.mode = 'sieve';
+        if (key === 'silva') engine.inspectingRings = true;
+        ctx._scaled = false;
+        if (engine.render) engine.render(ctx);
+        assert.equal(ctx._scaled, true, `${key}: render() must apply uiScale() via ctx.scale() at dpr=3`);
+        assert.equal(ctx._stack.length, 0, `${key}: transform stack depth must return to 0 after render()`);
+        assert.deepEqual(ctx._m, [1, 1], `${key}: residual transform scale must return to [1, 1] after render()`);
+        if (key === 'eratosthenes') engine.mode = 'circumference';
+        if (key === 'silva') engine.inspectingRings = false;
         engine.resize(800, 600, 1);
         assert.equal(engine.uiScale(), 1, `${key}: uiScale() must return 1 after restoring dpr=1`);
       }

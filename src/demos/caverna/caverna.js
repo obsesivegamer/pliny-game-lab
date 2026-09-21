@@ -1039,11 +1039,11 @@ export class CavernaEngine {
     ctx.font = `${narrow ? 9 : 10}px "JetBrains Mono", monospace`;
     ctx.fillText(`PRESET: ${this.currentPreset.toUpperCase()}`, 24, narrow ? 48 : 50);
 
-    const pillars = this.speleothems.filter(s => s.type === 'column' || s.isPillar).length;
+    const pillars = this.speleothems.filter(s => s.type === 'pillar').length;
     const stalactites = this.speleothems.filter(s => s.type === 'stalactite').length;
     const stalagmites = this.speleothems.filter(s => s.type === 'stalagmite').length;
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText(narrow ? `COL: ${pillars} | TITE: ${stalactites} | MITE: ${stalagmites}` : `PILLARS: ${pillars} | STALACTITES: ${stalactites} | STALAGMITES: ${stalagmites}`, 24, narrow ? 62 : 68);
+    ctx.fillText(narrow ? `PIL: ${pillars} | TITE: ${stalactites} | MITE: ${stalagmites}` : `PILLARS: ${pillars} | STALACTITES: ${stalactites} | STALAGMITES: ${stalagmites}`, 24, narrow ? 62 : 68);
 
     ctx.restore();
   }

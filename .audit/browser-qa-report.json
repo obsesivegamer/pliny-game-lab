@@ -3,111 +3,111 @@
     "key": "vesuvius",
     "title": "Vesuvius (Volcanology Sim)",
     "fps": "60",
-    "entities": "14755",
+    "entities": "14754",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/01_vesuvius.png"
+    "screenshot": ".audit/screenshots_mobile/01_vesuvius.png"
   },
   {
     "key": "geyser",
     "title": "Geyser (Hydrothermal Vent)",
     "fps": "60",
-    "entities": "297",
+    "entities": "82",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/02_geyser.png"
+    "screenshot": ".audit/screenshots_mobile/02_geyser.png"
   },
   {
     "key": "caverna",
     "title": "Caverna (Karst & Speleothems)",
     "fps": "60",
-    "entities": "328",
+    "entities": "318",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/03_caverna.png"
+    "screenshot": ".audit/screenshots_mobile/03_caverna.png"
   },
   {
     "key": "terrae_motus",
     "title": "Terrae Motus (Seismic Dynamics)",
     "fps": "60",
-    "entities": "4283",
+    "entities": "4220",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/04_terrae_motus.png"
+    "screenshot": ".audit/screenshots_mobile/04_terrae_motus.png"
   },
   {
     "key": "aurum",
     "title": "Aurum (Alluvial Gold Sluice)",
     "fps": "60",
-    "entities": "386",
+    "entities": "393",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/05_aurum.png"
+    "screenshot": ".audit/screenshots_mobile/05_aurum.png"
   },
   {
     "key": "bestiarium",
     "title": "Bestiarium (ALife Ecosystem)",
     "fps": "60",
-    "entities": "197",
+    "entities": "192",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/06_bestiarium.png"
+    "screenshot": ".audit/screenshots_mobile/06_bestiarium.png"
   },
   {
     "key": "myrmex",
     "title": "Myrmex (Ant Colony Optimization)",
     "fps": "60",
-    "entities": "291",
+    "entities": "292",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/07_myrmex.png"
+    "screenshot": ".audit/screenshots_mobile/07_myrmex.png"
   },
   {
     "key": "apis",
     "title": "Apis (Beehive & Waggle Dance)",
     "fps": "60",
-    "entities": "420",
+    "entities": "652",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/08_apis.png"
+    "screenshot": ".audit/screenshots_mobile/08_apis.png"
   },
   {
     "key": "hydra",
     "title": "Hydra (Soft-Body Bioluminescence)",
     "fps": "60",
-    "entities": "378",
+    "entities": "335",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/09_hydra.png"
+    "screenshot": ".audit/screenshots_mobile/09_hydra.png"
   },
   {
     "key": "silva",
     "title": "Silva (Space-Colonization Botany)",
     "fps": "60",
-    "entities": "1125",
+    "entities": "584",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/10_silva.png"
+    "screenshot": ".audit/screenshots_mobile/10_silva.png"
   },
   {
     "key": "mechanica",
@@ -118,7 +118,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/11_mechanica.png"
+    "screenshot": ".audit/screenshots_mobile/11_mechanica.png"
   },
   {
     "key": "aqueduct",
@@ -129,7 +129,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/12_aqueduct.png"
+    "screenshot": ".audit/screenshots_mobile/12_aqueduct.png"
   },
   {
     "key": "ballista",
@@ -140,18 +140,18 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/13_ballista.png"
+    "screenshot": ".audit/screenshots_mobile/13_ballista.png"
   },
   {
     "key": "horologium",
     "title": "Horologium (Vitruvian Water Clock)",
     "fps": "60",
-    "entities": "760",
+    "entities": "416",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/14_horologium.png"
+    "screenshot": ".audit/screenshots_mobile/14_horologium.png"
   },
   {
     "key": "antikythera",
@@ -162,18 +162,18 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/15_antikythera.png"
+    "screenshot": ".audit/screenshots_mobile/15_antikythera.png"
   },
   {
     "key": "cosmographia",
     "title": "Cosmographia (Celestial Spheres)",
     "fps": "60",
-    "entities": "1029",
+    "entities": "949",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/16_cosmographia.png"
+    "screenshot": ".audit/screenshots_mobile/16_cosmographia.png"
   },
   {
     "key": "solstitium",
@@ -184,29 +184,29 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/17_solstitium.png"
+    "screenshot": ".audit/screenshots_mobile/17_solstitium.png"
   },
   {
     "key": "aurora",
     "title": "Aurora (Geomagnetic Plasma Field)",
-    "fps": "41",
+    "fps": "25",
     "entities": "1274",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/18_aurora.png"
+    "screenshot": ".audit/screenshots_mobile/18_aurora.png"
   },
   {
     "key": "cometa",
     "title": "Cometa (Cometary Tail & Grav-Slingshot)",
     "fps": "60",
-    "entities": "620",
+    "entities": "232",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/19_cometa.png"
+    "screenshot": ".audit/screenshots_mobile/19_cometa.png"
   },
   {
     "key": "armilla",
@@ -217,29 +217,29 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/20_armilla.png"
+    "screenshot": ".audit/screenshots_mobile/20_armilla.png"
   },
   {
     "key": "labyrinthus",
     "title": "Labyrinthus (3D Catacomb Crawler)",
     "fps": "60",
-    "entities": "48",
+    "entities": "39",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/21_labyrinthus.png"
+    "screenshot": ".audit/screenshots_mobile/21_labyrinthus.png"
   },
   {
     "key": "colosseum",
     "title": "Colosseum (Gladiator Combat Sim)",
     "fps": "60",
-    "entities": "37",
+    "entities": "56",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/22_colosseum.png"
+    "screenshot": ".audit/screenshots_mobile/22_colosseum.png"
   },
   {
     "key": "trireme",
@@ -250,29 +250,29 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/23_trireme.png"
+    "screenshot": ".audit/screenshots_mobile/23_trireme.png"
   },
   {
     "key": "chariot",
     "title": "Chariot (Circus Maximus Grand Prix)",
     "fps": "60",
-    "entities": "504",
+    "entities": "465",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/24_chariot.png"
+    "screenshot": ".audit/screenshots_mobile/24_chariot.png"
   },
   {
     "key": "oraculum",
     "title": "Oraculum (Delphic Pythia Smoke Oracle)",
     "fps": "60",
-    "entities": "314",
+    "entities": "192",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/25_oraculum.png"
+    "screenshot": ".audit/screenshots_mobile/25_oraculum.png"
   },
   {
     "key": "euclid",
@@ -283,7 +283,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/26_euclid.png"
+    "screenshot": ".audit/screenshots_mobile/26_euclid.png"
   },
   {
     "key": "archimedes_spiral",
@@ -294,7 +294,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/27_archimedes_spiral.png"
+    "screenshot": ".audit/screenshots_mobile/27_archimedes_spiral.png"
   },
   {
     "key": "eratosthenes",
@@ -305,7 +305,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/28_eratosthenes.png"
+    "screenshot": ".audit/screenshots_mobile/28_eratosthenes.png"
   },
   {
     "key": "pythagoras",
@@ -316,18 +316,18 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/29_pythagoras.png"
+    "screenshot": ".audit/screenshots_mobile/29_pythagoras.png"
   },
   {
     "key": "fractal_roman",
     "title": "Fractal Roman (Mosaic & Voronoi Tessellation)",
-    "fps": "60",
-    "entities": "6185",
+    "fps": "50",
+    "entities": "6170",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/30_fractal_roman.png"
+    "screenshot": ".audit/screenshots_mobile/30_fractal_roman.png"
   },
   {
     "key": "scylla_charybdis",
@@ -338,7 +338,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/31_scylla_charybdis.png"
+    "screenshot": ".audit/screenshots_mobile/31_scylla_charybdis.png"
   },
   {
     "key": "mare_nostrum",
@@ -349,29 +349,29 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/32_mare_nostrum.png"
+    "screenshot": ".audit/screenshots_mobile/32_mare_nostrum.png"
   },
   {
     "key": "pharos",
     "title": "Pharos (Lighthouse Optics & Fog)",
-    "fps": "56",
+    "fps": "44",
     "entities": "1107",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/33_pharos.png"
+    "screenshot": ".audit/screenshots_mobile/33_pharos.png"
   },
   {
     "key": "coral_reef",
     "title": "Coral Reef (DLA Biomineralization)",
-    "fps": "60",
-    "entities": "455",
+    "fps": "56",
+    "entities": "436",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/34_coral_reef.png"
+    "screenshot": ".audit/screenshots_mobile/34_coral_reef.png"
   },
   {
     "key": "nautilus",
@@ -382,18 +382,18 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/35_nautilus.png"
+    "screenshot": ".audit/screenshots_mobile/35_nautilus.png"
   },
   {
     "key": "forum_builder",
     "title": "Forum Builder (Roman Town Planner)",
     "fps": "60",
-    "entities": "143",
+    "entities": "119",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/36_forum_builder.png"
+    "screenshot": ".audit/screenshots_mobile/36_forum_builder.png"
   },
   {
     "key": "arch_vault",
@@ -404,29 +404,29 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/37_arch_vault.png"
+    "screenshot": ".audit/screenshots_mobile/37_arch_vault.png"
   },
   {
     "key": "opus_caementicium",
     "title": "Opus Caementicium (Roman Concrete)",
     "fps": "60",
     "entities": "160",
-    "canvasFill": "99.1",
+    "canvasFill": "99.5",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/38_opus_caementicium.png"
+    "screenshot": ".audit/screenshots_mobile/38_opus_caementicium.png"
   },
   {
     "key": "thermae",
     "title": "Thermae (Hypocaust Thermal Diffusion)",
     "fps": "60",
-    "entities": "4030",
+    "entities": "3688",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/39_thermae.png"
+    "screenshot": ".audit/screenshots_mobile/39_thermae.png"
   },
   {
     "key": "pantheon",
@@ -437,7 +437,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/40_pantheon.png"
+    "screenshot": ".audit/screenshots_mobile/40_pantheon.png"
   },
   {
     "key": "vitrum",
@@ -448,73 +448,73 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/41_vitrum.png"
+    "screenshot": ".audit/screenshots_mobile/41_vitrum.png"
   },
   {
     "key": "metallum",
     "title": "Metallum (Bloomery Iron Smelter)",
     "fps": "60",
-    "entities": "171",
+    "entities": "165",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/42_metallum.png"
+    "screenshot": ".audit/screenshots_mobile/42_metallum.png"
   },
   {
     "key": "pigmentum",
     "title": "Pigmentum (Ancient Fresco Pigments)",
-    "fps": "43",
-    "entities": "2146",
+    "fps": "40",
+    "entities": "2955",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/43_pigmentum.png"
+    "screenshot": ".audit/screenshots_mobile/43_pigmentum.png"
   },
   {
     "key": "hermetica",
     "title": "Hermetica (Alembic Distillation)",
     "fps": "60",
-    "entities": "796",
+    "entities": "560",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/44_hermetica.png"
+    "screenshot": ".audit/screenshots_mobile/44_hermetica.png"
   },
   {
     "key": "electrum",
     "title": "Electrum (Amber Triboelectricity)",
     "fps": "60",
-    "entities": "452",
+    "entities": "489",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/45_electrum.png"
+    "screenshot": ".audit/screenshots_mobile/45_electrum.png"
   },
   {
     "key": "testudo",
     "title": "Testudo (Legionary Shield Wall)",
     "fps": "60",
-    "entities": "252",
+    "entities": "93",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/46_testudo.png"
+    "screenshot": ".audit/screenshots_mobile/46_testudo.png"
   },
   {
     "key": "siege_tower",
     "title": "Siege Tower (Helepolis Assault)",
     "fps": "60",
-    "entities": "54",
+    "entities": "28",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/47_siege_tower.png"
+    "screenshot": ".audit/screenshots_mobile/47_siege_tower.png"
   },
   {
     "key": "hoplite_phalanx",
@@ -525,7 +525,7 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/48_hoplite_phalanx.png"
+    "screenshot": ".audit/screenshots_mobile/48_hoplite_phalanx.png"
   },
   {
     "key": "scorpio",
@@ -536,17 +536,17 @@
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/49_scorpio.png"
+    "screenshot": ".audit/screenshots_mobile/49_scorpio.png"
   },
   {
     "key": "signal_fire",
     "title": "Signal Fire (Polybius Optical Telegraph)",
     "fps": "60",
-    "entities": "102",
+    "entities": "92",
     "canvasFill": "100.0",
     "errors": 0,
     "warnings": 0,
     "issues": [],
-    "screenshot": "/Users/jeremylichtman/Documents/antigravity/Pliny Game Dev/.audit/screenshots/50_signal_fire.png"
+    "screenshot": ".audit/screenshots_mobile/50_signal_fire.png"
   }
 ]

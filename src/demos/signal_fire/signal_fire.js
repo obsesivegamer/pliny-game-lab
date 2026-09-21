@@ -261,7 +261,7 @@ export class SignalFireEngine {
       const ui = this.uiScale();
       const sw = w / ui;
       const sh = h / ui;
-      this.hud.w = Math.min(220, sw * 0.32);
+      this.hud.w = Math.max(160, Math.min(220, sw * 0.32));
       this.hud.cellSize = Math.floor((this.hud.w - 32) / 5);
       this.hud.h = this.hud.cellSize * 5 + 38;
       this.hud.x = 22;
@@ -1468,7 +1468,8 @@ export class SignalFireEngine {
     ctx.fillStyle = '#ffd700';
     ctx.font = 'bold 10px "JetBrains Mono", serif';
     ctx.textAlign = 'left';
-    ctx.fillText('POLYBII TELEGRAPHUS (5x5)', h.x + 10, h.y + 16);
+    const narrow = h.w < 160;
+    ctx.fillText(narrow ? 'POLYBII (5x5)' : 'POLYBII TELEGRAPHUS (5x5)', h.x + 10, h.y + 16);
 
     // Active Row and Column highlight beams
     const activeRow = (this.currentSymbol && !this.currentSymbol.isSpace) ? this.currentSymbol.row : null;
