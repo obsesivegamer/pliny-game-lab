@@ -3,6 +3,8 @@
 // counterweighted drop drawbridge, defender burning pitch cauldrons, and combustion thermodynamics.
 // Pure ES module — zero external dependencies.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class SiegeTowerEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -13,6 +15,8 @@ export class SiegeTowerEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+
+    attachTouchBridge(this, canvas);
 
     // Audio Synthesizer
     this.audioCtx = null;
@@ -474,6 +478,14 @@ export class SiegeTowerEngine {
 
     this.buildSimulation();
     this.updateTelemetry();
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   resize(width, height, dpr) {
@@ -1667,40 +1679,55 @@ export class SiegeTowerEngine {
   }
 
   renderHUD(ctx) {
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
     ctx.save();
+    ctx.scale(ui, ui);
 
     // Top Title & Legend
-    ctx.fillStyle = 'rgba(15, 12, 22, 0.65)';
-    ctx.fillRect(15, 15, 310, 68);
+    const cardW = Math.min(sw - 28, narrow ? 320 : 340);
+    const cardH = narrow ? 66 : 68;
+    ctx.fillStyle = 'rgba(15, 12, 22, 0.75)';
+    ctx.beginPath();
+    ctx.roundRect(14, 14, cardW, cardH, 6);
+    ctx.fill();
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(15, 15, 310, 68);
+    ctx.stroke();
 
     ctx.fillStyle = '#d4af37';
-    ctx.font = "bold 13px 'Cinzel', serif, Georgia";
+    ctx.font = `bold ${narrow ? 11 : 13}px 'Cinzel', serif, Georgia`;
     ctx.textAlign = 'left';
-    ctx.fillText('TURRIS AMBULATORIA (HELEPOLIS)', 28, 35);
+    ctx.fillText(narrow ? 'TURRIS AMBULATORIA' : 'TURRIS AMBULATORIA (HELEPOLIS)', 24, 32);
 
     ctx.fillStyle = '#a0aec0';
-    ctx.font = "11px 'JetBrains Mono', monospace";
-    ctx.fillText('Vitruvius De Architectura X.13 — Rampart Assault', 28, 52);
+    ctx.font = `${narrow ? 9 : 11}px 'JetBrains Mono', monospace`;
+    ctx.fillText(narrow ? 'Vitruvius X.13 — Rampart Assault' : 'Vitruvius De Architectura X.13 — Rampart Assault', 24, narrow ? 46 : 50);
 
     const dist = Math.max(0, ((this.wallX - (this.towerX + this.towerWidth)) * 0.18)).toFixed(1);
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`DIST TO WALL: ${dist} m | TOWER: ${Math.round(this.towerHealth / 10)}% | GATE: ${Math.round(this.wallIntegrity / 12)}%`, 28, 68);
+    ctx.font = `${narrow ? 9 : 11}px 'JetBrains Mono', monospace`;
+    ctx.fillText(`DIST: ${dist}m | TOWER: ${Math.round(this.towerHealth / 10)}% | GATE: ${Math.round(this.wallIntegrity / 12)}%`, 24, narrow ? 60 : 66);
 
     // Wall Breach Banner
     if (this.gateBreached) {
+      const bannerW = Math.min(sw - 40, 260);
+      const bannerX = (sw - bannerW) * 0.5;
       ctx.fillStyle = 'rgba(220, 38, 38, 0.85)';
-      ctx.fillRect(this.width * 0.5 - 130, 25, 260, 38);
+      ctx.beginPath();
+      ctx.roundRect(bannerX, 25, bannerW, 36, 6);
+      ctx.fill();
       ctx.strokeStyle = '#fef08a';
       ctx.lineWidth = 2;
-      ctx.strokeRect(this.width * 0.5 - 130, 25, 260, 38);
+      ctx.stroke();
 
       ctx.fillStyle = '#fff';
-      ctx.font = "bold 15px 'Cinzel', serif";
+      ctx.font = `bold ${narrow ? 12 : 14}px 'Cinzel', serif`;
       ctx.textAlign = 'center';
-      ctx.fillText('⚡ RAMPART GATE BREACHED! ⚡', this.width * 0.5, 49);
+      ctx.fillText('⚡ RAMPART GATE BREACHED! ⚡', sw * 0.5, 48);
     }
 
     ctx.restore();
@@ -1835,6 +1862,7 @@ export class SiegeTowerEngine {
 
   // Teardown & Resource Cleanup
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audioCtx) {
       try {
         this.audioCtx.close();

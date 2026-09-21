@@ -2,6 +2,8 @@
 // Grounded in Vitruvius (De Architectura Book X) and Pliny the Elder (Naturalis Historia)
 // Zero external dependencies — pure ES module
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class BallistaEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -43,6 +45,7 @@ export class BallistaEngine {
     // Initialize UI and Simulation State
     this.initControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   // Safe Web Audio Synthesizer
@@ -270,7 +273,16 @@ export class BallistaEngine {
     this.updateTelemetry();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -1519,10 +1531,14 @@ export class BallistaEngine {
     ctx.fill();
 
     // Wind HUD Legend
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
     ctx.fillStyle = '#d4af37';
     ctx.font = "bold 11px 'JetBrains Mono', monospace";
     ctx.textAlign = 'left';
-    ctx.fillText(`WIND: ${this.wind > 0 ? '+' + this.wind : this.wind} m/s`, flagPoleX - 25, flagPoleY + 62);
+    ctx.fillText(`WIND: ${this.wind > 0 ? '+' + this.wind : this.wind} m/s`, (flagPoleX - 25) / ui, (flagPoleY + 62) / ui);
+    ctx.restore();
 
     ctx.restore();
   }

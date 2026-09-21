@@ -9,7 +9,11 @@
  *  Grypas aurum effodere et custodire tradunt adversus Arimaspos, alites feras, aduncis rostris et unguibus praeditas...
  *  Cervis in Africa vita non est, in aliis terris gregatim degunt, duces agminis servant."
  *  — C. Plinius Secundus, Naturalis Historia, Liber VIII & X
- *
+ */
+
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
+/**
  * Complete Monumental Artificial Life & Ecosystem Simulation Engine:
  *  1. Six Plinian Creature Species:
  *     - 1. Cervus (Forest Red Deer / Herd Prey): Reynolds flocking (separation, alignment, cohesion),
@@ -2804,21 +2808,27 @@ export class BestiariumHUD {
 
   render(ctx) {
     ctx.save();
-    const w = this.engine.width;
-    const h = this.engine.height;
+    const ui = this.engine.uiScale();
+    ctx.scale(ui, ui);
+    const w = this.engine.width / ui;
+    const h = this.engine.height / ui;
+    const narrow = w < 560;
 
     // 1. Top Ribbon: Census & Season Epigraphy
     this.renderTopRibbon(ctx, w);
 
     // 2. Bottom-Right: Lotka-Volterra Phase Space Plot
-    this.engine.lotkaVolterra.renderPhasePlot(ctx, w - 210, h - 145, 195, 130);
+    if (!narrow) {
+      this.engine.lotkaVolterra.renderPhasePlot(ctx, w - 210, h - 145, 195, 130);
+    }
 
     // 3. Bottom-Left: Authentic Pliny Book VIII Citation Scroll
-    this.renderCitationScroll(ctx, 16, h - 85, Math.min(600, w - 240), 70);
+    const scrollW = narrow ? (w - 32) : Math.min(600, w - 240);
+    this.renderCitationScroll(ctx, 16, h - 75, scrollW, 65);
 
     // 4. Selected Creature Inspector Card (if creature is selected)
     if (this.engine.selectedCreature && !this.engine.selectedCreature.isDead()) {
-      this.renderInspectorCard(ctx, 16, 48, 260, 160);
+      this.renderInspectorCard(ctx, 16, 48, Math.min(260, w - 32), 160);
     }
 
     ctx.restore();
@@ -3132,6 +3142,7 @@ export class BestiariumEngine {
     this.initPondsAndTerrain();
     setupDOMControls(this);
     this.seedEcosystem('wilderness');
+    attachTouchBridge(this, canvas);
   }
 
   initPondsAndTerrain() {
@@ -3556,7 +3567,16 @@ export class BestiariumEngine {
     this.seedEcosystem('wilderness');
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.creatures = [];
     this.flora = [];
     this.carcasses = [];

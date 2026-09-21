@@ -3,6 +3,8 @@
 // Features soft-body mass-spring column, articulated IK tentacles, mitotic regeneration,
 // vascular luciferin fluid transport, and micro-prey hunting dynamics.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class HydraEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -46,6 +48,7 @@ export class HydraEngine {
     // Build UI and initialize simulation
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   // ==========================================
@@ -228,6 +231,7 @@ export class HydraEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.tentacles = [];
     this.severedPieces = [];
     this.fluidParticles = [];
@@ -236,6 +240,14 @@ export class HydraEngine {
     this.shockwaves = [];
     this.bubbles = [];
     this.trunk = null;
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   getEntityCount() {
@@ -1610,15 +1622,21 @@ export class HydraEngine {
 
   renderHUD(ctx) {
     ctx.save();
-    const x = 20;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const narrow = sw < 560;
+
+    const x = narrow ? 16 : 20;
     const y = 24;
     const count = this.getEntityCount();
+    const boxW = narrow ? Math.min(sw - 24, 210) : 210;
 
     ctx.fillStyle = 'rgba(5, 7, 12, 0.75)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
     ctx.lineWidth = 1;
-    ctx.fillRect(x - 8, y - 14, 210, 80);
-    ctx.strokeRect(x - 8, y - 14, 210, 80);
+    ctx.fillRect(x - 8, y - 14, boxW, 80);
+    ctx.strokeRect(x - 8, y - 14, boxW, 80);
 
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.fillStyle = '#d4af37';

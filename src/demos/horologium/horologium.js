@@ -13,6 +13,8 @@
  * 6. Cyber-Classical Styling: Gold (#FFD700), Cyan (#00FFFF), Deep Blue (#000033).
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class HorologiumEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -117,6 +119,7 @@ export class HorologiumEngine {
     this.calculateLayout();
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   // Calculate Responsive Layout Coordinates
@@ -417,8 +420,17 @@ export class HorologiumEngine {
     }
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   // Destroy / Cleanup
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -751,13 +763,21 @@ export class HorologiumEngine {
   // Classical Header HUD
   renderHeaderHUD(ctx) {
     ctx.save();
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 15px monospace';
-    ctx.fillText('HOROLOGIUM VITRUVIANUM // CLEPSYDRA CTESIBII', 24, 30);
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
-    ctx.fillStyle = '#3bd6c6';
-    ctx.font = '11px monospace';
-    ctx.fillText('DE ARCHITECTURA LIBER IX — TORRICELLI HYDRO-MECHANICAL ESCAPEMENT', 24, 48);
+    ctx.fillStyle = '#FFD700';
+    ctx.font = narrow ? 'bold 12px monospace' : 'bold 15px monospace';
+    ctx.fillText(narrow ? 'HOROLOGIUM VITRUVIANUM' : 'HOROLOGIUM VITRUVIANUM // CLEPSYDRA CTESIBII', 16, 24);
+
+    if (!narrow) {
+      ctx.fillStyle = '#3bd6c6';
+      ctx.font = '11px monospace';
+      ctx.fillText('DE ARCHITECTURA LIBER IX — TORRICELLI HYDRO-MECHANICAL ESCAPEMENT', 16, 42);
+    }
 
     // Current Roman Hour Readout
     const normalizedDial = ((this.dialAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
@@ -766,13 +786,16 @@ export class HorologiumEngine {
     const minuteFrac = Math.floor(((normalizedDial / (Math.PI * 2)) * 12 - hourIndex) * 60);
 
     ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 13px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`HORA: ${currentRoman} +${minuteFrac.toString().padStart(2, '0')}m | TICKS: ${this.escapementTicks}`, this.width - 24, 30);
-
-    ctx.fillStyle = '#00FFFF';
-    ctx.font = '11px monospace';
-    ctx.fillText(`HEAD h: ${this.headHeight.toFixed(1)} cm | dV/dt: ${this.flowRate.toFixed(1)} mL/s`, this.width - 24, 48);
+    ctx.font = narrow ? 'bold 11px monospace' : 'bold 13px monospace';
+    ctx.textAlign = narrow ? 'left' : 'right';
+    if (narrow) {
+      ctx.fillText(`HORA: ${currentRoman} +${minuteFrac.toString().padStart(2, '0')}m`, 16, 40);
+    } else {
+      ctx.fillText(`HORA: ${currentRoman} +${minuteFrac.toString().padStart(2, '0')}m | TICKS: ${this.escapementTicks}`, sw - 24, 24);
+      ctx.fillStyle = '#00FFFF';
+      ctx.font = '11px monospace';
+      ctx.fillText(`HEAD h: ${this.headHeight.toFixed(1)} cm | dV/dt: ${this.flowRate.toFixed(1)} mL/s`, sw - 24, 42);
+    }
 
     ctx.restore();
   }
@@ -1494,21 +1517,23 @@ export class HorologiumEngine {
   // Interactive Cursor Tooltip & Overlay
   renderOverlayTelemetry(ctx) {
     ctx.save();
-    const w = this.width;
-    const h = this.height;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
 
     // Bottom Navigation & Interaction Key Hints
     ctx.fillStyle = 'rgba(212, 175, 55, 0.85)';
     ctx.font = '10px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('[DRAG DIAL] Rotate gear train | [CLICK VALVE] Toggle drain | [CLICK BELL / SPACE] Chime | [R] Reset', w * 0.5, h - 16);
+    ctx.fillText('[DRAG DIAL] Rotate | [CLICK VALVE] Drain | [SPACE] Chime | [R] Reset', sw * 0.5, sh - 14);
 
     // Hovered Item Highlight
     if (this.hoveredItem) {
       ctx.fillStyle = '#00FFFF';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(`TARGET: ${this.hoveredItem}`, this.mousePos.x + 12, this.mousePos.y - 12);
+      ctx.fillText(`TARGET: ${this.hoveredItem}`, (this.mousePos.x / ui) + 12, (this.mousePos.y / ui) - 12);
     }
 
     ctx.restore();

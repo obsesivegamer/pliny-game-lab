@@ -13,6 +13,8 @@
  * 4. Urban Distribution Manifold (Castellum Divisorium) with Calices to Fountains, Baths, Insulae
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class AqueductEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -65,6 +67,7 @@ export class AqueductEngine {
     this.initSediment();
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   // Guarded DOM Initialization
@@ -497,7 +500,16 @@ export class AqueductEngine {
     }
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -1203,13 +1215,19 @@ export class AqueductEngine {
   }
 
   renderHUD(ctx, w, h) {
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
+
     // Classic Roman Telemetry Banner
-    const panelW = 340;
-    const panelH = 110;
+    const panelW = narrow ? Math.min(sw - 32, 340) : 340;
+    const panelH = narrow ? 116 : 110;
     const px = 16;
     const py = 16;
 
-    ctx.save();
     ctx.fillStyle = 'rgba(12, 14, 20, 0.86)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
     ctx.lineWidth = 1.5;
@@ -1221,7 +1239,7 @@ export class AqueductEngine {
     // Title
     ctx.fillStyle = '#d4af37';
     ctx.font = 'bold 11px "Cinzel", Georgia, serif';
-    ctx.fillText('AQUAEDUCTUS ROMANUS — HYDRAULIC TELEMETRY', px + 10, py + 18);
+    ctx.fillText('AQUAEDUCTUS ROMANUS', px + 10, py + 18);
 
     ctx.font = '10px monospace';
     ctx.fillStyle = '#e6e8ee';
@@ -1229,31 +1247,29 @@ export class AqueductEngine {
     // Manning Open Channel Status
     const slopeStr = `1:${Math.round(this.inclineGradient)}`;
     const velStr = `${this.manningVelocity.toFixed(2)} m/s`;
-    const flowStr = `${Math.round(this.flowDischarge)} L/s (${Math.round(this.springFlowRate)} Q)`;
-    ctx.fillText(`Manning Gradient:  ${slopeStr} | Velocity: ${velStr}`, px + 10, py + 36);
-    ctx.fillText(`Spring Discharge:  ${flowStr}`, px + 10, py + 50);
+    const flowStr = `${Math.round(this.flowDischarge)} L/s`;
+    ctx.fillText(`Manning: ${slopeStr} | Vel: ${velStr}`, px + 10, py + 36);
+    ctx.fillText(`Discharge: ${flowStr}`, px + 10, py + 50);
 
     // Siphon & Basin Status
     const siphonStr = `${this.siphonPressureBar} bar (${this.activePreset === 'Pont du Gard Valley' ? 'Bridged' : 'Active'})`;
     const clarityStr = `${Math.round(this.sedimentClarity * 100)}% Pure`;
-    ctx.fillText(`Siphon Pressure:   ${siphonStr}`, px + 10, py + 66);
-    ctx.fillText(`Water Clarity:     ${clarityStr}`, px + 10, py + 80);
+    ctx.fillText(`Siphon: ${siphonStr} | Clarity: ${clarityStr}`, px + 10, py + 66);
 
     // Distribution Splitting
-    const allocStr = `Lacus: ${Math.round(this.fountainsAlloc * 100)}% | Thermae: ${Math.round(this.bathsAlloc * 100)}% | Insulae: ${Math.round(this.insulaeAlloc * 100)}%`;
+    const allocStr = `Lacus: ${Math.round(this.fountainsAlloc * 100)}% | Thermae: ${Math.round(this.bathsAlloc * 100)}%`;
     ctx.fillStyle = '#3bd6c6';
-    ctx.fillText(`Urban Split:       ${allocStr}`, px + 10, py + 96);
+    ctx.fillText(allocStr, px + 10, py + 82);
 
     // Operational Alerts
     if (this.flashFloodTimer > 0) {
       ctx.fillStyle = '#c83232';
       ctx.font = 'bold 10px monospace';
-      ctx.fillText(`⚠️ FLASH FLOOD SURGE (${this.flashFloodTimer.toFixed(1)}s)`, px + panelW + 12, py + 20);
-    }
-    if (this.scourFlushTimer > 0) {
+      ctx.fillText(`⚠️ SURGE (${this.flashFloodTimer.toFixed(1)}s)`, px + 10, py + 98);
+    } else if (this.scourFlushTimer > 0) {
       ctx.fillStyle = '#ffaa33';
       ctx.font = 'bold 10px monospace';
-      ctx.fillText(`🧹 SEDIMENT SCOUR ACTIVE (${this.scourFlushTimer.toFixed(1)}s)`, px + panelW + 12, py + 38);
+      ctx.fillText(`🧹 SCOUR (${this.scourFlushTimer.toFixed(1)}s)`, px + 10, py + 98);
     }
     ctx.restore();
   }
@@ -1261,13 +1277,20 @@ export class AqueductEngine {
   renderTooltip(ctx) {
     const { x, y, title, desc } = this.hoveredZone;
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const sx = x / ui;
+    const sy = y / ui;
+
     ctx.fillStyle = 'rgba(18, 20, 28, 0.94)';
     ctx.strokeStyle = '#d4af37';
     ctx.lineWidth = 1;
-    const tw = 240;
+    const tw = Math.min(sw - 24, 240);
     const th = 48;
-    const tx = Math.min(this.width - tw - 12, Math.max(12, x - tw / 2));
-    const ty = Math.max(12, y - th - 12);
+    const tx = Math.min(sw - tw - 12, Math.max(12, sx - tw / 2));
+    const ty = Math.max(12, sy - th - 12);
 
     ctx.beginPath();
     ctx.roundRect ? ctx.roundRect(tx, ty, tw, th, 6) : ctx.rect(tx, ty, tw, th);

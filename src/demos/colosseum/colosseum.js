@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book VIII: Wild Beasts; Book XXXVI: Amphitheatres)
 // Pure ES module with ZERO external dependencies.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 const CYBER_RED = '#FF0055';
 const GOLD = '#D4AF37';
 const CHARCOAL = '#1A1A1A';
@@ -203,6 +205,7 @@ export class ColosseumEngine {
     // Setup controls & entities
     this.initControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -589,7 +592,16 @@ export class ColosseumEngine {
     return activeCombatants + activeProjectiles + activeParticles;
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.audio.destroy();
     this.gladiators = [];
     this.beasts = [];
@@ -1996,38 +2008,45 @@ export class ColosseumEngine {
 
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Top-left Telemetry
+    const badgeW = narrow ? Math.min(sw - 24, 210) : 210;
     ctx.fillStyle = 'rgba(10, 10, 12, 0.75)';
-    ctx.fillRect(12, 12, 210, 78);
+    ctx.fillRect(12, 12, badgeW, 78);
     ctx.strokeStyle = GOLD;
     ctx.lineWidth = 1;
-    ctx.strokeRect(12, 12, 210, 78);
+    ctx.strokeRect(12, 12, badgeW, 78);
 
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = GOLD;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('COLOSSEUM ARENA TELEMETRY', 20, 18);
+    ctx.fillText('COLOSSEUM TELEMETRY', 20, 18);
 
     ctx.font = '9.5px monospace';
     ctx.fillStyle = '#E5D4C0';
     const activeGlad = this.gladiators.filter(g => g.alive).length;
     const activeBeasts = this.beasts.filter(b => b.alive).length;
-    ctx.fillText(`Combatants: ${activeGlad} Gladiators | ${activeBeasts} Beasts`, 20, 34);
-    ctx.fillText(`Projectiles: ${this.projectiles.length} | Particles: ${this.particles.length + this.dustParticles.length}`, 20, 48);
+    ctx.fillText(`Combatants: ${activeGlad} Glad | ${activeBeasts} Beasts`, 20, 34);
+    ctx.fillText(narrow ? `Projs: ${this.projectiles.length} | Parts: ${this.particles.length}` : `Projectiles: ${this.projectiles.length} | Particles: ${this.particles.length + this.dustParticles.length}`, 20, 48);
 
     // Crowd Excitement Bar
-    ctx.fillText('Crowd Excitement:', 20, 64);
+    ctx.fillText('Excitement:', 20, 64);
+    const barW = narrow ? 70 : 90;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(120, 63, 90, 8);
+    ctx.fillRect(100, 63, barW, 8);
     ctx.fillStyle = this.crowdExcitement > 70 ? CYBER_RED : GOLD;
-    ctx.fillRect(120, 63, 90 * (this.crowdExcitement / 100), 8);
+    ctx.fillRect(100, 63, barW * (this.crowdExcitement / 100), 8);
 
-    // Bottom Combat Log
-    if (this.combatLog.length > 0) {
+    // Bottom Combat Log (hide on narrow or limit to 2 entries)
+    if (this.combatLog.length > 0 && !narrow) {
       const logH = this.combatLog.length * 15 + 10;
-      const logY = this.height - logH - 12;
+      const logY = sh - logH - 12;
       ctx.fillStyle = 'rgba(10, 10, 12, 0.7)';
       ctx.fillRect(12, logY, 340, logH);
       ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';

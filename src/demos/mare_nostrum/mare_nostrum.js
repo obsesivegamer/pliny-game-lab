@@ -2,6 +2,8 @@
 // Pliny Game Lab — Pavilion VII: Mare Nostrum
 // Classical 12-Wind Rose Meteorology, Lateen Sail Aerodynamics, Keel Leeway, and Portolan Cartography
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 const TWO_PI = Math.PI * 2;
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
@@ -267,6 +269,7 @@ export class MareNostrumEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Timing & Animation Clock
     this.time = 0;
@@ -598,6 +601,14 @@ export class MareNostrumEngine {
   /* LIFECYCLE: RESIZE, ENTITY COUNT, RESET, DESTROY                            */
   /* -------------------------------------------------------------------------- */
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   resize(width, height, dpr = 1) {
     const oldW = this.width || 800;
     const oldH = this.height || 600;
@@ -659,6 +670,7 @@ export class MareNostrumEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer && typeof document !== 'undefined') {
       this.controlsContainer.innerHTML = '';
     }
@@ -1701,11 +1713,16 @@ export class MareNostrumEngine {
 
   renderNauticalTelemetryHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
-    const hudW = 280;
-    const hudH = 158;
-    const hudX = 22;
-    const hudY = 22;
+    const hudW = narrow ? Math.min(sw - 24, 260) : 280;
+    const hudH = narrow ? 134 : 158;
+    const hudX = narrow ? 12 : 22;
+    const hudY = narrow ? 12 : 22;
 
     // Classical Roman Parchment Cartouche
     const grad = ctx.createLinearGradient(hudX, hudY, hudX + hudW, hudY + hudH);
@@ -1730,48 +1747,47 @@ export class MareNostrumEngine {
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 12px "Cinzel", "Palatino Linotype", "Times New Roman", serif';
     ctx.textAlign = 'left';
-    ctx.fillText('MARE NOSTRUM • PORTOLANUS', hudX + 12, hudY + 20);
+    ctx.fillText('MARE NOSTRUM • PORTOLANUS', hudX + 10, hudY + 20);
 
     // Active Classical 12-Wind Metadata
     const currentWind = WINDS_12[this.windIndex];
     ctx.fillStyle = '#E8DFD1';
-    ctx.font = '11px serif';
-    ctx.fillText(`Ventus: ${currentWind.name} [${currentWind.dir} ${currentWind.compassDeg}°] (${currentWind.greek})`, hudX + 12, hudY + 38);
+    ctx.font = '10px serif';
+    ctx.fillText(`Ventus: ${currentWind.name} [${currentWind.dir} ${currentWind.compassDeg}°]`, hudX + 10, hudY + 36);
 
     // Wind Speed & Velocity
     ctx.fillStyle = '#C7B49E';
-    ctx.font = '10px monospace';
-    ctx.fillText(`Wind Velocity    : ${this.windVelocityKnots.toFixed(0)} Knots (${(this.windVelocityKnots * this.gustStrength).toFixed(1)} gust)`, hudX + 12, hudY + 56);
+    ctx.font = '9.5px monospace';
+    ctx.fillText(`Wind: ${this.windVelocityKnots.toFixed(0)}kt | Ship: ${this.playerShip.speedKnots.toFixed(1)}kt`, hudX + 10, hudY + 54);
 
     // Vessel Speed & Apparent Wind
     const ship = this.playerShip;
-    ctx.fillText(`Vessel Speed     : ${ship.speedKnots.toFixed(1)} Knots`, hudX + 12, hudY + 74);
-    ctx.fillText(`Apparent Wind    : ${ship.apparentWindKnots.toFixed(1)} Knots @ ${(ship.apparentWindAngle * RAD2DEG).toFixed(0)}°`, hudX + 12, hudY + 92);
+    ctx.fillText(`Apparent: ${ship.apparentWindKnots.toFixed(1)}kt @ ${(ship.apparentWindAngle * RAD2DEG).toFixed(0)}°`, hudX + 10, hudY + 72);
 
     // Point of Sail Status (Close-Hauled, Beam Reach, Running, or In Irons)
-    let pointOfSail = 'Beam Reach (Celeritas Optima)';
+    let pointOfSail = narrow ? 'Beam Reach' : 'Beam Reach (Celeritas Optima)';
     let statusColor = '#A5D6A7';
     if (ship.inNoGoZone) {
-      pointOfSail = 'IN IRONS (No-Go Headwind / Flapping)';
+      pointOfSail = narrow ? 'IN IRONS (No-Go)' : 'IN IRONS (No-Go Headwind / Flapping)';
       statusColor = '#FF8A80';
     } else if (ship.isTacking) {
-      pointOfSail = 'TACKING (Maneuver in Progress)';
+      pointOfSail = narrow ? 'TACKING' : 'TACKING (Maneuver in Progress)';
       statusColor = '#FFD54F';
     } else if (Math.abs(normalizeAngle(ship.apparentWindAngle - ship.heading)) < 45 * DEG2RAD) {
-      pointOfSail = 'Running (Before the Wind)';
+      pointOfSail = narrow ? 'Running' : 'Running (Before the Wind)';
       statusColor = '#80DEEA';
     } else if (Math.abs(normalizeAngle(ship.apparentWindAngle - ship.heading)) > 100 * DEG2RAD) {
-      pointOfSail = 'Beating Upwind (Close-Hauled)';
+      pointOfSail = narrow ? 'Close-Hauled' : 'Beating Upwind (Close-Hauled)';
       statusColor = '#FFF59D';
     }
 
     ctx.fillStyle = statusColor;
-    ctx.fillText(`Point of Sail    : ${pointOfSail}`, hudX + 12, hudY + 110);
+    ctx.fillText(`Point of Sail: ${pointOfSail}`, hudX + 10, hudY + 90);
 
     // Lateen Trim & Keel Leeway
     ctx.fillStyle = '#C7B49E';
-    ctx.fillText(`Lateen Sheet Trim: ${ship.sailTrimDeg.toFixed(0)}° (Tack: ${ship.tackSide > 0 ? 'Starboard' : 'Port'})`, hudX + 12, hudY + 128);
-    ctx.fillText(`Keel Leeway Drift: ${ship.leewayAngleDeg.toFixed(1)}° | Commerce: ${this.totalDenariiEarned} Denarii`, hudX + 12, hudY + 146);
+    ctx.fillText(`Trim: ${ship.sailTrimDeg.toFixed(0)}° (${ship.tackSide > 0 ? 'Stbd' : 'Port'})`, hudX + 10, hudY + 108);
+    ctx.fillText(`Drift: ${ship.leewayAngleDeg.toFixed(1)}° | Denarii: ${this.totalDenariiEarned}`, hudX + 10, hudY + 126);
 
     ctx.restore();
   }

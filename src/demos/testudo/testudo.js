@@ -2,6 +2,8 @@
 // Grounded in Vegetius (De Re Militari), Polybius (Histories), and Pliny the Elder (Naturalis Historia)
 // Zero external dependencies — pure ES module
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class TestudoEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -12,6 +14,8 @@ export class TestudoEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+
+    attachTouchBridge(this, canvas);
 
     // Tactical State & Formation
     this.formationType = 'testudo'; // 'testudo', 'acies', 'orbis'
@@ -322,6 +326,14 @@ export class TestudoEngine {
     if (cohEl) cohEl.textContent = `${Math.round(this.cohesionIndex * 100)}%`;
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   resize(width, height, dpr) {
     this.width = width;
     this.height = height;
@@ -354,6 +366,7 @@ export class TestudoEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.arrows = [];
     this.sparks = [];
     this.splinters = [];
@@ -984,46 +997,76 @@ export class TestudoEngine {
 
   // Battlefield HUD & Tactical Telemetry
   renderHUD(ctx) {
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
     ctx.save();
+    ctx.scale(ui, ui);
 
     // Roman Banner Emblem (Top Left)
-    ctx.fillStyle = 'rgba(18, 14, 10, 0.75)';
+    const bannerW = narrow ? Math.min(sw - 28, 260) : 210;
+    const bannerH = narrow ? 72 : 78;
+    ctx.fillStyle = 'rgba(18, 14, 10, 0.85)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
     ctx.lineWidth = 1;
-    ctx.fillRect(16, 16, 210, 78);
-    ctx.strokeRect(16, 16, 210, 78);
+    ctx.beginPath();
+    ctx.roundRect(14, 14, bannerW, bannerH, 6);
+    ctx.fill();
+    ctx.stroke();
 
     // Golden Eagle Icon
     ctx.fillStyle = '#d4af37';
-    ctx.font = 'bold 13px serif';
-    ctx.fillText('⚡ LEGIO VI FERRATA', 28, 36);
+    ctx.font = `bold ${narrow ? 11 : 13}px serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText('⚡ LEGIO VI FERRATA', 24, 32);
 
-    ctx.font = '11px sans-serif';
+    ctx.font = `${narrow ? 9 : 11}px sans-serif`;
     ctx.fillStyle = '#dcd0b8';
     const formName = this.formationType === 'testudo' ? 'Testudo (Roof Lock)' :
-                     this.formationType === 'acies' ? 'Acies Triplex (3 Lines)' : 'Orbis (Ring)';
-    ctx.fillText(`Tactics: ${formName}`, 28, 54);
+                     this.formationType === 'acies' ? (narrow ? 'Acies Triplex' : 'Acies Triplex (3 Lines)') : 'Orbis (Ring)';
+    ctx.fillText(`Tactics: ${formName}`, 24, narrow ? 48 : 52);
 
-    const statusText = this.isCharging ? '⚡ CHARGING (AD GLADIUM!)' : '🛡️ DEFENSIVE ADVANCE';
+    const statusText = this.isCharging ? '⚡ CHARGING!' : '🛡️ ADVANCE';
     ctx.fillStyle = this.isCharging ? '#ff4d4d' : '#5ac8fa';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.fillText(statusText, 28, 72);
+    ctx.font = `bold ${narrow ? 10 : 11}px sans-serif`;
+    ctx.fillText(statusText, 24, narrow ? 64 : 70);
 
-    // Deflection counter in top right
-    const rightBoxW = 160;
-    const rightBoxX = this.width - rightBoxW - 16;
-    ctx.fillStyle = 'rgba(18, 14, 10, 0.75)';
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
-    ctx.fillRect(rightBoxX, 16, rightBoxW, 58);
-    ctx.strokeRect(rightBoxX, 16, rightBoxW, 58);
+    // Deflection counter
+    if (!narrow) {
+      const rightBoxW = 160;
+      const rightBoxX = sw - rightBoxW - 14;
+      ctx.fillStyle = 'rgba(18, 14, 10, 0.85)';
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
+      ctx.beginPath();
+      ctx.roundRect(rightBoxX, 14, rightBoxW, 58, 6);
+      ctx.fill();
+      ctx.stroke();
 
-    ctx.fillStyle = '#d4af37';
-    ctx.font = 'bold 10px serif';
-    ctx.fillText('PROJECTILES DEFLECTED', rightBoxX + 12, 34);
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 10px serif';
+      ctx.fillText('PROJECTILES DEFLECTED', rightBoxX + 12, 32);
 
-    ctx.fillStyle = '#4cd964';
-    ctx.font = 'bold 18px monospace';
-    ctx.fillText(`${this.totalDeflected}`, rightBoxX + 12, 58);
+      ctx.fillStyle = '#4cd964';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(`${this.totalDeflected}`, rightBoxX + 12, 54);
+    } else {
+      const badgeW = 70;
+      const badgeX = bannerW - badgeW - 6;
+      ctx.fillStyle = 'rgba(212, 175, 55, 0.15)';
+      ctx.beginPath();
+      ctx.roundRect(badgeX + 14, 20, badgeW, 40, 4);
+      ctx.fill();
+      ctx.fillStyle = '#4cd964';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${this.totalDeflected}`, badgeX + 14 + badgeW / 2, 38);
+      ctx.fillStyle = '#d4af37';
+      ctx.font = '8px serif';
+      ctx.fillText('DEFLECTED', badgeX + 14 + badgeW / 2, 50);
+      ctx.textAlign = 'left';
+    }
 
     ctx.restore();
   }

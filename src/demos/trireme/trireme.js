@@ -3,6 +3,8 @@
 // Grounded in classical naval mechanics (Pliny the Elder, Naturalis Historia; Polybius, The Histories)
 // Pure ES module — Zero external dependencies
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class TriremeEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -64,6 +66,7 @@ export class TriremeEngine {
     // Initialize UI and Simulation State
     this.initControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -574,12 +577,21 @@ export class TriremeEngine {
     this.dpr = dpr;
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   getEntityCount() {
     // Number of ships + active wake particles + projectile bolts
     return this.ships.length + this.wakeParticles.length + this.bolts.length;
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -1989,24 +2001,29 @@ export class TriremeEngine {
 
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Top-Left Tactical Helm Readout
     ctx.fillStyle = 'rgba(0, 18, 38, 0.78)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(14, 14, 210, 86, 6);
+    ctx.roundRect(14, 14, narrow ? 170 : 210, 86, 6);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = `bold ${narrow ? 11 : 12}px sans-serif`;
     ctx.fillStyle = '#FFD700'; // Roman Gold
     ctx.textAlign = 'left';
-    ctx.fillText('TRIREME NAVAL HELM', 24, 32);
+    ctx.fillText('TRIREME HELM', 24, 32);
 
     if (this.playerShip && !this.playerShip.isDestroyed) {
       const speedKnots = (Math.sqrt(this.playerShip.vx * this.playerShip.vx + this.playerShip.vy * this.playerShip.vy) * 0.12).toFixed(1);
-      ctx.font = '11px monospace';
+      ctx.font = `${narrow ? 10 : 11}px monospace`;
       ctx.fillStyle = '#E0FAFF';
       ctx.fillText(`SPEED:   ${speedKnots} kn`, 24, 49);
       ctx.fillText(`CADENCE: ${this.cadence} SPM`, 24, 65);
@@ -2019,26 +2036,28 @@ export class TriremeEngine {
     }
 
     // Top-Right Fleet Score & Kills
+    const badgeW = narrow ? 120 : 151;
+    const badgeX = sw - badgeW - 14;
     ctx.beginPath();
-    ctx.roundRect(this.width - 165, 14, 151, 62, 6);
+    ctx.roundRect(badgeX, 14, badgeW, 62, 6);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'bold 11px sans-serif';
+    ctx.font = `bold ${narrow ? 10 : 11}px sans-serif`;
     ctx.fillStyle = '#D4AF37';
-    ctx.fillText('FLEET ENGAGEMENT', this.width - 153, 32);
+    ctx.fillText('FLEET', badgeX + 10, 32);
 
-    ctx.font = '11px monospace';
+    ctx.font = `${narrow ? 9.5 : 11}px monospace`;
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`WARSHIPS SUNK: ${this.enemiesSunk}`, this.width - 153, 50);
+    ctx.fillText(`SUNK: ${this.enemiesSunk}`, badgeX + 10, 50);
     const activeEnemies = this.ships.filter(s => !s.isPlayer && !s.isDestroyed).length;
-    ctx.fillText(`HOSTILES LEFT: ${activeEnemies}`, this.width - 153, 65);
+    ctx.fillText(`LEFT: ${activeEnemies}`, badgeX + 10, 65);
 
     // Bottom Center Ramming Status Banner
     if (this.isRammingSpeed) {
-      const bannerWidth = 260;
-      const bx = (this.width - bannerWidth) * 0.5;
-      const by = this.height - 48;
+      const bannerWidth = narrow ? Math.min(sw - 40, 240) : 260;
+      const bx = (sw - bannerWidth) * 0.5;
+      const by = sh - 48;
 
       ctx.fillStyle = 'rgba(139, 0, 0, 0.85)';
       ctx.strokeStyle = '#FFD700';
@@ -2048,10 +2067,10 @@ export class TriremeEngine {
       ctx.fill();
       ctx.stroke();
 
-      ctx.font = 'bold 13px sans-serif';
+      ctx.font = `bold ${narrow ? 11 : 13}px sans-serif`;
       ctx.fillStyle = '#FFD700';
       ctx.textAlign = 'center';
-      ctx.fillText('⚔️ FULL RAMMING SPEED ENGAGED! ⚔️', this.width * 0.5, by + 21);
+      ctx.fillText('⚔️ FULL RAMMING SPEED! ⚔️', sw * 0.5, by + 21);
     }
 
     ctx.restore();

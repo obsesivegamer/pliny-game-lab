@@ -3,6 +3,8 @@
 // Grounded in Polybius (Histories Book X.45–47) and Pliny the Elder (Naturalis Historia)
 // Zero external dependencies — pure ES module
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 const TWO_PI = Math.PI * 2;
 const DEG2RAD = Math.PI / 180;
 
@@ -61,6 +63,8 @@ export class SignalFireEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+
+    attachTouchBridge(this, canvas);
 
     // Simulation Modes & Parameters
     this.mode = 'night'; // 'night' (torches & dusk sky) or 'day' (smoke columns & sunlit mountains)
@@ -550,6 +554,14 @@ export class SignalFireEngine {
   /* LIFECYCLE & CONTRACT METHODS                                               */
   /* -------------------------------------------------------------------------- */
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   resize(width, height, dpr) {
     this.width = width;
     this.height = height;
@@ -586,6 +598,7 @@ export class SignalFireEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer && typeof document !== 'undefined') {
       this.controlsContainer.innerHTML = '';
     }
@@ -980,11 +993,8 @@ export class SignalFireEngine {
     // 6. Particles (Torch flames, glowing embers, day smoke columns)
     this.renderParticles(ctx);
 
-    // 7. Interactive Polybius 5x5 Matrix HUD (Parchment & Bronze tablet)
-    this.renderPolybiusHUD(ctx);
-
-    // 8. Telemetry Header Banner & Decoded Message Ribbon
-    this.renderTelemetryRibbon(ctx, w, h);
+    // 7. Interactive Polybius 5x5 Matrix HUD & Telemetry Ribbon
+    this.renderHUD(ctx);
 
     ctx.restore();
   }
@@ -1525,16 +1535,21 @@ export class SignalFireEngine {
     ctx.restore();
   }
 
+  renderHUD(ctx) {
+    this.renderPolybiusHUD(ctx);
+    this.renderTelemetryRibbon(ctx, this.width, this.height);
+  }
+
   renderTelemetryRibbon(ctx, w, h) {
     ctx.save();
 
-    // Top Message Bar & Terminal Decoded Output
-    const barH = 58;
+    const narrow = w < 560;
+    const barH = narrow ? 44 : 58;
     const barY = 12;
-    const barX = Math.max(this.hud.x + this.hud.w + 16, w * 0.28);
-    const barW = w - barX - 18;
+    const barX = narrow ? 14 : Math.max(this.hud.x + this.hud.w + 16, w * 0.28);
+    const barW = narrow ? (w - 28) : (w - barX - 18);
 
-    if (barW > 160) {
+    if (barW > 120) {
       // Background Plate
       const barGrad = ctx.createLinearGradient(barX, barY, barX + barW, barY + barH);
       barGrad.addColorStop(0, 'rgba(14, 12, 16, 0.88)');
@@ -1559,38 +1574,50 @@ export class SignalFireEngine {
         ctx.strokeRect(barX, barY, barW, barH);
       }
 
-      // Origin Message Stream
-      ctx.font = 'bold 10px "JetBrains Mono", monospace';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#a89878';
-      ctx.fillText('ORIGIN TRANSMISSION:', barX + 12, barY + 18);
+      if (narrow) {
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#a89878';
+        ctx.fillText(`TX: ${this.messageText}`, barX + 8, barY + 16);
 
-      // Render message letters with active cursor highlight
-      let textX = barX + 145;
-      for (let i = 0; i < this.messageText.length; i++) {
-        const ch = this.messageText[i];
-        if (i === this.transmitIndex && this.isTransmitting) {
-          ctx.fillStyle = '#ff8c00';
-          ctx.font = 'bold 12px "JetBrains Mono", monospace';
-        } else if (i < this.transmitIndex) {
-          ctx.fillStyle = '#6e6556';
-          ctx.font = '10px "JetBrains Mono", monospace';
-        } else {
-          ctx.fillStyle = '#dcd2b8';
-          ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('RX (ROMA):', barX + 8, barY + 32);
+        ctx.fillStyle = '#3bd6c6';
+        ctx.fillText(`"${this.decodedOutput || '---'}"`, barX + 75, barY + 32);
+      } else {
+        // Origin Message Stream
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#a89878';
+        ctx.fillText('ORIGIN TRANSMISSION:', barX + 12, barY + 18);
+
+        // Render message letters with active cursor highlight
+        let textX = barX + 145;
+        for (let i = 0; i < this.messageText.length; i++) {
+          const ch = this.messageText[i];
+          if (i === this.transmitIndex && this.isTransmitting) {
+            ctx.fillStyle = '#ff8c00';
+            ctx.font = 'bold 12px "JetBrains Mono", monospace';
+          } else if (i < this.transmitIndex) {
+            ctx.fillStyle = '#6e6556';
+            ctx.font = '10px "JetBrains Mono", monospace';
+          } else {
+            ctx.fillStyle = '#dcd2b8';
+            ctx.font = '10px "JetBrains Mono", monospace';
+          }
+          ctx.fillText(ch, textX, barY + 18);
+          textX += 9;
         }
-        ctx.fillText(ch, textX, barY + 18);
-        textX += 9;
+
+        // Terminal Reception Decoded at Rome
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('DECODED AT ROMA (ARX):', barX + 12, barY + 40);
+
+        ctx.fillStyle = '#3bd6c6';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(`"${this.decodedOutput || '---'}"`, barX + 165, barY + 40);
       }
-
-      // Terminal Reception Decoded at Rome
-      ctx.font = 'bold 10px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#ffd700';
-      ctx.fillText('DECODED AT ROMA (ARX):', barX + 12, barY + 40);
-
-      ctx.fillStyle = '#3bd6c6';
-      ctx.font = 'bold 11px "JetBrains Mono", monospace';
-      ctx.fillText(`"${this.decodedOutput || '---'}"`, barX + 165, barY + 40);
     }
 
     ctx.restore();

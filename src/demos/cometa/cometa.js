@@ -2,6 +2,8 @@
 // Pliny Game Lab — Pavilion IV: Cosmographia & Astra
 // Grounded in Pliny the Elder's Naturalis Historia (Book II, 22-24: "De cometis eorumque natura et speciebus")
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const COMETA_PRESETS = {
   HALLEY: 'Halley Elliptical (e = 0.96)',
   SLINGSHOT: 'Iuppiter Grav-Assist (Slingshot)',
@@ -69,6 +71,7 @@ export class CometaEngine {
     // Initialize Simulation & UI
     this.initControls();
     this.loadPreset(this.currentPreset);
+    attachTouchBridge(this, canvas);
   }
 
   // -------------------------------------------------------------------------
@@ -1113,18 +1116,24 @@ export class CometaEngine {
 
   renderOverlay(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
     ctx.fillStyle = 'rgba(224, 255, 255, 0.85)';
-    ctx.font = '12px monospace';
+    ctx.font = narrow ? 'bold 11px monospace' : '12px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('COMETA: CELESTIAL GRAVITATION & SUBLIMATION TAIL', 20, 28);
+    ctx.fillText('COMETA: CELESTIAL GRAVITATION', 16, 24);
 
     ctx.fillStyle = 'rgba(140, 144, 158, 0.8)';
     ctx.font = '10px monospace';
-    ctx.fillText('Drag on screen to launch custom comet vector | Space to re-launch', 20, 46);
+    ctx.fillText(narrow ? 'Drag to launch comet | Space: launch' : 'Drag on screen to launch custom comet vector | Space to re-launch', 16, 40);
 
     // Bottom left telemetry summary
     const count = this.getEntityCount();
-    ctx.fillText(`Bodies: ${this.bodies.length + this.comets.length} | Tail Particles: ${this.tailParticles.length} | Total Entities: ${count}`, 20, this.height - 20);
+    ctx.fillText(narrow ? `Entities: ${count}` : `Bodies: ${this.bodies.length + this.comets.length} | Tail Particles: ${this.tailParticles.length} | Total Entities: ${count}`, 16, sh - 16);
 
     ctx.restore();
   }
@@ -1143,7 +1152,16 @@ export class CometaEngine {
     this.loadPreset(this.currentPreset);
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.bodies = [];
     this.comets = [];
     this.tailParticles = [];

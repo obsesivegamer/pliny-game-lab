@@ -15,6 +15,8 @@
  * 7. Architectural Blueprint Aesthetic with drafting guides, stress vectors & Vitruvian telemetry
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class ArchVaultEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -24,6 +26,7 @@ export class ArchVaultEngine {
     this.width = canvas.width || 800;
     this.height = canvas.height || 600;
     this.dpr = 1;
+    attachTouchBridge(this, canvas);
 
     // Architectural & Structural Parameters
     this.spanWidth = 380;        // Distance between springing points (pixels, ~7.6 m)
@@ -704,6 +707,14 @@ export class ArchVaultEngine {
     }
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   // Contract Methods: Resize, Update, Render, Entity Count, Destroy
   resize(width, height, dpr = 1) {
     this.width = width;
@@ -724,6 +735,7 @@ export class ArchVaultEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audioCtx) {
       try { this.audioCtx.close(); } catch {}
       this.audioCtx = null;
@@ -1261,39 +1273,66 @@ export class ArchVaultEngine {
 
   renderBlueprintHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
-    // Vitruvian Title Plaque (Top Left)
-    ctx.fillStyle = 'rgba(12, 26, 46, 0.85)';
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.fillRect(20, 20, 280, 68);
-    ctx.strokeRect(20, 20, 280, 68);
+    if (narrow) {
+      const boxW = Math.min(sw - 24, 250);
+      const boxH = 68;
+      ctx.fillStyle = 'rgba(12, 26, 46, 0.88)';
+      ctx.strokeStyle = this.collapsed ? '#ff4757' : (this.scaffoldActive ? '#d4af37' : (this.maxEccentricity <= 1.0 ? '#3bd678' : '#f5c242'));
+      ctx.lineWidth = 1;
+      ctx.fillRect(12, 12, boxW, boxH);
+      ctx.strokeRect(12, 12, boxW, boxH);
 
-    ctx.font = 'bold 11px serif';
-    ctx.fillStyle = '#d4af37';
-    ctx.fillText('DE ARCHITECTURA — LIBER VI', 32, 38);
+      ctx.font = 'bold 10px serif';
+      ctx.fillStyle = '#d4af37';
+      ctx.fillText('FORNIX ET ARCUS (VAULT)', 20, 28);
 
-    ctx.font = '10px monospace';
-    ctx.fillStyle = '#e6e8ee';
-    ctx.fillText('FORNIX ET ARCUS (KEYSTONE VAULT)', 32, 54);
+      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fillText(this.collapsed ? 'COLLAPSED' : (this.scaffoldActive ? 'CENTERING ACTIVE' : (this.maxEccentricity <= 1.0 ? 'STABLE' : 'UNSTABLE')), 20, 46);
 
-    ctx.font = '9px monospace';
-    ctx.fillStyle = '#3bd6c6';
-    ctx.fillText('HOOKE CATENARY & MIDDLE-THIRD ANALYSIS', 32, 70);
+      ctx.font = '8.5px monospace';
+      ctx.fillStyle = '#e6e8ee';
+      ctx.fillText(`THRUST: ${this.horizontalThrust.toFixed(1)} kN | S.F.: ${this.safetyFactor.toFixed(2)}`, 20, 62);
+    } else {
+      // Vitruvian Title Plaque (Top Left)
+      ctx.fillStyle = 'rgba(12, 26, 46, 0.85)';
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.fillRect(20, 20, 280, 68);
+      ctx.strokeRect(20, 20, 280, 68);
 
-    // Status Banner (Top Center)
-    const bannerW = 340;
-    const bannerX = (this.width - bannerW) / 2;
-    ctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
-    ctx.strokeStyle = this.collapsed ? '#ff4757' : (this.scaffoldActive ? '#d4af37' : (this.maxEccentricity <= 1.0 ? '#3bd678' : '#f5c242'));
-    ctx.lineWidth = 1.5;
-    ctx.fillRect(bannerX, 20, bannerW, 26);
-    ctx.strokeRect(bannerX, 20, bannerW, 26);
+      ctx.font = 'bold 11px serif';
+      ctx.fillStyle = '#d4af37';
+      ctx.fillText('DE ARCHITECTURA — LIBER VI', 32, 38);
 
-    ctx.font = 'bold 9px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.fillText(`STATUS: ${this.stabilityStatus}`, this.width / 2, 36);
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#e6e8ee';
+      ctx.fillText('FORNIX ET ARCUS (KEYSTONE VAULT)', 32, 54);
+
+      ctx.font = '9px monospace';
+      ctx.fillStyle = '#3bd6c6';
+      ctx.fillText('HOOKE CATENARY & MIDDLE-THIRD ANALYSIS', 32, 70);
+
+      // Status Banner (Top Center)
+      const bannerW = 340;
+      const bannerX = (sw - bannerW) / 2;
+      ctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
+      ctx.strokeStyle = this.collapsed ? '#ff4757' : (this.scaffoldActive ? '#d4af37' : (this.maxEccentricity <= 1.0 ? '#3bd678' : '#f5c242'));
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(bannerX, 20, bannerW, 26);
+      ctx.strokeRect(bannerX, 20, bannerW, 26);
+
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fillText(`STATUS: ${this.stabilityStatus}`, sw / 2, 36);
+    }
 
     ctx.restore();
   }

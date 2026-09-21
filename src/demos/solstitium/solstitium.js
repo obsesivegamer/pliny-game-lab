@@ -1,6 +1,8 @@
 // Solstitium: Solar Analemma, Axial Tilt & Roman Sundial Simulation
 // Pliny Game Lab — Pavilion IV: Cosmographia & Astra
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 const TWO_PI = Math.PI * 2;
@@ -84,6 +86,7 @@ export class SolstitiumEngine {
         this.initEntities();
         this.buildControls();
         this.rebuildDialMarkings();
+        attachTouchBridge(this, canvas);
     }
 
     // -------------------------------------------------------------
@@ -896,7 +899,16 @@ export class SolstitiumEngine {
         this.rebuildDialMarkings();
     }
 
+    uiScale() {
+        return Math.max(1, this.dpr || 1);
+    }
+
+    worldView() {
+        return { x: 0, y: 0, w: this.width, h: this.height };
+    }
+
     destroy() {
+        detachTouchBridge(this, this.canvas);
         if (this.controlsContainer && typeof document !== 'undefined') {
             this.uiElements.forEach((el) => {
                 if (el.parentNode) el.parentNode.removeChild(el);
@@ -1716,8 +1728,14 @@ export class SolstitiumEngine {
      */
     renderRomanTelemetryHUD(ctx, solar, dateInfo) {
         ctx.save();
-        const hudW = 270;
-        const hudH = 148;
+        const ui = this.uiScale();
+        ctx.scale(ui, ui);
+        const sw = this.width / ui;
+        const sh = this.height / ui;
+        const narrow = sw < 560;
+
+        const hudW = narrow ? Math.min(sw - 28, 270) : 270;
+        const hudH = narrow ? 132 : 148;
         const hudX = 14;
         const hudY = 14;
 
@@ -1728,7 +1746,7 @@ export class SolstitiumEngine {
 
         ctx.fillStyle = hudGrad;
         ctx.beginPath();
-        ctx.roundRect(hudX, hudY, hudW, hudH, 8);
+        ctx.roundRect ? ctx.roundRect(hudX, hudY, hudW, hudH, 8) : ctx.rect(hudX, hudY, hudW, hudH);
         ctx.fill();
         ctx.strokeStyle = '#d4af37';
         ctx.lineWidth = 1.5;
@@ -1743,40 +1761,42 @@ export class SolstitiumEngine {
         ctx.fillStyle = '#ffd700';
         ctx.font = 'bold 12px serif';
         ctx.textAlign = 'left';
-        ctx.fillText('SOLSTITIUM • HOROLOGIUM ROMANUM', hudX + 12, hudY + 22);
+        ctx.fillText('SOLSTITIUM • HOROLOGIUM', hudX + 12, hudY + 22);
 
         // Roman Calendar Date & Zodiac
         ctx.fillStyle = '#e8dfd1';
         ctx.font = '11px serif';
-        ctx.fillText(`📅 ${dateInfo.romanCalendarStr} [${dateInfo.zodiacSymbol} ${dateInfo.zodiacName}]`, hudX + 12, hudY + 42);
+        ctx.fillText(`📅 ${dateInfo.romanCalendarStr} [${dateInfo.zodiacSymbol}]`, hudX + 12, hudY + 40);
 
         // Roman Seasonal Hour
-        let hourText = 'Nox (Night — Vigilia)';
+        let hourText = 'Nox (Night)';
         if (solar.isDaytime && solar.romanHourIndex >= 0) {
             hourText = `${ROMAN_NUMERALS[solar.romanHourIndex]} — Hora ${ROMAN_NUMERALS[solar.romanHourIndex]}`;
             if (solar.romanHourIndex === 5) hourText += ' (Meridies)';
         }
         ctx.fillStyle = '#ffcf73';
-        ctx.fillText(`⏳ ${hourText}`, hudX + 12, hudY + 62);
+        ctx.fillText(`⏳ ${hourText}`, hudX + 12, hudY + 58);
 
         // Astronomical Solar Declination
         const sign = solar.declinationDeg >= 0 ? '+' : '';
         ctx.fillStyle = '#c7b49e';
         ctx.font = '10px monospace';
-        ctx.fillText(`Solar Declination δ : ${sign}${solar.declinationDeg.toFixed(2)}°`, hudX + 12, hudY + 82);
+        ctx.fillText(`Declination δ: ${sign}${solar.declinationDeg.toFixed(1)}°`, hudX + 12, hudY + 76);
 
         // Equation of Time (EoT)
         const eotSign = solar.eotMinutes >= 0 ? '+' : '';
-        ctx.fillText(`Equation of Time    : ${eotSign}${solar.eotMinutes.toFixed(2)} min`, hudX + 12, hudY + 100);
+        ctx.fillText(`Eq. of Time  : ${eotSign}${solar.eotMinutes.toFixed(1)} min`, hudX + 12, hudY + 92);
 
         // Altitude & Azimuth
-        ctx.fillText(`Solar Alt / Az      : ${solar.altitudeDeg.toFixed(1)}° / ${solar.azimuthDeg.toFixed(1)}°`, hudX + 12, hudY + 118);
+        ctx.fillText(`Alt / Az     : ${solar.altitudeDeg.toFixed(1)}° / ${solar.azimuthDeg.toFixed(1)}°`, hudX + 12, hudY + 108);
 
-        // Apparent Solar Time vs Mean Time
-        const hrs = Math.floor(solar.astHours);
-        const mins = Math.floor((solar.astHours - hrs) * 60);
-        const astStr = `${hrs < 10 ? '0' + hrs : hrs}:${mins < 10 ? '0' + mins : mins}`;
-        ctx.fillText(`Apparent Solar Time : ${astStr} (True Dial)`, hudX + 12, hudY + 136);
+        if (!narrow || hudH > 140) {
+            // Apparent Solar Time vs Mean Time
+            const hrs = Math.floor(solar.astHours);
+            const mins = Math.floor((solar.astHours - hrs) * 60);
+            const astStr = `${hrs < 10 ? '0' + hrs : hrs}:${mins < 10 ? '0' + mins : mins}`;
+            ctx.fillText(`Solar Time   : ${astStr} (True Dial)`, hudX + 12, hudY + 124);
+        }
 
         ctx.restore();
     }

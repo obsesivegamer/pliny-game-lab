@@ -3,6 +3,8 @@
 // Grounded in Thucydides, Xenophon, and Epaminondas' Oblique Order (Leuctra, 371 BC)
 // Zero external dependencies — pure ES module
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class HoplitePhalanxEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -13,6 +15,8 @@ export class HoplitePhalanxEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+
+    attachTouchBridge(this, canvas);
 
     // Simulation Parameters (Tunable via UI)
     this.ranksDepth = 8;             // 4, 8, 16 ranks (or 32 for Epaminondas oblique mode)
@@ -654,6 +658,14 @@ export class HoplitePhalanxEngine {
   /* LIFECYCLE & CONTRACT METHODS                                               */
   /* -------------------------------------------------------------------------- */
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   resize(width, height, dpr = 1) {
     this.width = width;
     this.height = height;
@@ -690,6 +702,7 @@ export class HoplitePhalanxEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -1672,13 +1685,19 @@ export class HoplitePhalanxEngine {
   }
 
   renderHUD(ctx) {
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
     ctx.save();
+    ctx.scale(ui, ui);
 
     // 1. Center Top: Tug-of-War Othismos Push Gauge
-    const barW = Math.min(360, this.width * 0.45);
-    const barH = 14;
-    const barX = (this.width - barW) * 0.5;
-    const barY = 24;
+    const barW = Math.min(narrow ? 260 : 340, sw - 40);
+    const barH = narrow ? 12 : 14;
+    const barX = (sw - barW) * 0.5;
+    const barY = narrow ? 20 : 24;
 
     // Bar Background
     ctx.fillStyle = 'rgba(10, 12, 18, 0.85)';
@@ -1688,8 +1707,7 @@ export class HoplitePhalanxEngine {
     ctx.strokeRect(barX, barY, barW, barH);
 
     // Dynamic Displacement Fill
-    // Displacement mapped: -180px (Theban peak) to +180px (Spartan peak)
-    const normalized = (this.battleLineOffset + 180) / 360.0;
+    const normalized = Math.max(0, Math.min(1, (this.battleLineOffset + 180) / 360.0));
     const splitX = barX + (barW * normalized);
 
     // Spartan (Red) Half
@@ -1709,23 +1727,26 @@ export class HoplitePhalanxEngine {
     ctx.fillRect(splitX - 1.5, barY - 4, 3, barH + 8);
 
     // 2. HUD Labels & Pressure Gauges
-    ctx.font = 'bold 11px Cinzel, serif, -apple-system';
+    ctx.font = `bold ${narrow ? 9 : 11}px Cinzel, serif, -apple-system`;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#e63946';
-    ctx.fillText(`SPARTANS: ${(this.spartanTotalPressure / 1000).toFixed(1)} kN`, barX, barY - 8);
+    ctx.fillText(narrow ? `SP: ${(this.spartanTotalPressure / 1000).toFixed(1)} kN` : `SPARTANS: ${(this.spartanTotalPressure / 1000).toFixed(1)} kN`, barX, barY - 6);
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#70d6ff';
-    ctx.fillText(`THEBANS: ${(this.thebanTotalPressure / 1000).toFixed(1)} kN`, barX + barW, barY - 8);
+    ctx.fillText(narrow ? `TH: ${(this.thebanTotalPressure / 1000).toFixed(1)} kN` : `THEBANS: ${(this.thebanTotalPressure / 1000).toFixed(1)} kN`, barX + barW, barY - 6);
 
     // 3. Tactical Status Banner
-    ctx.font = '600 12px "JetBrains Mono", monospace';
+    ctx.font = `600 ${narrow ? 10 : 12}px "JetBrains Mono", monospace`;
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffd700';
-    ctx.fillText(this.battleStatus, this.width * 0.5, barY + barH + 16);
+    ctx.fillText(this.battleStatus, sw * 0.5, barY + barH + 16);
 
-    // 4. Selected Hoplite Inspector Tooltip
+    ctx.restore();
+
+    // 4. Selected Hoplite Inspector Tooltip (in world coordinates)
     if (this.selectedHoplite && this.selectedHoplite.isAlive) {
+      ctx.save();
       const h = this.selectedHoplite;
       const tipW = 160;
       const tipH = 68;
@@ -1748,8 +1769,7 @@ export class HoplitePhalanxEngine {
       ctx.fillText(`Rank: ${h.rank + 1} | File: ${h.file + 1}`, tipX + 8, tipY + 30);
       ctx.fillText(`Othismos Load: ${h.pressure.toFixed(0)} N`, tipX + 8, tipY + 44);
       ctx.fillText(`Stamina: ${h.stamina.toFixed(0)}% | HP: ${h.health}`, tipX + 8, tipY + 58);
+      ctx.restore();
     }
-
-    ctx.restore();
   }
 }

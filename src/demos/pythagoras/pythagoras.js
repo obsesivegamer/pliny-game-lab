@@ -4,6 +4,8 @@
 // Fourier overtone decomposition, oscilloscope waveforms, Lissajous figures,
 // and polished Roman/Hellenistic bronze soundboard aesthetics.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class PythagorasEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -64,6 +66,7 @@ export class PythagorasEngine {
     this.updateBoardLayout();
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   // ---------------------------------------------------------------------------
@@ -944,34 +947,39 @@ export class PythagorasEngine {
 
   renderHUD(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
 
     // Classical Inscription Header
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
-    ctx.font = 'bold 15px Cinzel, serif';
+    ctx.font = `bold ${narrow ? 12 : 15}px Cinzel, serif`;
     ctx.fillStyle = '#d4af37';
-    ctx.fillText('PYTHAGORAS: KANON HARMONICUS', 40, 20);
+    ctx.fillText('PYTHAGORAS: KANON HARMONICUS', narrow ? 16 : 40, 20);
 
     ctx.font = '10px JetBrains Mono, monospace';
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Naturalis Historia Lib. II — Monochordum & Mathematica Consonantia', 40, 40);
+    ctx.fillText(narrow ? 'Lib. II — Monochordum' : 'Naturalis Historia Lib. II — Monochordum & Mathematica Consonantia', narrow ? 16 : 40, 40);
 
     // Consonant Ratio readout badge
     const activePreset = this.presets.find(p => Math.abs(this.bridgeRatio - p.ratio) < 0.02);
     ctx.fillStyle = '#ffd97d';
-    ctx.font = '11px monospace';
+    ctx.font = `${narrow ? 10 : 11}px monospace`;
     if (activePreset) {
-      ctx.fillText(`Interval: ${activePreset.name}`, 40, 58);
+      ctx.fillText(narrow ? `Interval: ${activePreset.label} (${activePreset.greek})` : `Interval: ${activePreset.name}`, narrow ? 16 : 40, 58);
     } else {
-      ctx.fillText(`Interval: Custom Ratio (${(this.bridgeRatio / (1 - this.bridgeRatio)).toFixed(3)}:1)`, 40, 58);
+      ctx.fillText(`Interval: Custom (${(this.bridgeRatio / (1 - this.bridgeRatio)).toFixed(2)}:1)`, narrow ? 16 : 40, 58);
     }
 
     // Interaction hint footer
     ctx.fillStyle = 'rgba(212, 175, 55, 0.6)';
     ctx.font = '10px Cinzel, serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Click/Drag String: Pluck | Drag Bridge: Ratio | 1-5: Presets | Space: Pluck', 40, Math.min(this.board.y - 12, 130));
+    ctx.fillText(narrow ? 'Drag: Pluck / Ratio | Tap: Sound' : 'Click/Drag String: Pluck | Drag Bridge: Ratio | 1-5: Presets | Space: Pluck', narrow ? 16 : 40, Math.min(this.board.y - 12, 130));
 
     ctx.restore();
   }
@@ -1133,7 +1141,16 @@ export class PythagorasEngine {
     this.updateBoardLayout();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audioCtx) {
       try {
         this.audioCtx.close();

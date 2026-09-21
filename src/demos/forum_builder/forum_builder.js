@@ -12,6 +12,8 @@
  * 7. Autonomous Roman citizen walking agents with BFS road pathfinding
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class ForumBuilderEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -21,6 +23,7 @@ export class ForumBuilderEngine {
     this.width = canvas.width || 800;
     this.height = canvas.height || 600;
     this.dpr = 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Grid Parameters
     this.cols = 24;
@@ -328,6 +331,7 @@ export class ForumBuilderEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -342,6 +346,14 @@ export class ForumBuilderEngine {
   // =========================================================================
   // RESIZE & COORDINATE TRANSFORMATIONS
   // =========================================================================
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
 
   resize(width, height, dpr) {
     this.width = width;
@@ -1408,35 +1420,44 @@ export class ForumBuilderEngine {
 
   renderHeaderHUD(ctx) {
     ctx.save();
-    const w = this.width;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Imperial Roman Banner across top
+    const bannerH = 38;
     ctx.fillStyle = '#8B1E0F';
-    ctx.fillRect(0, 0, w, 38);
+    ctx.fillRect(0, 0, sw, bannerH);
 
     // Gold borders
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(0, 0, w, 38);
+    ctx.strokeRect(0, 0, sw, bannerH);
 
     // SPQR Title
     ctx.fillStyle = '#ECEFF1';
-    ctx.font = 'bold 13px "Cinzel", "Times New Roman", serif';
+    ctx.font = 'bold 12px "Cinzel", "Times New Roman", serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('S · P · Q · R  |  FORVM ROMANVM', 14, 19);
+    ctx.fillText(narrow ? 'S·P·Q·R' : 'S · P · Q · R  |  FORVM ROMANVM', 10, bannerH / 2);
 
     // Metrics Display Chips
-    ctx.font = '11px monospace';
+    ctx.font = narrow ? '10px monospace' : '11px monospace';
     ctx.textAlign = 'right';
 
-    const textPop = `🏛️ Pop: ${this.totalPopulation}`;
-    const textWater = `💧 Water: ${Math.round(this.waterCoverage)}%`;
-    const textHarmony = `⚖️ Harmony: ${Math.round(this.civicHarmony)}%`;
-    const textEnt = `Entities: ${this.getEntityCount()}`;
-
-    ctx.fillStyle = '#ECEFF1';
-    ctx.fillText(`${textPop}   ${textWater}   ${textHarmony}   ${textEnt}`, w - 16, 19);
+    if (narrow) {
+      ctx.fillStyle = '#ECEFF1';
+      ctx.fillText(`👥${this.totalPopulation} 💧${Math.round(this.waterCoverage)}% ⚖️${Math.round(this.civicHarmony)}%`, sw - 10, bannerH / 2);
+    } else {
+      const textPop = `🏛️ Pop: ${this.totalPopulation}`;
+      const textWater = `💧 Water: ${Math.round(this.waterCoverage)}%`;
+      const textHarmony = `⚖️ Harmony: ${Math.round(this.civicHarmony)}%`;
+      const textEnt = `Entities: ${this.getEntityCount()}`;
+      ctx.fillStyle = '#ECEFF1';
+      ctx.fillText(`${textPop}   ${textWater}   ${textHarmony}   ${textEnt}`, sw - 16, bannerH / 2);
+    }
 
     ctx.restore();
   }

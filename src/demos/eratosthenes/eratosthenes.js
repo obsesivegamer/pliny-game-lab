@@ -2,6 +2,8 @@
 // Pliny Game Lab — Pavilion VI: Mathematica & Geometria
 // Zero external dependencies — pure ES module
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // -------------------------------------------------------------
 // Historical & Mathematical Constants
 // -------------------------------------------------------------
@@ -112,6 +114,7 @@ export class EratosthenesEngine {
     this.initPhotons();
     this.initSieveGrid();
     this.initControls();
+    attachTouchBridge(this, canvas);
   }
 
   // -------------------------------------------------------------
@@ -658,6 +661,14 @@ export class EratosthenesEngine {
     this.initPhotons();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   update(dt) {
     this.elapsed += dt;
 
@@ -704,6 +715,7 @@ export class EratosthenesEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audioCtx) {
       try {
         this.audioCtx.close();
@@ -1333,36 +1345,39 @@ export class EratosthenesEngine {
 
   renderSieveHeader(ctx) {
     const w = this.width;
+    const narrow = w < 560;
 
     ctx.save();
     ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 16px Cinzel, serif';
+    ctx.font = `bold ${narrow ? 12 : 16}px Cinzel, serif`;
     ctx.textAlign = 'left';
-    ctx.fillText('SIEVE OF ERATOSTHENES • KOKKINON (Κόσκινον Ἐρατοσθένους)', 28, 34);
+    ctx.fillText(narrow ? 'SIEVE OF ERATOSTHENES' : 'SIEVE OF ERATOSTHENES • KOKKINON (Κόσκινον Ἐρατοσθένους)', narrow ? 16 : 28, 34);
 
     ctx.fillStyle = '#c7b28a';
-    ctx.font = '12px serif';
-    ctx.fillText('Systematic elimination of composite multiples in a natural number grid', 28, 52);
+    ctx.font = `${narrow ? 9.5 : 12}px serif`;
+    ctx.fillText(narrow ? 'Elimination of composite multiples' : 'Systematic elimination of composite multiples in a natural number grid', narrow ? 16 : 28, 52);
 
     // Status Pill
-    ctx.textAlign = 'right';
     let statusText = `Sifting with Prime p = ${this.currentPrime}`;
     let statusColor = '#ffd700';
     if (this.sieveState === 'FINISHED') {
-      statusText = `🏆 All ${this.primesFound.length} Primes Found up to ${this.gridLimit}!`;
+      statusText = `🏆 Primes Found up to ${this.gridLimit}!`;
       statusColor = '#3bd6c6';
     } else if (this.sieveState === 'MARK_MULTIPLES') {
       statusText = `Eliminating multiples: ${this.currentPrime} × k ...`;
       statusColor = '#f59e0b';
     }
 
-    ctx.fillStyle = statusColor;
-    ctx.font = 'bold 13px Cinzel, serif';
-    ctx.fillText(statusText, w - 28, 36);
+    if (!narrow) {
+      ctx.textAlign = 'right';
+      ctx.fillStyle = statusColor;
+      ctx.font = 'bold 13px Cinzel, serif';
+      ctx.fillText(statusText, w - 28, 36);
 
-    ctx.fillStyle = '#ede8dc';
-    ctx.font = '11px JetBrains Mono, monospace';
-    ctx.fillText(`Prime Density π(${this.gridLimit})/${this.gridLimit} = ${((this.primesFound.length / this.gridLimit) * 100).toFixed(1)}%`, w - 28, 52);
+      ctx.fillStyle = '#ede8dc';
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.fillText(`Prime Density π(${this.gridLimit})/${this.gridLimit} = ${((this.primesFound.length / this.gridLimit) * 100).toFixed(1)}%`, w - 28, 52);
+    }
 
     ctx.restore();
   }

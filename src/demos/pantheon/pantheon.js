@@ -9,6 +9,8 @@
 // - Unreinforced Roman concrete stress tensor visualization (meridian compression vs hoop tension)
 // - April 21 Parilia / Rome Founding Zenith alignment mode
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class PantheonEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -18,6 +20,7 @@ export class PantheonEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Clock & Astronomical Parameters
     this.time = 0; // Elapsed animation time in seconds
@@ -1143,17 +1146,25 @@ export class PantheonEngine {
 
   renderHUD(ctx, w, h, solar) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = (w || this.width) / ui;
+    const sh = (h || this.height) / ui;
+    const narrow = sw < 560;
+
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     // Monumental Title Banner
-    ctx.font = 'bold 13px Cinzel, serif';
+    ctx.font = 'bold 12px Cinzel, serif';
     ctx.fillStyle = '#D4AF37';
-    ctx.fillText('PANTHEON HADRIANI — ROMA', 20, 20);
+    ctx.fillText('PANTHEON HADRIANI', 16, 16);
 
-    ctx.font = '10px JetBrains Mono, monospace';
-    ctx.fillStyle = '#A0988E';
-    ctx.fillText('Naturalis Historia Lib. XXXVI — Opus Caementicium Rotundae', 20, 38);
+    if (!narrow) {
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillStyle = '#A0988E';
+      ctx.fillText('Naturalis Historia Lib. XXXVI — Opus Caementicium Rotundae', 16, 32);
+    }
 
     // Epigraphic Astronomy & Structural Data
     const timeHours = Math.floor(this.timeOfDay);
@@ -1163,46 +1174,40 @@ export class PantheonEngine {
     const azDeg = (solar.azimuth * (180 / Math.PI)).toFixed(1);
 
     const monthNames = [
-      'Ianuarius', 'Februarius', 'Martius', 'Aprilis', 'Maius', 'Iunius',
-      'Iulius', 'Augustus', 'September', 'October', 'November', 'December'
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     const monthName = monthNames[Math.max(0, Math.min(11, this.calendarMonth - 1))];
 
+    ctx.font = narrow ? '9px JetBrains Mono, monospace' : '10px JetBrains Mono, monospace';
     ctx.fillStyle = '#E0E0E0';
-    ctx.fillText(`Hora Solis: ${timeStr} | Mensis: ${monthName} | Elevatio: ${elDeg}° | Azimuth: ${azDeg}°`, 20, 54);
+    const yAstronomical = narrow ? 34 : 48;
+    ctx.fillText(`Hora: ${timeStr} | ${monthName} | El: ${elDeg}° | Az: ${azDeg}°`, 16, yAstronomical);
 
     if (this.viewMode === 'tensors') {
       ctx.fillStyle = '#00FFFF';
-      ctx.fillText('Modus: TENSORES STRESSIS (Cyan = Compressio Meridiana | Rubrum = Tensio Circumferentialis)', 20, 70);
-      ctx.fillStyle = '#FFD700';
-      ctx.fillText('Linea Neutralis: θ = 51.8° (Orbis Aureus Transeundi in Tensionem)', 20, 84);
+      ctx.fillText(narrow ? 'Modus: STRESS TENSORS' : 'Modus: TENSORES STRESSIS (Cyan = Compressio | Red = Tensio)', 16, yAstronomical + 16);
     } else {
-      const surfaceName = solar.hitSurface === 'floor' ? 'Pavimentum Opus Sectile' :
-                          (solar.hitSurface === 'drum' ? 'Murus Rotundae' :
-                          (solar.hitSurface === 'dome' ? 'Lacunaria Tholi' : 'Nox / Sol Sub Horizonte'));
+      const surfaceName = solar.hitSurface === 'floor' ? 'Pavimentum' :
+                          (solar.hitSurface === 'drum' ? 'Murus' :
+                          (solar.hitSurface === 'dome' ? 'Lacunaria' : 'Nox'));
       ctx.fillStyle = '#D4AF37';
-      ctx.fillText(`Vestigium Solare: ${surfaceName} | Oculus: 9.0m Aperiens`, 20, 70);
+      ctx.fillText(`Vestigium: ${surfaceName} | Oculus: 9.0m`, 16, yAstronomical + 16);
     }
 
-    // April 21 Zenith Highlight Banner
+    // April 21 Zenith Highlight Banner or hint
     if (this.isRomeZenithActive || this.zenithBannerTimer > 0) {
       ctx.save();
       ctx.textAlign = 'center';
-      ctx.font = 'bold 12px Cinzel, serif';
+      ctx.font = 'bold 11px Cinzel, serif';
       ctx.fillStyle = '#FFE680';
-      ctx.shadowColor = '#D4AF37';
-      ctx.shadowBlur = 10;
-      ctx.fillText('🏛️ PARILIA — APRIL 21 ROMAE NATALIS: SOL PER OCULUM PORTAM SEPTENTRIONALEM COLLUSTRAT 🏛️', w * 0.5, h - 45);
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.fillStyle = '#D4AF37';
-      ctx.shadowBlur = 0;
-      ctx.fillText('Solar zenith streams onto northern portal archway illuminating the Emperor as he enters', w * 0.5, h - 28);
+      ctx.fillText('🏛️ PARILIA — ROMAE NATALIS 🏛️', sw * 0.5, sh - (narrow ? 25 : 35));
       ctx.restore();
-    } else {
+    } else if (!narrow) {
       // Standard navigation hint
       ctx.fillStyle = 'rgba(212, 175, 55, 0.65)';
       ctx.font = '10px Cinzel, serif';
-      ctx.fillText('Drag: 3D Orbit Rotunda | Scroll: Zoom | Space: Stress Mode | Z: Rome Zenith Alignment', 20, h - 26);
+      ctx.fillText('Drag: Orbit | Scroll: Zoom | Space: Stress Mode | Z: Zenith', 16, sh - 22);
     }
 
     ctx.restore();
@@ -1420,6 +1425,14 @@ export class PantheonEngine {
   // Lifecycle & Interface Methods
   // ---------------------------------------------------------------------------
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   resize(width, height, dpr = 1) {
     this.width = width;
     this.height = height;
@@ -1444,6 +1457,7 @@ export class PantheonEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }

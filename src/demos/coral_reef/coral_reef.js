@@ -2,6 +2,8 @@
 // Diffusion-Limited Aggregation (DLA) branching calcification with Brownian nutrient ions,
 // schooling tropical boids, dynamic water caustics, and bioluminescent pulse dynamics.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class CoralReefEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -11,6 +13,7 @@ export class CoralReefEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Timing
     this.time = 0;
@@ -1423,10 +1426,15 @@ export class CoralReefEngine {
 
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Top-Left Marine Telemetry Card
     const pad = 14;
-    const cardW = 260;
+    const cardW = narrow ? Math.min(sw - 28, 230) : 260;
     const cardH = 92;
 
     ctx.fillStyle = 'rgba(3, 10, 22, 0.82)';
@@ -1442,10 +1450,10 @@ export class CoralReefEngine {
 
     // Stat Lines
     ctx.fillStyle = '#c7d5e0';
-    ctx.font = '10px monospace';
-    ctx.fillText(`BIOMINERALIZATION: ${this.stats.recentCalcRate.toFixed(1)} /s (TOT: ${this.stats.calcificationsTotal})`, pad + 10, pad + 35);
-    ctx.fillText(`CURRENT DRIFT:     ${this.currentFlow >= 0 ? '+' : ''}${this.currentFlow.toFixed(2)} kn (CROSSFLOW)`, pad + 10, pad + 50);
-    ctx.fillText(`ENTITIES:          ${this.getEntityCount()} (DLA+IONS+BOIDS)`, pad + 10, pad + 65);
+    ctx.font = narrow ? '9px monospace' : '10px monospace';
+    ctx.fillText(`CALCIFICATION: ${this.stats.recentCalcRate.toFixed(1)}/s (TOT: ${this.stats.calcificationsTotal})`, pad + 10, pad + 35);
+    ctx.fillText(`CURRENT DRIFT: ${this.currentFlow >= 0 ? '+' : ''}${this.currentFlow.toFixed(2)} kn`, pad + 10, pad + 50);
+    ctx.fillText(`ENTITIES:      ${this.getEntityCount()}`, pad + 10, pad + 65);
 
     // Species Badges
     const cyanNodes = this.coralNodes.filter(n => n.species === 'cyan').length;
@@ -1455,38 +1463,40 @@ export class CoralReefEngine {
     ctx.fillStyle = '#00F0FF';
     ctx.fillText(`■ ${cyanNodes}`, pad + 10, pad + 81);
     ctx.fillStyle = '#FF007F';
-    ctx.fillText(`■ ${magNodes}`, pad + 78, pad + 81);
+    ctx.fillText(`■ ${magNodes}`, pad + (narrow ? 65 : 78), pad + 81);
     ctx.fillStyle = '#FFD700';
-    ctx.fillText(`■ ${goldNodes}`, pad + 146, pad + 81);
+    ctx.fillText(`■ ${goldNodes}`, pad + (narrow ? 120 : 146), pad + 81);
 
-    // Top-Right Current & Weather Compass Indicator
-    const compW = 100;
-    const compH = 50;
-    const compX = this.width - compW - pad;
-    ctx.fillStyle = 'rgba(3, 10, 22, 0.82)';
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.35)';
-    ctx.fillRect(compX, pad, compW, compH);
-    ctx.strokeRect(compX, pad, compW, compH);
+    if (!narrow) {
+      // Top-Right Current & Weather Compass Indicator
+      const compW = 100;
+      const compH = 50;
+      const compX = sw - compW - pad;
+      ctx.fillStyle = 'rgba(3, 10, 22, 0.82)';
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.35)';
+      ctx.fillRect(compX, pad, compW, compH);
+      ctx.strokeRect(compX, pad, compW, compH);
 
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 9px monospace';
-    ctx.fillText('OCEAN FLOW', compX + 18, pad + 16);
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 9px monospace';
+      ctx.fillText('OCEAN FLOW', compX + 18, pad + 16);
 
-    // Flow arrow vector
-    const arrowCenterX = compX + compW * 0.5;
-    const arrowCenterY = pad + 33;
-    const arrowLength = 24 * Math.min(1.5, Math.max(0.3, Math.abs(this.currentFlow) / 1.5));
-    const dirSign = this.currentFlow >= 0 ? 1 : -1;
+      // Flow arrow vector
+      const arrowCenterX = compX + compW * 0.5;
+      const arrowCenterY = pad + 33;
+      const arrowLength = 24 * Math.min(1.5, Math.max(0.3, Math.abs(this.currentFlow) / 1.5));
+      const dirSign = this.currentFlow >= 0 ? 1 : -1;
 
-    ctx.strokeStyle = '#00F0FF';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(arrowCenterX - (arrowLength * 0.5) * dirSign, arrowCenterY);
-    ctx.lineTo(arrowCenterX + (arrowLength * 0.5) * dirSign, arrowCenterY);
-    ctx.lineTo(arrowCenterX + (arrowLength * 0.25) * dirSign, arrowCenterY - 4);
-    ctx.moveTo(arrowCenterX + (arrowLength * 0.5) * dirSign, arrowCenterY);
-    ctx.lineTo(arrowCenterX + (arrowLength * 0.25) * dirSign, arrowCenterY + 4);
-    ctx.stroke();
+      ctx.strokeStyle = '#00F0FF';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(arrowCenterX - (arrowLength * 0.5) * dirSign, arrowCenterY);
+      ctx.lineTo(arrowCenterX + (arrowLength * 0.5) * dirSign, arrowCenterY);
+      ctx.lineTo(arrowCenterX + (arrowLength * 0.25) * dirSign, arrowCenterY - 4);
+      ctx.moveTo(arrowCenterX + (arrowLength * 0.5) * dirSign, arrowCenterY);
+      ctx.lineTo(arrowCenterX + (arrowLength * 0.25) * dirSign, arrowCenterY + 4);
+      ctx.stroke();
+    }
 
     ctx.restore();
   }
@@ -1494,6 +1504,15 @@ export class CoralReefEngine {
   /* -------------------------------------------------------------------------- */
   /* LIFECYCLE & CONTRACT METHODS                                               */
   /* -------------------------------------------------------------------------- */
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   /**
    * Returns total count of active simulation entities:
    * Coral branch segments + free nutrient ions + swimming fish boids.
@@ -1534,6 +1553,7 @@ export class CoralReefEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audioCtx) {
       try {
         this.audioCtx.close();

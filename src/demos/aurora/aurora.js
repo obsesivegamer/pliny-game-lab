@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book II, Chapter 33: De Chasmate et Caelestibus Miraculis)
 // and modern Magnetospheric Physics (Lorentz Force, Dipole Trapping & Auroral Oval Spectral Transitions).
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 /**
  * Deterministic 2D Perlin & Fractal Brownian Motion (FBM) Noise Generator.
  * Zero external dependencies, pure ES implementation.
@@ -124,6 +126,7 @@ export class AuroraEngine {
     // Initial setup
     this.initSimulation();
     this.initControls();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------
@@ -955,8 +958,14 @@ export class AuroraEngine {
 
   renderRomanTelemetryHUD(ctx) {
     ctx.save();
-    const hudW = 280;
-    const hudH = 150;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const hudW = narrow ? Math.min(sw - 28, 280) : 280;
+    const hudH = narrow ? 134 : 150;
     const hudX = 14;
     const hudY = 14;
 
@@ -967,7 +976,7 @@ export class AuroraEngine {
 
     ctx.fillStyle = hudGrad;
     ctx.beginPath();
-    ctx.roundRect(hudX, hudY, hudW, hudH, 8);
+    ctx.roundRect ? ctx.roundRect(hudX, hudY, hudW, hudH, 8) : ctx.rect(hudX, hudY, hudW, hudH);
     ctx.fill();
 
     // Cyber-Gold border
@@ -984,37 +993,38 @@ export class AuroraEngine {
     // Pliny the Elder Quote
     ctx.fillStyle = '#b0b8d0';
     ctx.font = 'italic 10px serif';
-    ctx.fillText('“In caelo trabes ac chasmata visa...” (Plin. II.33)', hudX + 12, hudY + 40);
+    ctx.fillText('“In caelo trabes ac chasmata...”', hudX + 12, hudY + 38);
 
     // Telemetry lines
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Solar Wind Velocity :', hudX + 12, hudY + 62);
+    ctx.fillText('Solar Wind:', hudX + 12, hudY + 58);
     ctx.fillStyle = '#39ff14';
-    ctx.fillText(`${Math.round(this.solarWindStrength)} km/s (Fast Stream)`, hudX + 144, hudY + 62);
+    ctx.fillText(`${Math.round(this.solarWindStrength)} km/s`, hudX + 105, hudY + 58);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Interplanetary B_z  :', hudX + 12, hudY + 79);
+    ctx.fillText('B_z Coup  :', hudX + 12, hudY + 74);
     const bzVal = (-3.2 - (this.solarWindStrength / 300) * 2.1).toFixed(1);
     ctx.fillStyle = '#ff80df';
-    ctx.fillText(`${bzVal} nT (Southward Coup)`, hudX + 144, hudY + 79);
+    ctx.fillText(`${bzVal} nT`, hudX + 105, hudY + 74);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Auroral Oval Lat    :', hudX + 12, hudY + 96);
+    ctx.fillText('Oval Lat  :', hudX + 12, hudY + 90);
     ctx.fillStyle = '#00ffff';
-    ctx.fillText(`67.5° N (Dipole: ${(this.dipoleTilt * 180 / Math.PI).toFixed(1)}°)`, hudX + 144, hudY + 96);
+    ctx.fillText(`67.5° N`, hudX + 105, hudY + 90);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Spectral Emission   :', hudX + 12, hudY + 113);
-    const specLabel = this.colorShift < 0.4 ? 'OI 557.7nm [Green]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purple]');
+    ctx.fillText('Emission  :', hudX + 12, hudY + 106);
+    const specLabel = this.colorShift < 0.4 ? 'OI 557nm [Grn]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purp]');
     ctx.fillStyle = this.colorShift < 0.4 ? '#39ff14' : (this.colorShift < 0.7 ? '#00ffff' : '#bf40bf');
-    ctx.fillText(specLabel, hudX + 144, hudY + 113);
+    ctx.fillText(specLabel, hudX + 105, hudY + 106);
 
-    // Entity count
-    ctx.fillStyle = '#8c909e';
-    ctx.fillText('Simulated Entities  :', hudX + 12, hudY + 130);
-    ctx.fillStyle = '#d4af37';
-    ctx.fillText(`${this.getEntityCount()} nodes & ions`, hudX + 144, hudY + 130);
+    if (!narrow || hudH > 140) {
+      ctx.fillStyle = '#8c909e';
+      ctx.fillText('Entities  :', hudX + 12, hudY + 122);
+      ctx.fillStyle = '#d4af37';
+      ctx.fillText(`${this.getEntityCount()} nodes/ions`, hudX + 105, hudY + 122);
+    }
 
     ctx.restore();
   }
@@ -1069,7 +1079,16 @@ export class AuroraEngine {
     this.initControls();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer && typeof document !== 'undefined') {
       this.uiElements.forEach((el) => {
         if (el.parentNode) el.parentNode.removeChild(el);

@@ -3,6 +3,8 @@
 // siphuncle cameral fluid/gas osmosis, Archimedean buoyancy dynamics, and hyponome jet pulses.
 // Visuals: Cutaway iridescent mother-of-pearl (nacre), Amber (#FFBF00), Pearl (#EAE6DF), Deep Sea Blue (#0B1B3D).
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class NautilusEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -12,6 +14,7 @@ export class NautilusEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Clock
     this.time = 0;
@@ -1103,11 +1106,17 @@ export class NautilusEngine {
   }
 
   renderHUD(ctx, pearlColor, amberColor) {
-    const pad = 16;
-    const boxW = 260;
-    const boxH = 102;
-
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const pad = 16;
+    const boxW = narrow ? Math.min(sw - 32, 230) : 260;
+    const boxH = narrow ? 92 : 102;
+
     ctx.fillStyle = 'rgba(6, 15, 33, 0.82)';
     ctx.strokeStyle = 'rgba(72, 202, 228, 0.45)';
     ctx.lineWidth = 1;
@@ -1116,27 +1125,27 @@ export class NautilusEngine {
 
     // Header Title
     ctx.fillStyle = amberColor;
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText('NAUTILUS POMPILIUS (HYDROSTATICS)', pad + 10, pad + 18);
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('NAUTILUS POMPILIUS', pad + 10, pad + 18);
 
     // Current Depth & Pressure
     const depthMargin = 60;
-    const depthSpan = Math.max(10, this.height - depthMargin * 2);
-    const validSpecY = isFinite(this.specimen.y) ? this.specimen.y : this.height * 0.45;
+    const depthSpan = Math.max(10, sh - depthMargin * 2);
+    const validSpecY = isFinite(this.specimen.y) ? this.specimen.y / ui : sh * 0.45;
     const currentDepthMeters = 20 + Math.max(0, Math.min(1, (validSpecY - depthMargin) / depthSpan)) * 480;
     const pressureAtm = 1.0 + (currentDepthMeters / 10.0);
 
     ctx.fillStyle = pearlColor;
-    ctx.font = '11px monospace';
+    ctx.font = narrow ? '9.5px monospace' : '11px monospace';
     const targetD = isFinite(this.depthTarget) ? this.depthTarget : 220;
-    ctx.fillText(`DEPTH: ${Math.round(currentDepthMeters)}m / TARGET: ${Math.round(targetD)}m`, pad + 10, pad + 38);
-    ctx.fillText(`PRESSURE: ${pressureAtm.toFixed(1)} atm (${(pressureAtm * 1.013).toFixed(1)} bar)`, pad + 10, pad + 54);
+    ctx.fillText(`DEPTH: ${Math.round(currentDepthMeters)}m / TGT: ${Math.round(targetD)}m`, pad + 10, pad + 36);
+    ctx.fillText(`PRESSURE: ${pressureAtm.toFixed(1)} atm`, pad + 10, pad + 50);
 
     // Archimedean Buoyancy State
     const totalMass = (this.specimen.dryMass || 0.82) + (this.specimen.fluidMass || 0.20);
     const neutralMass = 1.025;
     const netB = neutralMass - totalMass;
-    let buoyancyLabel = 'NEUTRAL (EQUILIBRIUM)';
+    let buoyancyLabel = 'NEUTRAL';
     let buoyancyColor = '#2EC4B6';
     if (netB > 0.015) {
       buoyancyLabel = 'POSITIVE (SURFACING)';
@@ -1147,43 +1156,45 @@ export class NautilusEngine {
     }
 
     ctx.fillStyle = buoyancyColor;
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText(`BUOYANCY: ${buoyancyLabel}`, pad + 10, pad + 70);
+    ctx.font = 'bold 9.5px monospace';
+    ctx.fillText(`BUOYANCY: ${buoyancyLabel}`, pad + 10, pad + 65);
 
     // Siphuncle Osmosis Rate & Active Entities
     ctx.fillStyle = 'rgba(234, 230, 223, 0.85)';
-    ctx.font = '10px monospace';
+    ctx.font = '9px monospace';
     const entities = this.getEntityCount();
-    ctx.fillText(`CAMERAL OSMOSIS: ${(this.osmosisRate || 1.2).toFixed(1)}x | ENTITIES: ${entities}`, pad + 10, pad + 88);
+    ctx.fillText(`OSMOSIS: ${(this.osmosisRate || 1.2).toFixed(1)}x | ENT: ${entities}`, pad + 10, pad + 80);
 
-    // Depth Gauge Scale on Right Margin
-    const gaugeX = this.width - 24;
-    const gaugeY1 = depthMargin;
-    const gaugeY2 = this.height - depthMargin;
+    if (!narrow) {
+      // Depth Gauge Scale on Right Margin
+      const gaugeX = sw - 24;
+      const gaugeY1 = depthMargin;
+      const gaugeY2 = sh - depthMargin;
 
-    ctx.strokeStyle = 'rgba(234, 230, 223, 0.25)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(gaugeX, gaugeY1);
-    ctx.lineTo(gaugeX, gaugeY2);
-    ctx.stroke();
+      ctx.strokeStyle = 'rgba(234, 230, 223, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(gaugeX, gaugeY1);
+      ctx.lineTo(gaugeX, gaugeY2);
+      ctx.stroke();
 
-    // Target depth marker
-    const targetY = gaugeY1 + ((targetD - 20) / 480) * (gaugeY2 - gaugeY1);
-    ctx.fillStyle = amberColor;
-    ctx.beginPath();
-    ctx.moveTo(gaugeX - 8, targetY);
-    ctx.lineTo(gaugeX, targetY - 5);
-    ctx.lineTo(gaugeX, targetY + 5);
-    ctx.closePath();
-    ctx.fill();
+      // Target depth marker
+      const targetY = gaugeY1 + ((targetD - 20) / 480) * (gaugeY2 - gaugeY1);
+      ctx.fillStyle = amberColor;
+      ctx.beginPath();
+      ctx.moveTo(gaugeX - 8, targetY);
+      ctx.lineTo(gaugeX, targetY - 5);
+      ctx.lineTo(gaugeX, targetY + 5);
+      ctx.closePath();
+      ctx.fill();
 
-    // Current specimen depth marker
-    const specY = Math.max(gaugeY1, Math.min(gaugeY2, validSpecY));
-    ctx.fillStyle = '#48CAE4';
-    ctx.beginPath();
-    ctx.arc(gaugeX, specY, 4, 0, Math.PI * 2);
-    ctx.fill();
+      // Current specimen depth marker
+      const specY = Math.max(gaugeY1, Math.min(gaugeY2, validSpecY));
+      ctx.fillStyle = '#48CAE4';
+      ctx.beginPath();
+      ctx.arc(gaugeX, specY, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
   }
@@ -1191,6 +1202,14 @@ export class NautilusEngine {
   /* -------------------------------------------------------------------------- */
   /* 7. CONTRACT METHODS: ENTITY COUNT, RESIZE, RESET, DESTROY                 */
   /* -------------------------------------------------------------------------- */
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
 
   getEntityCount() {
     // Exact spec requirement: Chamber septa segments + gas particles + water jet nodes
@@ -1248,6 +1267,7 @@ export class NautilusEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audioCtx) {
       try {
         this.audioCtx.close();

@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book XI: Bees, Hexagonal Combs & Superorganism)
 // and Karl von Frisch's Nobel Prize-winning discovery of the Honeybee Dance Language (1973).
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class ApisEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -45,6 +47,7 @@ export class ApisEngine {
 
     this.initSimulation();
     this.initControls();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------
@@ -1657,7 +1660,16 @@ export class ApisEngine {
     this.initSimulation();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.cells = [];
     this.bees = [];
     this.flowers = [];

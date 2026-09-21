@@ -80,6 +80,8 @@ const SAROS_ECLIPSE_GLYPHS = [
   { month: 217, type: 'LUNAR', glyph: 'H', hour: 15 }
 ];
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class AntikytheraEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -119,6 +121,7 @@ export class AntikytheraEngine {
 
     this.initMechanism();
     this.buildControls();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------
@@ -879,7 +882,16 @@ export class AntikytheraEngine {
     }
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -2176,18 +2188,23 @@ export class AntikytheraEngine {
    * ---------------------------------------------------------------------- */
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Top-Left Panel: Title & Historical Reference
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
-    ctx.font = 'bold 13px "Cinzel", serif';
+    ctx.font = narrow ? 'bold 11px "Cinzel", serif' : 'bold 13px "Cinzel", serif';
     ctx.fillStyle = '#d4af37';
-    ctx.fillText('ANTIKYTHERA MECHANE (Ὀδυσσεὺς Μηχανή)', 20, 20);
+    ctx.fillText('ANTIKYTHERA MECHANE', 16, 16);
 
-    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.font = '9px "JetBrains Mono", monospace';
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Circa 150-100 BC — Hellenistic Epicyclic Astronomical Computer', 20, 38);
+    ctx.fillText('Circa 150-100 BC — Analog Computer', 16, narrow ? 30 : 34);
 
     // Astronomical Telemetry Data
     const astro = this.astronomy;
@@ -2206,40 +2223,46 @@ export class AntikytheraEngine {
 
     const phasePct = (astro.phaseFraction * 100).toFixed(0);
     let phaseName = 'New Moon';
-    if (astro.phaseFraction < 0.05) phaseName = 'New Moon (Novilunium)';
-    else if (astro.phaseFraction < 0.45) phaseName = 'Crescent (Corniculum)';
-    else if (astro.phaseFraction < 0.55) phaseName = 'First / Last Quarter';
-    else if (astro.phaseFraction < 0.95) phaseName = 'Gibbous (Plenilunio Prox.)';
-    else phaseName = 'Full Moon (Plenilunium)';
+    if (astro.phaseFraction < 0.05) phaseName = 'New Moon';
+    else if (astro.phaseFraction < 0.45) phaseName = 'Crescent';
+    else if (astro.phaseFraction < 0.55) phaseName = 'Quarter';
+    else if (astro.phaseFraction < 0.95) phaseName = 'Gibbous';
+    else phaseName = 'Full Moon';
 
     ctx.fillStyle = '#e6e8ee';
-    ctx.fillText(`Solar Time: Year ${solYear} | ${EGYPTIAN_MONTHS[monthIdx]} Day ${dayInMonth} (Day ${egyptianDay}/365)`, 20, 56);
-    ctx.fillText(`Sun Longitude: ${astro.solarEclipticDeg.toFixed(1)}° (${solSign.symbol} ${solSign.name} ${solDegInSign}°)`, 20, 72);
-    ctx.fillText(`Moon Longitude: ${astro.lunarEclipticDeg.toFixed(1)}° (${lunSign.symbol} ${lunSign.name} ${lunDegInSign}°)`, 20, 88);
-    ctx.fillText(`Moon Phase: ${phaseName} (${phasePct}% Illuminated)`, 20, 104);
+    if (narrow) {
+      ctx.fillText(`Year ${solYear} | ${EGYPTIAN_MONTHS[monthIdx]} Day ${dayInMonth}`, 16, 46);
+      ctx.fillText(`Sun: ${astro.solarEclipticDeg.toFixed(1)}° (${solSign.symbol} ${solSign.name})`, 16, 60);
+      ctx.fillText(`Moon: ${astro.lunarEclipticDeg.toFixed(1)}° | ${phaseName} (${phasePct}%)`, 16, 74);
+    } else {
+      ctx.fillText(`Solar Time: Year ${solYear} | ${EGYPTIAN_MONTHS[monthIdx]} Day ${dayInMonth} (Day ${egyptianDay}/365)`, 20, 52);
+      ctx.fillText(`Sun Longitude: ${astro.solarEclipticDeg.toFixed(1)}° (${solSign.symbol} ${solSign.name} ${solDegInSign}°)`, 20, 68);
+      ctx.fillText(`Moon Longitude: ${astro.lunarEclipticDeg.toFixed(1)}° (${lunSign.symbol} ${lunSign.name} ${lunDegInSign}°)`, 20, 84);
+      ctx.fillText(`Moon Phase: ${phaseName} (${phasePct}% Illuminated)`, 20, 100);
 
-    // Top-Right Panel: Cycles (Metonic, Saros, Olympiad)
-    ctx.textAlign = 'right';
-    const rx = this.width - 20;
+      // Top-Right Panel: Cycles (Metonic, Saros, Olympiad)
+      ctx.textAlign = 'right';
+      const rx = sw - 20;
 
-    ctx.fillStyle = '#3bd6c6';
-    ctx.fillText(`Metonic Cycle: Month ${astro.metonicMonth.toFixed(1)} / 235 (19 Solar Years)`, rx, 20);
+      ctx.fillStyle = '#3bd6c6';
+      ctx.fillText(`Metonic: Month ${astro.metonicMonth.toFixed(1)} / 235`, rx, 20);
 
-    const sarosMonthInt = Math.floor(astro.sarosMonth);
-    const nextEclipse = SAROS_ECLIPSE_GLYPHS.find((e) => e.month >= sarosMonthInt) || SAROS_ECLIPSE_GLYPHS[0];
-    ctx.fillText(`Saros Eclipse Cycle: Month ${astro.sarosMonth.toFixed(1)} / 223 (18.03 Years)`, rx, 38);
-    ctx.fillText(`Next Eclipse: ${nextEclipse.type} at Saros Month ${nextEclipse.month} (Hour ${nextEclipse.hour}:00)`, rx, 56);
+      const sarosMonthInt = Math.floor(astro.sarosMonth);
+      const nextEclipse = SAROS_ECLIPSE_GLYPHS.find((e) => e.month >= sarosMonthInt) || SAROS_ECLIPSE_GLYPHS[0];
+      ctx.fillText(`Saros: Month ${astro.sarosMonth.toFixed(1)} / 223`, rx, 36);
+      ctx.fillText(`Next: ${nextEclipse.type} (Month ${nextEclipse.month})`, rx, 52);
 
-    const oGame = OLYMPIAD_GAMES[astro.olympiadYear - 1];
-    ctx.fillStyle = '#ffd700';
-    ctx.fillText(`Olympiad ${astro.olympiadCycle}, Year ${astro.olympiadYear}: ${oGame.name}`, rx, 74);
-    ctx.fillText(`Active Entities: ${this.getEntityCount()} (31 Gears + 7 Dials)`, rx, 92);
+      const oGame = OLYMPIAD_GAMES[astro.olympiadYear - 1];
+      ctx.fillStyle = '#ffd700';
+      ctx.fillText(`Olympiad ${astro.olympiadCycle}, Yr ${astro.olympiadYear}: ${oGame.name}`, rx, 68);
+      ctx.fillText(`Entities: ${this.getEntityCount()} (31 Gears + 7 Dials)`, rx, 84);
+    }
 
     // Bottom Navigation Hint
     ctx.textAlign = 'center';
     ctx.font = '10px "Cinzel", serif';
     ctx.fillStyle = 'rgba(212, 175, 55, 0.7)';
-    ctx.fillText('Drag: Crank Gear Train | 1: Front Dials | 2: Rear Spirals | 3: Gears | Space: Pause', this.width * 0.5, this.height - 18);
+    ctx.fillText('Drag: Crank | 1: Front | 2: Rear | 3: Gears | Space: Pause', sw * 0.5, sh - 14);
 
     ctx.restore();
   }
@@ -2249,15 +2272,19 @@ export class AntikytheraEngine {
     if (!g) return;
 
     ctx.save();
-    const tooltipW = 260;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const tooltipW = Math.min(sw - 24, 260);
     const tooltipH = 92;
 
-    let tx = this.hoverPos.x + 15;
-    let ty = this.hoverPos.y + 15;
+    let tx = (this.hoverPos.x / ui) + 15;
+    let ty = (this.hoverPos.y / ui) + 15;
 
     // Constrain to viewport bounds
-    if (tx + tooltipW > this.width - 10) tx = this.hoverPos.x - tooltipW - 15;
-    if (ty + tooltipH > this.height - 10) ty = this.hoverPos.y - tooltipH - 15;
+    if (tx + tooltipW > sw - 10) tx = (this.hoverPos.x / ui) - tooltipW - 15;
+    if (ty + tooltipH > sh - 10) ty = (this.hoverPos.y / ui) - tooltipH - 15;
 
     ctx.fillStyle = 'rgba(12, 16, 26, 0.92)';
     ctx.strokeStyle = '#3bd6c6';

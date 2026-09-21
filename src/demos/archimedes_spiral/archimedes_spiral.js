@@ -3,6 +3,8 @@
 // Fermat, and Phyllotaxis Golden Angle flower packing with chromatic spectral trails.
 // Grounded in Archimedes of Syracuse's treatise "On Spirals" (Περὶ ἑλίκων, c. 225 BC).
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // Fast Prime Sieve Cache for Ulam / Sacks Prime Harmonics
 const MAX_PRIME_INDEX = 5000;
 const IS_PRIME = new Uint8Array(MAX_PRIME_INDEX + 1);
@@ -134,6 +136,7 @@ export class ArchimedesSpiralEngine {
     // Setup Controls and initial state
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   // ---------------------------------------------------------------------------
@@ -306,6 +309,14 @@ export class ArchimedesSpiralEngine {
     this.height = height || (this.canvas ? this.canvas.height : 600);
     this.dpr = dpr || 1;
     this.recomputeSpiral();
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   update(dt = 0.016) {
@@ -518,43 +529,51 @@ export class ArchimedesSpiralEngine {
 
   renderHUD(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
+
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
-    ctx.font = 'bold 13px Cinzel, Georgia, serif';
+    ctx.font = `bold ${narrow ? 11 : 13}px Cinzel, Georgia, serif`;
     ctx.fillStyle = '#ffd700';
     ctx.fillText('ARCHIMEDES SPIRAL (ΠΕΡΙ ΕΛΙΚΩΝ)', 20, 20);
 
     ctx.font = '10px JetBrains Mono, monospace';
     ctx.fillStyle = '#8e96a4';
-    ctx.fillText('Syracuse, c. 225 BC — Parametric Polar Geometry & Golden Ratio', 20, 38);
+    ctx.fillText(narrow ? 'Parametric Polar Geometry' : 'Syracuse, c. 225 BC — Parametric Polar Geometry & Golden Ratio', 20, 38);
 
-    ctx.font = '11px JetBrains Mono, monospace';
+    ctx.font = `${narrow ? 9.5 : 11}px JetBrains Mono, monospace`;
     ctx.fillStyle = '#dcdde2';
 
-    let formulaStr = 'r = a + bθ (Linear Archimedean)';
+    let formulaStr = 'r = a + bθ (Archimedean)';
     if (this.mode === SPIRAL_MODES.LOGARITHMIC) {
-      formulaStr = 'r = a · e^(bθ) (Spira Mirabilis)';
+      formulaStr = 'r = a · e^(bθ) (Mirabilis)';
     } else if (this.mode === SPIRAL_MODES.PHYLLOTAXIS) {
-      formulaStr = 'r = c√n, θ = n · α (Vogel Phyllotaxis)';
+      formulaStr = 'r = c√n, θ = n · α (Phyllotaxis)';
     } else if (this.mode === SPIRAL_MODES.FERMAT) {
-      formulaStr = 'r = b√θ (Fermat Parabolic)';
+      formulaStr = 'r = b√θ (Fermat)';
     }
 
-    ctx.fillText(`Mode: ${formulaStr}`, 20, 56);
-    ctx.fillText(`Divergence Angle α: ${this.divergenceAngle.toFixed(4)}°`, 20, 72);
+    ctx.fillText(`Mode: ${formulaStr}`, 20, 54);
+    ctx.fillText(`Angle α: ${this.divergenceAngle.toFixed(3)}°`, 20, narrow ? 68 : 72);
 
     const deltaGold = Math.abs(this.divergenceAngle - GOLDEN_ANGLE_DEG);
     const goldPercent = Math.max(0, 100 - deltaGold * 10).toFixed(1);
     ctx.fillStyle = deltaGold < 0.05 ? '#00f0ff' : '#99a1b0';
-    ctx.fillText(`Golden Angle Harmony: ${goldPercent}% (Target: ${GOLDEN_ANGLE_DEG.toFixed(4)}°)`, 20, 88);
+    ctx.fillText(`Harmony: ${goldPercent}%`, 20, narrow ? 82 : 88);
 
-    ctx.fillStyle = '#ffd700';
-    ctx.fillText(`Active Entities: ${this.getEntityCount()} (Vertices + Nodes + Harmonics: ${this.harmonicLinks.length})`, 20, 104);
+    if (!narrow) {
+      ctx.fillStyle = '#ffd700';
+      ctx.fillText(`Active Entities: ${this.getEntityCount()} (Vertices + Nodes + Harmonics: ${this.harmonicLinks.length})`, 20, 104);
+    }
 
     ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
     ctx.font = '10px Cinzel, Georgia, serif';
-    ctx.fillText('Drag: Morph Divergence Angle | Scroll: Zoom | Space: Toggle Primes | G: Golden Snap', 20, h - 26);
+    ctx.fillText(narrow ? 'Drag: Morph Angle | Pinch: Zoom' : 'Drag: Morph Divergence Angle | Scroll: Zoom | Space: Toggle Primes | G: Golden Snap', 20, sh - 26);
 
     ctx.restore();
   }
@@ -573,6 +592,7 @@ export class ArchimedesSpiralEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audioCtx) {
       try {
         this.audioCtx.close();

@@ -5,6 +5,8 @@
 // - Book XIV: Aqua ardens (distillation of wine spirits / aqua vitae)
 // and the works of Maria the Jewess and Zosimos of Panopolis (inventors of the tribikos alembic).
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const FEED_TYPE = {
   WINE: 'wine',
   ROSE: 'rose',
@@ -89,6 +91,7 @@ export class HermeticaEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation State
     this.activeFeed = FEED_TYPE.WINE;
@@ -532,6 +535,14 @@ export class HermeticaEngine {
     this.initSediment();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   resize(width, height, dpr = 1) {
     this.width = width || (this.canvas ? this.canvas.width : 800);
     this.height = height || (this.canvas ? this.canvas.height : 600);
@@ -540,6 +551,7 @@ export class HermeticaEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audio.ctx) {
       try {
         this.audio.ctx.close();
@@ -1545,55 +1557,77 @@ export class HermeticaEngine {
   }
 
   renderHUD(ctx) {
-    const w = this.width;
     const feed = FEED_CONFIG[this.activeFeed];
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const narrow = sw < 560;
 
     ctx.save();
+    ctx.scale(ui, ui);
+
+    const cardW = Math.min(sw - 28, narrow ? 340 : 480);
+    const cardH = narrow ? 116 : 108;
 
     // Top Laboratory Telemetry Header Bar
     ctx.fillStyle = 'rgba(12, 16, 24, 0.88)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)'; // Gilded alchemical border
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(14, 14, Math.min(w - 28, 480), 108, 6);
+    ctx.roundRect(14, 14, cardW, cardH, 6);
     ctx.fill();
     ctx.stroke();
 
     // Title
     ctx.fillStyle = '#fde047';
-    ctx.font = 'bold 13px "Cinzel", "Times New Roman", serif, sans-serif';
-    ctx.fillText(`ALEXANDRIAN ALEMBIC • ${feed.latin.toUpperCase()}`, 26, 34);
+    ctx.font = `bold ${narrow ? 11 : 13}px "Cinzel", "Times New Roman", serif, sans-serif`;
+    ctx.fillText(narrow ? feed.latin.toUpperCase() : `ALEXANDRIAN ALEMBIC • ${feed.latin.toUpperCase()}`, 24, 32);
 
     // Book citation
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(`${feed.book} — ${feed.name}`, 26, 50);
+    ctx.font = `${narrow ? 9 : 11}px sans-serif`;
+    ctx.fillText(narrow ? feed.name : `${feed.book} — ${feed.name}`, 24, narrow ? 46 : 50);
 
     // Live Thermodynamic Telemetry Columns
-    ctx.font = '12px "Courier New", monospace, sans-serif';
+    ctx.font = `${narrow ? 10 : 12}px "Courier New", monospace, sans-serif`;
 
-    // Wash & Boiler
-    ctx.fillStyle = '#f97316';
-    ctx.fillText(`Cucurbit Wash: ${this.washTemp.toFixed(1)}°C`, 26, 72);
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillText(`Volume: ${this.washVolume.toFixed(0)} mL (${Math.round(this.washVolatileFraction * 100)}% init)`, 26, 88);
-    ctx.fillStyle = this.boilIntensity > 0.05 ? '#22c55e' : '#64748b';
-    ctx.fillText(`Vapor Press: ${this.vaporPressureTotal.toFixed(1)} kPa [${this.boilIntensity > 0.05 ? 'EBULLITION' : 'HEATING'}]`, 26, 104);
+    if (narrow) {
+      ctx.fillStyle = '#f97316';
+      ctx.fillText(`Wash: ${this.washTemp.toFixed(1)}°C | Vol: ${this.washVolume.toFixed(0)}mL`, 24, 64);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`Helm: ${this.condenserTemp.toFixed(1)}°C | Yield: ${this.distillateVolume.toFixed(1)}mL`, 24, 80);
+      ctx.fillStyle = this.boilIntensity > 0.05 ? '#22c55e' : '#64748b';
+      ctx.fillText(`P: ${this.vaporPressureTotal.toFixed(1)} kPa [${this.boilIntensity > 0.05 ? 'BOIL' : 'HEAT'}]`, 24, 96);
+      ctx.fillStyle = this.fractionPhase.includes('Hearts') || this.fractionPhase.includes('SPIRITUS')
+        ? '#4ade80'
+        : (this.fractionPhase.includes('Heads') || this.fractionPhase.includes('FORESHOTS') ? '#facc15' : '#94a3b8');
+      ctx.fillText(`Cut: ${this.fractionPhase}`, 24, 110);
+    } else {
+      // Wash & Boiler
+      ctx.fillStyle = '#f97316';
+      ctx.fillText(`Cucurbit Wash: ${this.washTemp.toFixed(1)}°C`, 26, 72);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(`Volume: ${this.washVolume.toFixed(0)} mL (${Math.round(this.washVolatileFraction * 100)}% init)`, 26, 88);
+      ctx.fillStyle = this.boilIntensity > 0.05 ? '#22c55e' : '#64748b';
+      ctx.fillText(`Vapor Press: ${this.vaporPressureTotal.toFixed(1)} kPa [${this.boilIntensity > 0.05 ? 'EBULLITION' : 'HEATING'}]`, 26, 104);
 
-    // Condenser & Receiver Card (Right-aligned or beside)
-    const cardX = Math.min(w - 28, 480) - 175;
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`Helm Dome: ${this.condenserTemp.toFixed(1)}°C`, cardX, 72);
-    ctx.fillStyle = '#a7f3d0';
-    ctx.fillText(`Yield: ${this.distillateVolume.toFixed(1)} mL`, cardX, 88);
+      // Condenser & Receiver Card (Right-aligned or beside)
+      const cardX = cardW - 175;
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`Helm Dome: ${this.condenserTemp.toFixed(1)}°C`, cardX, 72);
+      ctx.fillStyle = '#a7f3d0';
+      ctx.fillText(`Yield: ${this.distillateVolume.toFixed(1)} mL`, cardX, 88);
 
-    // Fraction Phase Badge
-    ctx.fillStyle = this.fractionPhase.includes('Hearts') || this.fractionPhase.includes('SPIRITUS')
-      ? '#4ade80'
-      : (this.fractionPhase.includes('Heads') || this.fractionPhase.includes('FORESHOTS') ? '#facc15' : '#94a3b8');
-    ctx.fillText(`Cut: ${this.fractionPhase}`, cardX, 104);
+      // Fraction Phase Badge
+      ctx.fillStyle = this.fractionPhase.includes('Hearts') || this.fractionPhase.includes('SPIRITUS')
+        ? '#4ade80'
+        : (this.fractionPhase.includes('Heads') || this.fractionPhase.includes('FORESHOTS') ? '#facc15' : '#94a3b8');
+      ctx.fillText(`Cut: ${this.fractionPhase}`, cardX, 104);
+    }
+
+    ctx.restore();
 
     // Vessel Floating Labels
+    ctx.save();
     ctx.font = '11px "Cinzel", "Times New Roman", serif, sans-serif';
     ctx.textAlign = 'center';
 

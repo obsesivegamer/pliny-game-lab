@@ -38,6 +38,8 @@
  * 12. Safe, self-contained Web Audio API synthesizer with safe headless Node.js mock fallbacks.
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // ============================================================================
 // SECTION 1: HISTORICAL EPIGRAPHY & ANCIENT CITATIONS
 // ============================================================================
@@ -3190,8 +3192,8 @@ export class ParchmentBlueprintRenderer {
   renderCornerRadar(ctx, screenWidth, screenHeight, map, fog, mapWidth, mapHeight, player, dungeon, asterion, thread) {
     ctx.save();
     try {
-      const size = 170;
-      const pad = 15;
+      const size = screenWidth < 560 ? 100 : 170;
+      const pad = screenWidth < 560 ? 8 : 15;
       const x0 = screenWidth - size - pad;
       const y0 = pad + 40; // Below top bar
       const tileSize = size / Math.max(mapWidth, mapHeight);
@@ -3582,28 +3584,29 @@ export class LabyrinthusHUD {
       ctx.lineTo(width, bannerH);
       ctx.stroke();
 
+      const narrow = width < 560;
       // Title on left
       ctx.fillStyle = '#F1C40F';
-      ctx.font = 'bold 15px serif';
+      ctx.font = `bold ${narrow ? 12 : 15}px serif`;
       ctx.textAlign = 'left';
-      ctx.fillText('LABYRINTHVS DÆDALI', 16, 24);
+      ctx.fillText(narrow ? 'LABYRINTHVS' : 'LABYRINTHVS DÆDALI', narrow ? 8 : 16, 24);
 
       // Relic Sockets in center
-      const relicStartX = Math.floor(width * 0.45);
+      const relicStartX = narrow ? 110 : Math.floor(width * 0.45);
       const relics = dungeon ? dungeon.relics : [];
 
       for (let i = 0; i < 4; i++) {
         const r = relics[i];
         const isCollected = r && r.collected;
-        const rx = relicStartX + i * 36;
+        const rx = relicStartX + i * (narrow ? 22 : 36);
         const ry = 20;
 
         // Socket medallion circle
         ctx.strokeStyle = isCollected ? '#F1C40F' : '#564536';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1.5;
         ctx.fillStyle = isCollected ? 'rgba(241, 196, 15, 0.25)' : 'rgba(30, 24, 20, 0.6)';
         ctx.beginPath();
-        ctx.arc(rx, ry, safeArcRadius(12), 0, Math.PI * 2);
+        ctx.arc(rx, ry, safeArcRadius(narrow ? 8 : 12), 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
@@ -3611,24 +3614,24 @@ export class LabyrinthusHUD {
         if (isCollected) {
           ctx.fillStyle = r.color || '#F1C40F';
           ctx.beginPath();
-          ctx.arc(rx, ry, safeArcRadius(6), 0, Math.PI * 2);
+          ctx.arc(rx, ry, safeArcRadius(narrow ? 4 : 6), 0, Math.PI * 2);
           ctx.fill();
         } else {
           ctx.fillStyle = '#65503C';
-          ctx.font = '9px serif';
+          ctx.font = `${narrow ? 8 : 9}px serif`;
           ctx.textAlign = 'center';
           ctx.fillText((i + 1).toString(), rx, ry + 3);
         }
       }
 
       // Keys display
-      const keyX = relicStartX + 160;
+      const keyX = relicStartX + (narrow ? 95 : 160);
       if (dungeon && dungeon.keys) {
         dungeon.keys.forEach((k, idx) => {
           if (k.collected) {
             ctx.fillStyle = k.color;
             ctx.beginPath();
-            ctx.arc(keyX + idx * 18, 20, safeArcRadius(5), 0, Math.PI * 2);
+            ctx.arc(keyX + idx * (narrow ? 12 : 18), 20, safeArcRadius(narrow ? 3.5 : 5), 0, Math.PI * 2);
             ctx.fill();
           }
         });
@@ -3638,9 +3641,9 @@ export class LabyrinthusHUD {
       if (thread) {
         const rem = Math.floor(thread.getRemainingCubits());
         ctx.fillStyle = '#F1C40F';
-        ctx.font = '12px monospace';
+        ctx.font = `${narrow ? 10 : 12}px monospace`;
         ctx.textAlign = 'right';
-        ctx.fillText(`MITOS: ${rem} cubits`, width - 85, 24);
+        ctx.fillText(narrow ? `${rem}c` : `MITOS: ${rem} cubits`, width - 85, 24);
       }
 
     } finally {
@@ -3813,6 +3816,7 @@ export class LabyrinthusHUD {
    * 5. Bottom Center: Classical Latin Epigraphy Citation.
    */
   renderClassicalEpigraphy(ctx, width, height) {
+    if (width < 560) return;
     ctx.save();
     try {
       const cite = CLASSICAL_CITATIONS[this.citationIndex];
@@ -4237,6 +4241,7 @@ export class LabyrinthusEngine {
       };
       this.canvas.addEventListener('click', this.clickListener, { once: true });
     }
+    attachTouchBridge(this, canvas);
   }
 
   /**
@@ -4337,6 +4342,14 @@ export class LabyrinthusEngine {
     this.width = width;
     this.height = height;
     this.dpr = dpr;
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   /**
@@ -4530,11 +4543,17 @@ export class LabyrinthusEngine {
         timeMs
       );
 
-      // 2. Blueprint Minimap & Threat Radar
+      // 2. Blueprint Minimap & Threat Radar and 3. Classical Canvas HUD & Epigraphy
+      ctx.save();
+      const ui = this.uiScale();
+      ctx.scale(ui, ui);
+      const sw = this.width / ui;
+      const sh = this.height / ui;
+
       this.blueprint.render(
         ctx,
-        this.width,
-        this.height,
+        sw,
+        sh,
         this.map,
         this.fog,
         this.mapWidth,
@@ -4546,17 +4565,17 @@ export class LabyrinthusEngine {
         timeMs
       );
 
-      // 3. Classical Canvas HUD & Epigraphy
       this.hud.render(
         ctx,
-        this.width,
-        this.height,
+        sw,
+        sh,
         this.player,
         this.dungeon,
         this.asterion,
         this.thread,
         timeMs
       );
+      ctx.restore();
 
     } finally {
       ctx.restore();
@@ -4590,6 +4609,7 @@ export class LabyrinthusEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.clickListener && this.canvas && this.canvas.removeEventListener) {
       this.canvas.removeEventListener('click', this.clickListener);
     }

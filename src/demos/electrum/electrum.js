@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book XXXVII, Chapter 11: De Succino / On Amber)
 // "When friction has imparted life to amber, it attracts dry leaves, straw, chaff, and shreds of papyrus."
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const PARTICLE_TYPE = {
   GOLD_LEAF: 0,
   CHAFF: 1,
@@ -77,6 +79,8 @@ export class ElectrumEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+
+    attachTouchBridge(this, canvas);
 
     // Simulation Parameters
     this.coulombK = 32000;          // Electrostatic force constant
@@ -1587,35 +1591,47 @@ export class ElectrumEngine {
   }
 
   renderHUD(ctx) {
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
     ctx.save();
+    ctx.scale(ui, ui);
 
-    const hudX = 20;
-    const hudY = 18;
+    const hudX = 14;
+    const hudY = 14;
+    const hudW = Math.min(sw - 28, narrow ? 320 : 340);
+    const hudH = narrow ? 76 : 84;
 
-    ctx.fillStyle = 'rgba(18, 20, 28, 0.82)';
+    ctx.fillStyle = 'rgba(18, 20, 28, 0.85)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.25)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(hudX, hudY, 310, 84, 8);
+    ctx.roundRect(hudX, hudY, hudW, hudH, 8);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 12px "Cinzel", Georgia, serif';
+    ctx.font = `bold ${narrow ? 11 : 12}px "Cinzel", Georgia, serif`;
     ctx.textAlign = 'left';
-    ctx.fillText('ELECTRVM • AMBER TRIBOELECTRICITY', hudX + 12, hudY + 22);
+    ctx.fillText(narrow ? 'ELECTRVM • AMBER' : 'ELECTRVM • AMBER TRIBOELECTRICITY', hudX + 10, hudY + 20);
 
     ctx.fillStyle = '#e6e8ee';
-    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.font = `${narrow ? 9 : 10}px "JetBrains Mono", monospace`;
     const qVal = Math.abs(Math.round(this.amberRod.charge));
     const polSign = (this.polarity === -1) ? '−' : '+';
-    ctx.fillText(`POTENTIAL: ${this.telemetry.voltageKV} kV  |  CHARGE: ${polSign}${qVal} µC`, hudX + 12, hudY + 42);
+    ctx.fillText(`POTENTIAL: ${this.telemetry.voltageKV} kV | CHARGE: ${polSign}${qVal} µC`, hudX + 10, hudY + (narrow ? 38 : 42));
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText(`ATTRACTED: ${this.telemetry.totalAttractions}  |  REPELLED: ${this.telemetry.totalRepulsions}  |  SPARKS: ${this.telemetry.totalSparks}`, hudX + 12, hudY + 58);
+    if (narrow) {
+      ctx.fillText(`ATTR: ${this.telemetry.totalAttractions} | REP: ${this.telemetry.totalRepulsions} | SPARKS: ${this.telemetry.totalSparks}`, hudX + 10, hudY + 54);
+    } else {
+      ctx.fillText(`ATTRACTED: ${this.telemetry.totalAttractions}  |  REPELLED: ${this.telemetry.totalRepulsions}  |  SPARKS: ${this.telemetry.totalSparks}`, hudX + 10, hudY + 58);
+    }
 
     ctx.fillStyle = '#00FFFF';
-    ctx.fillText(`CYAN FLUX: ${this.showFluxLines ? 'ACTIVE' : 'OFF'}  |  GRAVITY: ${Math.round(this.gravity)} px/s²`, hudX + 12, hudY + 74);
+    ctx.fillText(`FLUX: ${this.showFluxLines ? 'ON' : 'OFF'} | GRAV: ${Math.round(this.gravity)} px/s²`, hudX + 10, hudY + (narrow ? 68 : 74));
 
     if (this.telemetry.bannerTimer > 0 && this.telemetry.bannerText) {
       const bannerAlpha = Math.min(1.0, this.telemetry.bannerTimer * 1.5);
@@ -1624,9 +1640,9 @@ export class ElectrumEngine {
       ctx.fillStyle = 'rgba(10, 11, 14, 0.88)';
       ctx.strokeStyle = '#D4AF37';
       ctx.lineWidth = 1;
-      const bW = Math.min(this.width - 40, 520);
-      const bX = (this.width - bW) * 0.5;
-      const bY = this.height - 40;
+      const bW = Math.min(sw - 40, 520);
+      const bX = (sw - bW) * 0.5;
+      const bY = sh - 40;
       ctx.beginPath();
       ctx.roundRect(bX, bY, bW, 28, 6);
       ctx.fill();
@@ -1635,7 +1651,7 @@ export class ElectrumEngine {
       ctx.fillStyle = '#FFD700';
       ctx.font = 'bold 10px "Cinzel", Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText(this.telemetry.bannerText, this.width * 0.5, bY + 18);
+      ctx.fillText(this.telemetry.bannerText, sw * 0.5, bY + 18);
       ctx.restore();
     }
 
@@ -1663,6 +1679,14 @@ export class ElectrumEngine {
     count += this.woolLints.length;
 
     return count;
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   resize(width, height, dpr = 1) {
@@ -1702,6 +1726,7 @@ export class ElectrumEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.sparks = [];
     this.particles = [];
     this.fluxLines = [];

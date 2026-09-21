@@ -310,6 +310,14 @@ export class GeyserEngine {
     return this.activeParticleCount + this.numNodes;
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   // --- Direct Actions ---
 
   forceEruption() {
@@ -1312,11 +1320,16 @@ export class GeyserEngine {
 
   renderTelemetryHUD(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
 
     // Top-Left Cyber-Classical Telemetry Box
-    const hudX = 20;
-    const hudY = 20;
-    const hudW = 260;
+    const hudX = narrow ? 10 : 20;
+    const hudY = narrow ? 10 : 20;
+    const hudW = narrow ? Math.min(sw - 20, 240) : 260;
     const hudH = 138;
 
     ctx.fillStyle = 'rgba(10, 11, 14, 0.85)';

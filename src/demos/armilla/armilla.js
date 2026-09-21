@@ -3,6 +3,8 @@
 // Incorporates Hipparchus's Precession of the Equinoxes, 10 nested bronze/gold rings,
 // central terrestrial globe, orbiting Moon, zodiac ecliptic band, and 3D camera controls.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class ArmillaEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -56,6 +58,7 @@ export class ArmillaEngine {
     this.initStars();
     this.initConstellations();
     this.buildControls();
+    attachTouchBridge(this, canvas);
   }
 
   // ---------------------------------------------------------------------------
@@ -783,7 +786,16 @@ export class ArmillaEngine {
     this.buildControls();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
+  worldView() {
+    return { x: 0, y: 0, w: this.width, h: this.height };
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.uiElements.forEach((el) => {
         if (el.parentNode === this.controlsContainer) {
@@ -1264,28 +1276,33 @@ export class ArmillaEngine {
 
   renderHUD(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
 
     // Classical Title Banner at top left
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
-    ctx.font = 'bold 13px Cinzel, serif';
+    ctx.font = `bold ${narrow ? 11 : 13}px Cinzel, serif`;
     ctx.fillStyle = 'var(--accent-gold, #d4af37)';
     ctx.fillText('ARMILLA SPHAERA PTOLEMAICA', 20, 20);
 
     ctx.font = '10px JetBrains Mono, monospace';
     ctx.fillStyle = 'var(--text-muted, #8c909e)';
-    ctx.fillText('Naturalis Historia Lib. II — Hipparchus Nicaeensis', 20, 38);
+    ctx.fillText(narrow ? 'Lib. II — Hipparchus' : 'Naturalis Historia Lib. II — Hipparchus Nicaeensis', 20, 38);
 
     // Precession & Great Year readout
     const greatYearFraction = ((this.precessionAngleDeg / 360) * 100).toFixed(1);
     ctx.fillStyle = '#e6e8ee';
-    ctx.fillText(`Praecessio Aequinoctiorum: ${this.precessionAngleDeg.toFixed(1)}° (${greatYearFraction}% Annus Magnus)`, 20, 54);
+    ctx.fillText(narrow ? `Praecessio: ${this.precessionAngleDeg.toFixed(1)}° (${greatYearFraction}%)` : `Praecessio Aequinoctiorum: ${this.precessionAngleDeg.toFixed(1)}° (${greatYearFraction}% Annus Magnus)`, 20, 54);
 
     // Navigation tip at bottom left
     ctx.fillStyle = 'rgba(212, 175, 55, 0.6)';
     ctx.font = '10px Cinzel, serif';
-    ctx.fillText('Drag: 3D Rotate | Scroll: Zoom | Align: Vernal Equinox', 20, h - 28);
+    ctx.fillText(narrow ? 'Drag: 3D Rotate | Pinch: Zoom' : 'Drag: 3D Rotate | Scroll: Zoom | Align: Vernal Equinox', 20, sh - 28);
 
     ctx.restore();
   }
