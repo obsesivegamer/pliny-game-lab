@@ -1034,14 +1034,25 @@ class PlinyHub {
         }
       }
 
-      // Escape: close codex first, return to showcase, or clear search
+      // Escape priority: codex > engine overlay > back-to-showcase > clear search.
+      // In simulator mode the engine receives the key through setupInputHandling
+      // and may consume it (e.g. closing an in-game overlay).  We still close the
+      // codex unconditionally since it is hub-level chrome, but we do NOT yank the
+      // player out of the simulator on a single Escape if the engine declares it
+      // handled the key (via e.defaultPrevented set by the engine's onKeyDown).
       if (e.key === "Escape") {
         if (this.codexDrawer && this.codexDrawer.classList.contains("open")) {
           this.closeCodex();
           return;
         }
         if (this.currentView === "simulator") {
-          this.switchView("showcase");
+          // Let the engine's keydown handler run first (it fires on the same
+          // event in setupInputHandling).  We defer the back-to-showcase check
+          // to a microtask so the engine can call e.preventDefault() to keep
+          // the simulator open.
+          Promise.resolve().then(() => {
+            if (!e.defaultPrevented) this.switchView("showcase");
+          });
         } else if (this.showcaseSearch && document.activeElement === this.showcaseSearch) {
           this.showcaseSearch.value = "";
           this.searchQuery = "";
@@ -1050,8 +1061,11 @@ class PlinyHub {
         }
       }
 
-      // 'c' or 'C' toggles Plinius Codex
-      if ((e.key === "c" || e.key === "C") && !isTyping) {
+      // 'c' or 'C' toggles Plinius Codex — only in showcase view so it
+      // doesn't collide with engines that bind 'C' for their own controls.
+      // In the simulator the codex button (and the existing open-codex
+      // Escape→close path) remains available.
+      if ((e.key === "c" || e.key === "C") && !isTyping && this.currentView === "showcase") {
         this.toggleCodex();
       }
 
@@ -1465,13 +1479,13 @@ class PlinyHub {
     });
 
     window.addEventListener("keydown", (e) => {
-      if (this.currentEngine && this.currentEngine.onKeyDown) {
+      if (this.currentView === "simulator" && this.currentEngine && this.currentEngine.onKeyDown) {
         this.currentEngine.onKeyDown(e.key, e);
       }
     });
 
     window.addEventListener("keyup", (e) => {
-      if (this.currentEngine && this.currentEngine.onKeyUp) {
+      if (this.currentView === "simulator" && this.currentEngine && this.currentEngine.onKeyUp) {
         this.currentEngine.onKeyUp(e.key, e);
       }
     });

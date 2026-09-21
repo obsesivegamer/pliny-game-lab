@@ -1085,6 +1085,41 @@ html, body {
   #app {
     height: 100dvh;
   }
+
+  /* Top bar: wrap into two rows so nav controls stay reachable on phones */
+  #top-bar {
+    flex-wrap: wrap;
+    padding: 6px 12px;
+    gap: 4px 8px;
+  }
+  .brand .subtitle { display: none; }
+  .brand h1 { font-size: 0.95rem; }
+
+  #nav-controls {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding: 2px 0;
+    scrollbar-width: none;
+  }
+  #nav-controls::-webkit-scrollbar { display: none; }
+  #nav-controls .nav-divider { display: none; }
+  #pavilion-select, #game-select { min-width: 0; flex: 0 0 auto; font-size: 0.72rem; padding: 6px 8px; }
+
+  /* Minimum 44px touch targets for all header buttons */
+  #nav-controls .icon-nav-btn,
+  #telemetry .icon-nav-btn { min-width: 44px; min-height: 44px; }
+
+  #telemetry {
+    gap: 6px;
+    font-size: 0.7rem;
+  }
+  /* Hide non-essential telemetry on mobile to save space */
+  #telemetry .soundscape-pill { display: none; }
+  #audio-volume-slider { width: 48px; }
+
   #viewport-container {
     min-height: 0;
     display: flex;
