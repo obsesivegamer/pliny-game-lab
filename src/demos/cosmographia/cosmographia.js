@@ -33,6 +33,8 @@
  *  5. Pure ES Module, safe headless DOM guard, zero external dependencies.
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // ============================================================================
 // ASTRONOMICAL CONSTANTS & HISTORICAL DATA TABLES
 // ============================================================================
@@ -469,6 +471,7 @@ export class CosmographiaEngine {
     this.initStellarFirmament();
     this.initPlanetaryModels();
     this.buildControls();
+    attachTouchBridge(this, canvas);
   }
 
   // ==========================================================================
@@ -2188,15 +2191,18 @@ export class CosmographiaEngine {
   // SUB-RENDERER 9: CANVAS HUD TELEMETRY OVERLAY (PLINIAN EPHEMERIS)
   // --------------------------------------------------------------------------
   renderAstronomicalHUD(ctx) {
-    const w = this.width;
-    const h = this.height;
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // ========================================================================
     // TOP-LEFT HUD PLAQUE: SYSTEM & PLINIAN CALENDAR
     // ========================================================================
-    const plaqueW = 280;
-    const plaqueH = 150;
+    const plaqueW = narrow ? Math.min(sw - 32, 280) : 280;
+    const plaqueH = narrow ? 116 : 150;
     const px = 16;
     const py = 16;
 
@@ -2217,11 +2223,11 @@ export class CosmographiaEngine {
     ctx.fillText('COSMOGRAPHIA & EPHEMERIS', px + 12, py + 22);
 
     ctx.fillStyle = '#8C909E';
-    ctx.font = '11px sans-serif';
+    ctx.font = '10px sans-serif';
     ctx.fillText(
       this.state.model === 'keplerian' ? 'SYSTEMA HELIOCENTRICUM (Kepler)' : 'SYSTEMA GEOCENTRICUM (Ptolemaeus)',
       px + 12,
-      py + 40
+      py + 38
     );
 
     // Julian / Plinian Day Count
@@ -2236,50 +2242,54 @@ export class CosmographiaEngine {
     const zodiacMinute = Math.floor(((solarEclipticDeg % 30) - zodiacDegree) * 60);
 
     ctx.fillStyle = '#E6E8EE';
-    ctx.fillText(`Dies Iulianus (JD): ${currentJD.toFixed(2)}`, px + 12, py + 62);
-    ctx.fillText(`Anno Simulatrix: Day ${(this.simDays % 365.25).toFixed(1)} / 365.25`, px + 12, py + 80);
+    if (!narrow) {
+      ctx.fillText(`Dies Iulianus (JD): ${currentJD.toFixed(2)}`, px + 12, py + 56);
+      ctx.fillText(`Anno Simulatrix: Day ${(this.simDays % 365.25).toFixed(1)} / 365.25`, px + 12, py + 74);
+    } else {
+      ctx.fillText(`JD: ${currentJD.toFixed(1)} | Day ${(this.simDays % 365.25).toFixed(0)}/365`, px + 12, py + 56);
+    }
 
     // Zodiac sign of the Sun
     ctx.fillStyle = currentZodiac.color;
-    ctx.font = "bold 12px 'Cinzel', serif";
+    ctx.font = "bold 11px 'Cinzel', serif";
     ctx.fillText(
       `Sol in ${currentZodiac.symbol} ${currentZodiac.name}: ${zodiacDegree}° ${zodiacMinute}'`,
       px + 12,
-      py + 104
+      narrow ? py + 74 : py + 98
     );
 
     // Time Rate Readout
     ctx.fillStyle = '#3BD6C6';
-    ctx.font = '11px monospace';
-    ctx.fillText(`Cursus Temporis: ${this.timeRate.toFixed(1)} days/s ${this.isPaused ? '(PAUSED)' : ''}`, px + 12, py + 128);
+    ctx.font = '10px monospace';
+    ctx.fillText(`Cursus: ${this.timeRate.toFixed(1)} d/s ${this.isPaused ? '(PAUSED)' : ''}`, px + 12, narrow ? py + 96 : py + 124);
 
     // ========================================================================
     // RETROGRADE MOTION WARNING BADGES
     // ========================================================================
     let retroCount = 0;
     Object.entries(this.retrogradeStates).forEach(([pName, isRetro]) => {
-      if (isRetro) {
+      if (isRetro && (!narrow || retroCount < 2)) {
         retroCount++;
-        const badgeY = py + plaqueH + 12 + (retroCount - 1) * 32;
+        const badgeY = py + plaqueH + 8 + (retroCount - 1) * 26;
 
         ctx.fillStyle = 'rgba(192, 57, 43, 0.85)';
         ctx.strokeStyle = '#E0564C';
-        ctx.fillRect(px, badgeY, plaqueW, 26);
-        ctx.strokeRect(px, badgeY, plaqueW, 26);
+        ctx.fillRect(px, badgeY, plaqueW, 22);
+        ctx.strokeRect(px, badgeY, plaqueW, 22);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = "bold 11px 'Cinzel', serif";
-        ctx.fillText(`⚡ MOTUS RETROGRADUS: ${pName.toUpperCase()}`, px + 10, badgeY + 17);
+        ctx.font = "bold 10px 'Cinzel', serif";
+        ctx.fillText(`⚡ MOTUS RETROGRADUS: ${pName.toUpperCase()}`, px + 10, badgeY + 15);
       }
     });
 
     // ========================================================================
     // TOP-RIGHT HUD PLAQUE: MUSICA UNIVERSALIS & HARMONIC RESONANCE
     // ========================================================================
-    if (this.state.model === 'keplerian') {
+    if (this.state.model === 'keplerian' && !narrow) {
       const harmW = 270;
       const harmH = 110;
-      const hx = w - harmW - 16;
+      const hx = sw - harmW - 16;
       const hy = 16;
 
       ctx.fillStyle = 'rgba(10, 12, 18, 0.88)';
@@ -2307,9 +2317,9 @@ export class CosmographiaEngine {
     // BOTTOM NAVIGATION GUIDE / CONTROLS HINT
     // ========================================================================
     ctx.fillStyle = 'rgba(230, 232, 238, 0.45)';
-    ctx.font = '11px sans-serif';
+    ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Pan: Mouse Drag | Orbit: Pitch/Yaw | Zoom: Mouse Wheel | Keys: Space (Pause), 1/2 (Model), R (Reset)', w * 0.5, h - 16);
+    ctx.fillText('Pan: Drag | Orbit: Pitch/Yaw | Zoom: Wheel | Space: Pause | 1/2: Model', sw * 0.5, sh - 14);
 
     ctx.restore();
   }
@@ -2449,7 +2459,12 @@ export class CosmographiaEngine {
     this.updateSimulationKinematics(0);
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }

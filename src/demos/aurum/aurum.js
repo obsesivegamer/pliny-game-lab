@@ -346,6 +346,10 @@ export class AurumEngine {
     return this.sediment.length + this.waterParticles.length;
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   depositPaydirtScoop(count = 65) {
     this.paydirtDepositedCount += count;
     const isSluice = (this.mode === 'sluice');
@@ -1431,12 +1435,17 @@ export class AurumEngine {
   }
 
   renderHUD(ctx) {
-    const cardW = 270;
-    const cardH = 115;
-    const cardX = 20;
-    const cardY = 20;
-
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const cardW = narrow ? Math.min(sw - 32, 270) : 270;
+    const cardH = 115;
+    const cardX = narrow ? 16 : 20;
+    const cardY = narrow ? 16 : 20;
 
     // Telemetry Card Background
     ctx.fillStyle = 'rgba(10, 12, 18, 0.88)';
@@ -1505,7 +1514,7 @@ export class AurumEngine {
       ctx.globalAlpha = bannerAlpha;
       ctx.font = 'bold 12px Cinzel, serif';
       const textW = ctx.measureText(this.bannerText).width;
-      const bX = (this.width - textW) * 0.5;
+      const bX = (sw - textW) * 0.5;
       const bY = 32;
 
       ctx.fillStyle = 'rgba(14, 16, 24, 0.92)';

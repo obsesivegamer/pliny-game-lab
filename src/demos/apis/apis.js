@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book XI: Bees, Hexagonal Combs & Superorganism)
 // and Karl von Frisch's Nobel Prize-winning discovery of the Honeybee Dance Language (1973).
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class ApisEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -45,6 +47,7 @@ export class ApisEngine {
 
     this.initSimulation();
     this.initControls();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------
@@ -1058,6 +1061,9 @@ export class ApisEngine {
     // 4. Render Solar Vector & Dance Angle Educational Overlay
     this.renderVectorCompassOverlay(ctx, splitX);
 
+    // 5. Render Responsive HUD
+    this.renderHUD(ctx);
+
     ctx.restore();
   }
 
@@ -1107,21 +1113,6 @@ export class ApisEngine {
         this.drawBee(ctx, b, false);
       }
     }
-
-    // Hive HUD Banner
-    ctx.fillStyle = 'rgba(18, 13, 8, 0.85)';
-    ctx.fillRect(10, 10, 240, 48);
-    ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(10, 10, 240, 48);
-
-    ctx.fillStyle = '#d4af37';
-    ctx.font = 'bold 12px Cinzel, serif';
-    ctx.fillText('ALVEARIUM (HIVE COMB)', 20, 28);
-
-    ctx.fillStyle = '#f5b041';
-    ctx.font = '10px JetBrains Mono, monospace';
-    ctx.fillText(`BROOD: ${this.hiveTemp.toFixed(1)}°C | HONEY: #${this.cells.filter(c => c.type === 'honey').length}`, 20, 46);
 
     ctx.restore();
   }
@@ -1277,21 +1268,6 @@ export class ApisEngine {
         this.drawBee(ctx, b, true);
       }
     }
-
-    // Meadow HUD Banner
-    ctx.fillStyle = 'rgba(10, 20, 15, 0.85)';
-    ctx.fillRect(splitX + 16, 10, 250, 48);
-    ctx.strokeStyle = '#2ecc71';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(splitX + 16, 10, 250, 48);
-
-    ctx.fillStyle = '#2ecc71';
-    ctx.font = 'bold 12px Cinzel, serif';
-    ctx.fillText('PRATUM (FLORAL MEADOW)', splitX + 26, 28);
-
-    ctx.fillStyle = '#a8e6cf';
-    ctx.font = '10px JetBrains Mono, monospace';
-    ctx.fillText(`FLORA: ${this.flowers.length} PATCHES | FORAGERS: ${this.bees.filter(b => b.location === 'meadow').length}`, splitX + 26, 46);
 
     ctx.restore();
   }
@@ -1637,6 +1613,80 @@ export class ApisEngine {
     ctx.restore();
   }
 
+  renderHUD(ctx) {
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+    const splitX = Math.floor(sw * this.splitRatio);
+
+    if (narrow) {
+      const bannerW = sw - 28;
+      ctx.fillStyle = 'rgba(18, 13, 8, 0.88)';
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(14, 10, bannerW, 46, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#d4af37';
+      ctx.font = 'bold 11px Cinzel, serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('APIS • ALVEARIUM ET PRATUM', 22, 26);
+
+      ctx.fillStyle = '#f5b041';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillText(`BROOD: ${this.hiveTemp.toFixed(1)}°C | HONEY: #${this.cells.filter(c => c.type === 'honey').length} | MEADOW: ${this.bees.filter(b => b.location === 'meadow').length} BEES`, 22, 42);
+    } else {
+      // Left: Hive HUD Banner
+      const hiveW = Math.min(240, splitX - 20);
+      if (hiveW > 120) {
+        ctx.fillStyle = 'rgba(18, 13, 8, 0.85)';
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(10, 10, hiveW, 48, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 12px Cinzel, serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('ALVEARIUM (HIVE COMB)', 20, 28);
+
+        ctx.fillStyle = '#f5b041';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText(`BROOD: ${this.hiveTemp.toFixed(1)}°C | HONEY: #${this.cells.filter(c => c.type === 'honey').length}`, 20, 46);
+      }
+
+      // Right: Meadow HUD Banner
+      const meadowW = Math.min(250, sw - splitX - 32);
+      if (meadowW > 120) {
+        ctx.fillStyle = 'rgba(10, 20, 15, 0.85)';
+        ctx.strokeStyle = '#2ecc71';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(splitX + 16, 10, meadowW, 48, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#2ecc71';
+        ctx.font = 'bold 12px Cinzel, serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('PRATUM (FLORAL MEADOW)', splitX + 26, 28);
+
+        ctx.fillStyle = '#a8e6cf';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText(`FLORA: ${this.flowers.length} PATCHES | FORAGERS: ${this.bees.filter(b => b.location === 'meadow').length}`, splitX + 26, 46);
+      }
+    }
+
+    ctx.restore();
+  }
+
   /* -------------------------------------------------------------------------
    * INTERACTION CONTRACT & LIFECYCLE
    * ---------------------------------------------------------------------- */
@@ -1657,7 +1707,12 @@ export class ApisEngine {
     this.initSimulation();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.cells = [];
     this.bees = [];
     this.flowers = [];

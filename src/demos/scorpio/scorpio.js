@@ -2,6 +2,8 @@
 // Grounded in Vitruvius (De Architectura Book X) and Pliny the Elder (Naturalis Historia)
 // Zero external dependencies — pure ES module
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class ScorpioEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -12,6 +14,8 @@ export class ScorpioEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+
+    attachTouchBridge(this, canvas);
 
     // -------------------------------------------------------------------------
     // Ballistics & Simulation Parameters (Vitruvian Torsion Mechanics)
@@ -601,6 +605,10 @@ export class ScorpioEngine {
   // ---------------------------------------------------------------------------
   // Lifecycle Contract Methods
   // ---------------------------------------------------------------------------
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   resize(width, height, dpr) {
     this.width = width;
     this.height = height;
@@ -630,6 +638,7 @@ export class ScorpioEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.bolts = [];
     this.targets = [];
     this.trajectoryPreview = [];
@@ -1665,61 +1674,82 @@ export class ScorpioEngine {
   // Tactical HUD & Telemetry Overlays
   // ---------------------------------------------------------------------------
   renderHUD(c) {
-    const w = this.width;
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     c.save();
+    c.scale(ui, ui);
 
     // Top Header Banner
-    c.fillStyle = 'rgba(12, 16, 24, 0.72)';
-    c.fillRect(0, 0, w, 28);
+    c.fillStyle = 'rgba(12, 16, 24, 0.75)';
+    c.fillRect(0, 0, sw, narrow ? 36 : 28);
     c.fillStyle = '#d4af37';
-    c.font = 'bold 11px var(--font-mono, monospace)';
+    c.font = `bold ${narrow ? 10 : 11}px var(--font-mono, monospace)`;
     c.textAlign = 'left';
-    c.fillText('🏹 PLINY GAME LAB — SCORPIO (TORSION SNIPER DART)', 14, 18);
+    c.fillText(narrow ? '🏹 SCORPIO' : '🏹 PLINY GAME LAB — SCORPIO (TORSION SNIPER DART)', 12, narrow ? 15 : 18);
 
-    c.textAlign = 'right';
+    c.textAlign = narrow ? 'left' : 'right';
     const accuracy = this.shotsFired > 0 ? Math.round((this.shotsHit / this.shotsFired) * 100) : 100;
-    c.fillText(`SCORE: ${this.totalScore} | SHOTS: ${this.shotsFired} | HITS: ${this.shotsHit} (${accuracy}%)`, w - 14, 18);
+    if (narrow) {
+      c.fillStyle = '#e8d8b5';
+      c.font = '9px var(--font-mono, monospace)';
+      c.fillText(`SCORE: ${this.totalScore} | ACC: ${accuracy}% (${this.shotsHit}/${this.shotsFired})`, 12, 28);
+    } else {
+      c.fillText(`SCORE: ${this.totalScore} | SHOTS: ${this.shotsFired} | HITS: ${this.shotsHit} (${accuracy}%)`, sw - 14, 18);
+    }
 
     // Left Tactical Data Card
-    const boxX = 14;
-    const boxY = 40;
+    const boxX = 12;
+    const boxY = narrow ? 42 : 36;
+    const boxW = Math.min(sw - 24, narrow ? 240 : 210);
+    const boxH = narrow ? 86 : 115;
     c.fillStyle = 'rgba(12, 16, 24, 0.75)';
     c.strokeStyle = 'rgba(212, 175, 55, 0.4)';
     c.lineWidth = 1;
-    c.fillRect(boxX, boxY, 210, 115);
-    c.strokeRect(boxX, boxY, 210, 115);
+    c.beginPath();
+    c.roundRect(boxX, boxY, boxW, boxH, 6);
+    c.fill();
+    c.stroke();
 
     c.textAlign = 'left';
     c.fillStyle = '#e8d8b5';
-    c.font = '10px var(--font-mono, monospace)';
+    c.font = `${narrow ? 9 : 10}px var(--font-mono, monospace)`;
 
-    const vWindText = this.windage > 0 ? `+${this.windage} M/S (FAVONIUS/W)` : `${this.windage} M/S (AUSTER/E)`;
-    c.fillText(`VENTUS: ${vWindText}`, boxX + 10, boxY + 20);
-    c.fillText(`RANGE:  ${this.targetDistance} METRA`, boxX + 10, boxY + 38);
-    c.fillText(`TORSION: ${this.torsionPower} N SINEW`, boxX + 10, boxY + 56);
-    c.fillText(`STATUS:  ${this.boltLoaded ? '⚡ ARMED & COCKED' : '⚙️ WINCH SLACK (CRANK)'}`, boxX + 10, boxY + 74);
-    c.fillText(`MAGNIF:  ${this.zoom.toFixed(1)}x ZOOM (Z)`, boxX + 10, boxY + 92);
+    const vWindText = this.windage > 0 ? `+${this.windage}m/s` : `${this.windage}m/s`;
+    if (narrow) {
+      c.fillText(`WIND: ${vWindText} | RANGE: ${this.targetDistance}m`, boxX + 8, boxY + 18);
+      c.fillText(`TORSION: ${this.torsionPower}N | ZOOM: ${this.zoom.toFixed(1)}x`, boxX + 8, boxY + 36);
+      c.fillText(`STATUS: ${this.boltLoaded ? '⚡ ARMED' : '⚙️ SLACK'}`, boxX + 8, boxY + 54);
+    } else {
+      const vWindFull = this.windage > 0 ? `+${this.windage} M/S (FAVONIUS/W)` : `${this.windage} M/S (AUSTER/E)`;
+      c.fillText(`VENTUS: ${vWindFull}`, boxX + 10, boxY + 20);
+      c.fillText(`RANGE:  ${this.targetDistance} METRA`, boxX + 10, boxY + 38);
+      c.fillText(`TORSION: ${this.torsionPower} N SINEW`, boxX + 10, boxY + 56);
+      c.fillText(`STATUS:  ${this.boltLoaded ? '⚡ ARMED & COCKED' : '⚙️ WINCH SLACK (CRANK)'}`, boxX + 10, boxY + 74);
+      c.fillText(`MAGNIF:  ${this.zoom.toFixed(1)}x ZOOM (Z)`, boxX + 10, boxY + 92);
+    }
 
     // Floating Combat Notices (Hits / Bullseyes / Shatters)
     for (let i = 0; i < this.hitNotices.length; i++) {
       const hn = this.hitNotices[i];
       c.save();
-      c.translate(w * 0.5, this.height * 0.32 - hn.yOffset);
+      c.translate(sw * 0.5, sh * 0.32 - hn.yOffset);
       c.globalAlpha = hn.alpha;
 
       c.textAlign = 'center';
       c.fillStyle = hn.isBullseye ? '#ffd700' : '#73d13d';
-      c.font = 'bold 16px var(--font-mono, monospace)';
+      c.font = `bold ${narrow ? 14 : 16}px var(--font-mono, monospace)`;
       c.fillText(hn.title, 0, 0);
 
       c.fillStyle = '#ffffff';
-      c.font = '12px var(--font-mono, monospace)';
-      c.fillText(hn.sub, 0, 20);
+      c.font = `${narrow ? 10 : 12}px var(--font-mono, monospace)`;
+      c.fillText(hn.sub, 0, 18);
 
       c.fillStyle = '#fadb14';
-      c.font = 'bold 14px var(--font-mono, monospace)';
-      c.fillText(hn.score, 0, 40);
+      c.font = `bold ${narrow ? 12 : 14}px var(--font-mono, monospace)`;
+      c.fillText(hn.score, 0, 36);
 
       c.restore();
     }

@@ -1570,12 +1570,17 @@ export class TerraeMotusEngine {
 
   // Seismograph Accelerogram HUD (Bottom Corner Readout)
   renderSeismograph(ctx) {
-    const w = 290;
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const w = narrow ? Math.min(sw - 32, 280) : 290;
     const h = 120;
     const x = 16;
-    const y = this.height - h - 16;
-
-    ctx.save();
+    const y = sh - h - 16;
 
     // Bezel container
     ctx.fillStyle = 'rgba(14, 16, 22, 0.88)';
@@ -1684,6 +1689,10 @@ export class TerraeMotusEngine {
   getEntityCount() {
     // Wave nodes + structural blocks + active dust particles
     return this.waveNodesCount + this.blocks.length + this.dustParticles.length;
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
   }
 
   onMouseDown(pos) {

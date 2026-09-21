@@ -2,6 +2,8 @@
 // Grounded in Roman Opus Vermiculatum, Opus Tessellatum, Voronoi Lloyd Relaxation,
 // Recursive Greek Key / Roman Meander Fractals, and Penrose Golden Quasicrystals.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const MOSAIC_STYLES = [
   'Opus Vermiculatum (Contour)',
   'Voronoi Organic Pavement',
@@ -179,6 +181,7 @@ export class FractalRomanEngine {
     // Build user controls and generate initial mosaic
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   buildControls() {
@@ -380,6 +383,10 @@ export class FractalRomanEngine {
     this.height = height;
     this.dpr = dpr;
     this.reset();
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
   }
 
   reset() {
@@ -1096,6 +1103,53 @@ export class FractalRomanEngine {
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.8)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
+
+    // 6. Classical Mosaic HUD
+    this.renderHUD(ctx, w, h);
+  }
+
+  renderHUD(ctx, w, h) {
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
+
+    // Header Plaque
+    const plaqueW = narrow ? Math.min(sw - 32, 280) : 320;
+    const plaqueH = narrow ? 50 : 62;
+    ctx.fillStyle = 'rgba(18, 16, 15, 0.82)';
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(16, 16, plaqueW, plaqueH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    ctx.font = `bold ${narrow ? 11 : 13}px Cinzel, serif`;
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText('FRACTAL ROMAN MOSAIC', 26, 24);
+
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillStyle = '#c8bea5';
+    ctx.fillText(narrow ? this.currentStyle.split(' ')[0] : this.currentStyle, 26, 40);
+
+    if (!narrow) {
+      ctx.fillStyle = '#8c909e';
+      ctx.font = '9px monospace';
+      ctx.fillText(`Tesserae: ${this.tesserae.length} | Vertices: ${this.totalVertices}`, 26, 54);
+    }
+
+    // Hint banner at bottom
+    ctx.fillStyle = 'rgba(212, 175, 55, 0.6)';
+    ctx.font = '10px Cinzel, serif';
+    ctx.fillText(narrow ? 'Tap/Drag: Lamp / Gold Brush' : '1-4: Styles | Space: Lloyd Relax | M: Subdivide | Drag: Lamp / Gold', 16, sh - 20);
+
+    ctx.restore();
   }
 
   // Total count of simulated entities (tiles, Voronoi cells, vertices)
@@ -1207,6 +1261,7 @@ export class FractalRomanEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer && typeof document !== 'undefined') {
       this.controlsContainer.innerHTML = '';
     }

@@ -3,6 +3,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book VIII: Equorum Natura; Book XXXVI: Circus Maximus et Obelisci)
 // Pure ES module with ZERO external dependencies.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 /* ============================================================================
  * ARCHITECTURAL DESIGN & HISTORICAL FOUNDATIONS
  *
@@ -1646,6 +1648,7 @@ class ChariotHUD {
 
   render(ctx, w, h, engine) {
     const player = engine.playerVehicle;
+    const narrow = w < 560;
 
     // Smooth gauge interpolation
     if (player) {
@@ -1656,18 +1659,20 @@ class ChariotHUD {
       this.lateralGVal = lerp(this.lateralGVal, targetG, 0.12);
     }
 
-    this.renderLeaderboard(ctx, 16, 16, engine);
-    this.renderTelemetryGauges(ctx, 16, h - 88, player);
-    this.renderSpinaLapBanner(ctx, w / 2, 28, engine);
-    this.renderChronicleTicker(ctx, w / 2, h - 24);
+    this.renderLeaderboard(ctx, 16, 16, engine, narrow);
+    this.renderTelemetryGauges(ctx, 16, h - 88, player, narrow);
+    this.renderSpinaLapBanner(ctx, w / 2, 28, engine, narrow);
+    if (!narrow) {
+      this.renderChronicleTicker(ctx, w / 2, h - 24);
+    }
   }
 
-  renderLeaderboard(ctx, x, y, engine) {
+  renderLeaderboard(ctx, x, y, engine, narrow) {
     // Sort chariots by total distance completed
     const sorted = [...engine.chariots].sort((a, b) => b.totalDistance - a.totalDistance);
 
-    const boxW = 210;
-    const boxH = 120;
+    const boxW = narrow ? 160 : 210;
+    const boxH = narrow ? 100 : 120;
 
     // Semi-transparent Roman Parchment / Charcoal frame
     ctx.fillStyle = 'rgba(18, 15, 12, 0.88)';
@@ -1719,10 +1724,10 @@ class ChariotHUD {
     });
   }
 
-  renderTelemetryGauges(ctx, x, y, player) {
+  renderTelemetryGauges(ctx, x, y, player, narrow) {
     if (!player) return;
 
-    const boxW = 260;
+    const boxW = narrow ? 220 : 260;
     const boxH = 68;
 
     ctx.fillStyle = 'rgba(18, 15, 12, 0.88)';
@@ -1736,7 +1741,7 @@ class ChariotHUD {
 
     // Speedometer
     ctx.fillStyle = COLOR_GOLD;
-    ctx.font = 'bold 10px Cinzel, serif';
+    ctx.font = `bold ${narrow ? 9 : 10}px Cinzel, serif`;
     ctx.fillText('CURSUS (SPEED)', x + 10, y + 15);
 
     ctx.font = '14px "JetBrains Mono", monospace';
@@ -1749,27 +1754,27 @@ class ChariotHUD {
     // Speedometer Bar
     const speedRatio = clamp(this.speedometerVal / 50.0, 0, 1);
     ctx.fillStyle = '#333';
-    ctx.fillRect(x + 10, y + 42, 90, 6);
+    ctx.fillRect(x + 10, y + 42, 80, 6);
     ctx.fillStyle = COLOR_GOLD_BRIGHT;
-    ctx.fillRect(x + 10, y + 42, 90 * speedRatio, 6);
+    ctx.fillRect(x + 10, y + 42, 80 * speedRatio, 6);
 
     // Centrifugal Lateral G-Force Gauge
     ctx.fillStyle = COLOR_GOLD;
-    ctx.font = 'bold 10px Cinzel, serif';
-    ctx.fillText('CENTRIFUGA (G)', x + 120, y + 15);
+    ctx.font = `bold ${narrow ? 9 : 10}px Cinzel, serif`;
+    ctx.fillText('CENTRIFUGA (G)', x + (narrow ? 105 : 120), y + 15);
 
     ctx.font = '14px "JetBrains Mono", monospace';
     ctx.fillStyle = player.isDrifting ? '#ff4757' : '#ffffff';
-    ctx.fillText(`${this.lateralGVal.toFixed(2)} G`, x + 120, y + 33);
+    ctx.fillText(`${this.lateralGVal.toFixed(2)} G`, x + (narrow ? 105 : 120), y + 33);
 
     // Lateral G Bar with Drift Warning Threshold
     const gRatio = clamp(this.lateralGVal / 1.8, 0, 1);
     ctx.fillStyle = '#333';
-    ctx.fillRect(x + 120, y + 42, 85, 6);
+    ctx.fillRect(x + (narrow ? 105 : 120), y + 42, narrow ? 70 : 85, 6);
     ctx.fillStyle = player.isDrifting ? '#ff4757' : '#2ed573';
-    ctx.fillRect(x + 120, y + 42, 85 * gRatio, 6);
+    ctx.fillRect(x + (narrow ? 105 : 120), y + 42, (narrow ? 70 : 85) * gRatio, 6);
 
-    if (player.isDrifting) {
+    if (player.isDrifting && !narrow) {
       ctx.fillStyle = '#ff4757';
       ctx.font = 'bold 9px sans-serif';
       ctx.fillText('DRIFT!', x + 212, y + 48);
@@ -1781,30 +1786,31 @@ class ChariotHUD {
     ctx.fillRect(x + 10, y + 56, (boxW - 20) * stamRatio, 3.5);
   }
 
-  renderSpinaLapBanner(ctx, cx, y, engine) {
+  renderSpinaLapBanner(ctx, cx, y, engine, narrow) {
     const leader = engine.getRaceLeader();
     const currentLap = leader ? Math.min(7, leader.lap + 1) : 1;
 
     ctx.save();
     ctx.translate(cx, y);
 
+    const bannerW = narrow ? 180 : 240;
     ctx.fillStyle = 'rgba(18, 15, 12, 0.85)';
     ctx.beginPath();
-    ctx.roundRect(-120, -14, 240, 28, 4);
+    ctx.roundRect(-bannerW / 2, -14, bannerW, 28, 4);
     ctx.fill();
 
     ctx.strokeStyle = COLOR_GOLD;
     ctx.lineWidth = 1.0;
-    ctx.strokeRect(-120, -14, 240, 28);
+    ctx.strokeRect(-bannerW / 2, -14, bannerW, 28);
 
     ctx.fillStyle = COLOR_GOLD_BRIGHT;
-    ctx.font = 'bold 12px Cinzel, serif';
+    ctx.font = `bold ${narrow ? 10 : 12}px Cinzel, serif`;
     ctx.textAlign = 'center';
 
     if (leader && leader.lap >= 7) {
-      ctx.fillText(`VICTORIA! ${leader.name.toUpperCase()} ACCEPIT PALMAM!`, 0, 4);
+      ctx.fillText(`VICTORIA! ${leader.name.toUpperCase()}!`, 0, 4);
     } else {
-      ctx.fillText(`MISSUS (LAP) ${currentLap} / VII — 7 DELPHINES IN CURSU`, 0, 4);
+      ctx.fillText(narrow ? `MISSUS ${currentLap} / VII` : `MISSUS (LAP) ${currentLap} / VII — 7 DELPHINES IN CURSU`, 0, 4);
     }
 
     ctx.restore();
@@ -1869,6 +1875,7 @@ export class ChariotEngine {
     this.resize(this.width, this.height, 1);
     this.initChariots();
     this.setupUI();
+    attachTouchBridge(this, canvas);
 
     this.addChronicle('🏁 The Mappa is dropped! The quadrigae thunder from the carceres!');
   }
@@ -2107,6 +2114,10 @@ export class ChariotEngine {
     this.spectators.init(this.track);
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   update(dt) {
     const clampedDt = Math.min(0.05, dt);
 
@@ -2313,7 +2324,11 @@ export class ChariotEngine {
     this.spectators.render(ctx);
 
     // ── 12. Canvas HUD & Gauges ──
-    this.hud.render(ctx, this.width, this.height, this);
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    this.hud.render(ctx, this.width / ui, this.height / ui, this);
+    ctx.restore();
   }
 
   renderCaveaArchitecture(ctx) {
@@ -2476,6 +2491,7 @@ export class ChariotEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.dustParticles = [];
     this.splinters = [];
     this.skidMarks = [];

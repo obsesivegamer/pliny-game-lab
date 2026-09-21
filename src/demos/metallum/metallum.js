@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book XXXIV: De Ferro / The Natural History of Metals)
 // Chemical Redox Cellular Automata: Fe2O3 + 3CO -> 2Fe + 3CO2, Bellows Draft (1200°C), Slag Tapping & Solid-State Bloom Forging
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const MATERIAL = {
   CHARCOAL: 0,        // Carbo: Hardwood charcoal fuel (C)
   ORE_HEMATITE: 1,    // Vena Ferri: Raw red iron ore (Fe2O3)
@@ -249,6 +251,7 @@ export class MetallumEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation time and speed
     this.elapsedTime = 0;
@@ -761,6 +764,10 @@ export class MetallumEngine {
     this.audio.playSlagHiss();
     this.bannerMessage = 'REHEATING BLOOM IN CHARCOAL EMBERS';
     this.bannerTimer = 2.5;
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
   }
 
   resize(width, height, dpr) {
@@ -1668,42 +1675,50 @@ export class MetallumEngine {
   }
 
   renderRomanHUD(ctx) {
-    const w = this.width;
-
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
-    // Classical Header Banner
+    const bannerH = narrow ? 50 : 56;
     ctx.fillStyle = 'rgba(10, 12, 16, 0.88)';
-    ctx.fillRect(0, 0, w, 56);
+    ctx.fillRect(0, 0, sw, bannerH);
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(0, 56);
-    ctx.lineTo(w, 56);
+    ctx.moveTo(0, bannerH);
+    ctx.lineTo(sw, bannerH);
     ctx.stroke();
 
     // Title
-    ctx.fillStyle = '#d4af37'; // Roman Gold
-    ctx.font = 'bold 15px Cinzel, serif, "Times New Roman"';
+    ctx.fillStyle = '#d4af37';
+    ctx.font = narrow ? 'bold 12px Cinzel, serif' : 'bold 14px Cinzel, serif';
     ctx.textAlign = 'left';
-    ctx.fillText('METALLUM • CAMINI EXCOCTIO FERRI', 20, 26);
+    ctx.fillText(narrow ? 'METALLUM • BLOOMERY' : 'METALLUM • CAMINI EXCOCTIO FERRI', 12, 20);
 
-    // Chemical Reaction Equation Subtitle
-    ctx.fillStyle = '#a0a6b2';
-    ctx.font = '11px "JetBrains Mono", monospace';
-    ctx.fillText('REDOX: Fe₂O₃ + 3CO → 2Fe + 3CO₂  |  TUYÈRE DRAFT: 1200°C', 20, 44);
+    if (narrow) {
+      ctx.fillStyle = this.tuyereTemp > 1150 ? '#ff7733' : '#ffd700';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillText(`${Math.round(this.tuyereTemp)}°C | Bloom: ${this.anvilBloom.massKg.toFixed(1)}kg`, 12, 38);
+    } else {
+      ctx.fillStyle = '#a0a6b2';
+      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillText('REDOX: Fe₂O₃ + 3CO → 2Fe + 3CO₂  |  TUYÈRE DRAFT: 1200°C', 12, 40);
 
-    // Live Metrics Telemetry (Top Right)
-    ctx.textAlign = 'right';
-    ctx.fillStyle = this.tuyereTemp > 1150 ? '#ff7733' : '#ffd700';
-    ctx.font = 'bold 13px "JetBrains Mono", monospace';
-    ctx.fillText(`FURNACE: ${Math.round(this.tuyereTemp)}°C`, w - 20, 25);
+      // Live Metrics Telemetry (Top Right)
+      ctx.textAlign = 'right';
+      ctx.fillStyle = this.tuyereTemp > 1150 ? '#ff7733' : '#ffd700';
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillText(`FURNACE: ${Math.round(this.tuyereTemp)}°C`, sw - 16, 22);
 
-    ctx.fillStyle = '#a0a6b2';
-    ctx.font = '11px "JetBrains Mono", monospace';
-    const bloomKg = this.anvilBloom.massKg.toFixed(1);
-    const consPct = Math.round(this.anvilBloom.consolidation * 100);
-    ctx.fillText(`BLOOM: ${bloomKg}kg (${consPct}% PURE)`, w - 20, 43);
+      ctx.fillStyle = '#a0a6b2';
+      ctx.font = '11px "JetBrains Mono", monospace';
+      const bloomKg = this.anvilBloom.massKg.toFixed(1);
+      const consPct = Math.round(this.anvilBloom.consolidation * 100);
+      ctx.fillText(`BLOOM: ${bloomKg}kg (${consPct}% PURE)`, sw - 16, 40);
+    }
 
     // Center Notification Banner / Triumph
     if (this.bannerTimer > 0) {
@@ -1712,16 +1727,16 @@ export class MetallumEngine {
       ctx.strokeStyle = `rgba(212, 175, 55, ${bannerAlpha})`;
       ctx.lineWidth = 1.5;
 
-      const bw = Math.min(w * 0.8, 560);
-      const bx = (w - bw) * 0.5;
-      const by = 68;
-      ctx.fillRect(bx, by, bw, 32);
-      ctx.strokeRect(bx, by, bw, 32);
+      const bw = Math.min(sw * 0.85, 480);
+      const bx = (sw - bw) * 0.5;
+      const by = bannerH + 10;
+      ctx.fillRect(bx, by, bw, 28);
+      ctx.strokeRect(bx, by, bw, 28);
 
       ctx.textAlign = 'center';
       ctx.fillStyle = `rgba(255, 230, 160, ${bannerAlpha})`;
-      ctx.font = 'bold 11.5px "JetBrains Mono", monospace';
-      ctx.fillText(this.bannerMessage, w * 0.5, by + 20);
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.fillText(this.bannerMessage, sw * 0.5, by + 18);
     }
 
     ctx.restore();
@@ -1741,6 +1756,7 @@ export class MetallumEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.audio) {
       this.audio.destroy();
     }

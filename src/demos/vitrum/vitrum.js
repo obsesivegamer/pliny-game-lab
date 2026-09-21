@@ -17,6 +17,8 @@ export const GLASS_TINTS = {
   CLEAR: { name: 'Vitrum Crystallinum', r: 180, g: 210, b: 220 }
 };
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class VitrumEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -26,6 +28,7 @@ export class VitrumEngine {
     this.width = canvas ? canvas.width || 1200 : 1200;
     this.height = canvas ? canvas.height || 800 : 800;
     this.dpr = 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Clock
     this.time = 0;
@@ -376,8 +379,12 @@ export class VitrumEngine {
   }
 
   // ---------------------------------------------------------------------------
-  // Resize Handler
+  // Contract & Resize Handlers
   // ---------------------------------------------------------------------------
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   resize(width, height, dpr) {
     this.width = width;
     this.height = height;
@@ -1276,28 +1283,38 @@ export class VitrumEngine {
   // ---------------------------------------------------------------------------
   renderHUD(ctx) {
     ctx.save();
-    const w = this.width;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Header Title
     ctx.fillStyle = '#d4af37';
-    ctx.font = '600 13px Cinzel, serif';
+    ctx.font = '600 12px Cinzel, serif';
     ctx.textAlign = 'left';
-    ctx.fillText('VITRUM — ARS VITRIARIA ROMANA (NATURALIS HISTORIA XXXVI)', 28, 32);
+    ctx.fillText(narrow ? 'VITRUM — ARS VITRIARIA' : 'VITRUM — ARS VITRIARIA ROMANA (NATURALIS HISTORIA XXXVI)', 16, 24);
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.font = '10px JetBrains Mono, monospace';
-    ctx.fillText('Non-Newtonian Viscoelastic Fluid Dynamics & Pneumatic Inflation', 28, 48);
+    if (!narrow) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillText('Non-Newtonian Viscoelastic Fluid Dynamics & Pneumatic Inflation', 16, 40);
 
-    // Interactive Hint Toast
-    ctx.textAlign = 'right';
-    let hint = 'Hold Space / Left-Click: Blow Air into Pipe | Tool: ' + this.activeTool.toUpperCase();
-    if (this.activeTool === 'marver') {
-      hint = 'Drag vertically to adjust Marver Slab & roll molten gather';
-    } else if (this.activeTool === 'jacks') {
-      hint = 'Click & Drag along gather to cinch waist & sculpt neck';
+      // Interactive Hint Toast
+      ctx.textAlign = 'right';
+      let hint = 'Hold Space / Left-Click: Blow Air into Pipe | Tool: ' + this.activeTool.toUpperCase();
+      if (this.activeTool === 'marver') {
+        hint = 'Drag vertically to adjust Marver Slab & roll molten gather';
+      } else if (this.activeTool === 'jacks') {
+        hint = 'Click & Drag along gather to cinch waist & sculpt neck';
+      }
+      ctx.fillStyle = '#80deea';
+      ctx.fillText(hint, sw - 16, 24);
+    } else {
+      ctx.fillStyle = '#80deea';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillText(`Tool: ${this.activeTool.toUpperCase()} | Press Space to Blow`, 16, 40);
     }
-    ctx.fillStyle = '#80deea';
-    ctx.fillText(hint, w - 28, 32);
 
     ctx.restore();
   }
@@ -1402,6 +1419,7 @@ export class VitrumEngine {
   // Lifecycle Teardown
   // ---------------------------------------------------------------------------
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.isMouseDown = false;
     this.isBlowing = false;
     this.isReheating = false;

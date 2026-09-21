@@ -1,6 +1,8 @@
 // Myrmex: Ant Colony Optimization, Subterranean Excavation & Pheromone ALife
 // Grounded in Pliny the Elder's Naturalis Historia (Book XI, Ch. 36: The Industry of Ants)
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const CELL = {
   AIR: 0,
   SOIL_FIRM: 1,   // Compacted subterranean loam, stable & diggable
@@ -88,6 +90,7 @@ export class MyrmexEngine {
     // Initialize colony
     this.initControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   initControls() {
@@ -1315,20 +1318,35 @@ export class MyrmexEngine {
     ctx.restore();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const w = narrow ? Math.min(sw - 28, 260) : 260;
+    const h = 62;
+    const x = 14;
+    const y = sh - 76;
+
     ctx.fillStyle = 'rgba(10, 12, 16, 0.72)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(14, this.height - 76, 260, 62, 8);
+    ctx.roundRect(x, y, w, h, 8);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#d4af37';
     ctx.font = 'bold 11px "Cinzel", serif';
     ctx.textAlign = 'left';
-    ctx.fillText('COLONIA MYRMEX (NAT. HIST. XI)', 24, this.height - 58);
+    ctx.fillText('COLONIA MYRMEX (NAT. HIST. XI)', x + 10, y + 18);
 
     ctx.fillStyle = '#8c909e';
     ctx.font = '10px "JetBrains Mono", monospace';
@@ -1336,8 +1354,8 @@ export class MyrmexEngine {
     const soldiers = this.ants.filter(a => a.caste === CASTE.SOLDIER).length;
     const nurses = this.ants.filter(a => a.caste === CASTE.NURSE).length;
 
-    ctx.fillText(`Ants: ${this.ants.length} (W:${workers} S:${soldiers} N:${nurses})`, 24, this.height - 42);
-    ctx.fillText(`Granary: ${this.stats.foodStored} | Brood Eggs: ${this.royalEggs.length}`, 24, this.height - 26);
+    ctx.fillText(`Ants: ${this.ants.length} (W:${workers} S:${soldiers} N:${nurses})`, x + 10, y + 34);
+    ctx.fillText(`Granary: ${this.stats.foodStored} | Brood Eggs: ${this.royalEggs.length}`, x + 10, y + 50);
     ctx.restore();
   }
 
@@ -1434,6 +1452,7 @@ export class MyrmexEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.ants = [];
     this.royalEggs = [];
     this.tunnelNodes = [];

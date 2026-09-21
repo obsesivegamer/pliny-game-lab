@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book II, Chapter 33: De Chasmate et Caelestibus Miraculis)
 // and modern Magnetospheric Physics (Lorentz Force, Dipole Trapping & Auroral Oval Spectral Transitions).
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 /**
  * Deterministic 2D Perlin & Fractal Brownian Motion (FBM) Noise Generator.
  * Zero external dependencies, pure ES implementation.
@@ -124,6 +126,7 @@ export class AuroraEngine {
     // Initial setup
     this.initSimulation();
     this.initControls();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------
@@ -955,8 +958,14 @@ export class AuroraEngine {
 
   renderRomanTelemetryHUD(ctx) {
     ctx.save();
-    const hudW = 280;
-    const hudH = 150;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const hudW = narrow ? Math.min(sw - 28, 280) : 280;
+    const hudH = narrow ? 134 : 150;
     const hudX = 14;
     const hudY = 14;
 
@@ -984,37 +993,40 @@ export class AuroraEngine {
     // Pliny the Elder Quote
     ctx.fillStyle = '#b0b8d0';
     ctx.font = 'italic 10px serif';
-    ctx.fillText('“In caelo trabes ac chasmata visa...” (Plin. II.33)', hudX + 12, hudY + 40);
+    ctx.fillText(narrow ? '“In caelo trabes ac chasmata...”' : '“In caelo trabes ac chasmata visa...” (Plin. II.33)', hudX + 12, narrow ? hudY + 38 : hudY + 40);
 
     // Telemetry lines
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Solar Wind Velocity :', hudX + 12, hudY + 62);
+    ctx.fillText(narrow ? 'Solar Wind:' : 'Solar Wind Velocity :', hudX + 12, narrow ? hudY + 58 : hudY + 62);
     ctx.fillStyle = '#39ff14';
-    ctx.fillText(`${Math.round(this.solarWindStrength)} km/s (Fast Stream)`, hudX + 144, hudY + 62);
+    ctx.fillText(narrow ? `${Math.round(this.solarWindStrength)} km/s` : `${Math.round(this.solarWindStrength)} km/s (Fast Stream)`, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 58 : hudY + 62);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Interplanetary B_z  :', hudX + 12, hudY + 79);
+    ctx.fillText(narrow ? 'B_z Coup  :' : 'Interplanetary B_z  :', hudX + 12, narrow ? hudY + 74 : hudY + 79);
     const bzVal = (-3.2 - (this.solarWindStrength / 300) * 2.1).toFixed(1);
     ctx.fillStyle = '#ff80df';
-    ctx.fillText(`${bzVal} nT (Southward Coup)`, hudX + 144, hudY + 79);
+    ctx.fillText(narrow ? `${bzVal} nT` : `${bzVal} nT (Southward Coup)`, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 74 : hudY + 79);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Auroral Oval Lat    :', hudX + 12, hudY + 96);
+    ctx.fillText(narrow ? 'Oval Lat  :' : 'Auroral Oval Lat    :', hudX + 12, narrow ? hudY + 90 : hudY + 96);
     ctx.fillStyle = '#00ffff';
-    ctx.fillText(`67.5° N (Dipole: ${(this.dipoleTilt * 180 / Math.PI).toFixed(1)}°)`, hudX + 144, hudY + 96);
+    ctx.fillText(narrow ? '67.5° N' : `67.5° N (Dipole: ${(this.dipoleTilt * 180 / Math.PI).toFixed(1)}°)`, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 90 : hudY + 96);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Spectral Emission   :', hudX + 12, hudY + 113);
-    const specLabel = this.colorShift < 0.4 ? 'OI 557.7nm [Green]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purple]');
+    ctx.fillText(narrow ? 'Emission  :' : 'Spectral Emission   :', hudX + 12, narrow ? hudY + 106 : hudY + 113);
+    const specLabel = narrow
+      ? (this.colorShift < 0.4 ? 'OI 557nm [Grn]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purp]'))
+      : (this.colorShift < 0.4 ? 'OI 557.7nm [Green]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purple]'));
     ctx.fillStyle = this.colorShift < 0.4 ? '#39ff14' : (this.colorShift < 0.7 ? '#00ffff' : '#bf40bf');
-    ctx.fillText(specLabel, hudX + 144, hudY + 113);
+    ctx.fillText(specLabel, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 106 : hudY + 113);
 
-    // Entity count
-    ctx.fillStyle = '#8c909e';
-    ctx.fillText('Simulated Entities  :', hudX + 12, hudY + 130);
-    ctx.fillStyle = '#d4af37';
-    ctx.fillText(`${this.getEntityCount()} nodes & ions`, hudX + 144, hudY + 130);
+    if (!narrow) {
+      ctx.fillStyle = '#8c909e';
+      ctx.fillText('Simulated Entities  :', hudX + 12, hudY + 130);
+      ctx.fillStyle = '#d4af37';
+      ctx.fillText(`${this.getEntityCount()} nodes & ions`, hudX + 144, hudY + 130);
+    }
 
     ctx.restore();
   }
@@ -1069,7 +1081,12 @@ export class AuroraEngine {
     this.initControls();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer && typeof document !== 'undefined') {
       this.uiElements.forEach((el) => {
         if (el.parentNode) el.parentNode.removeChild(el);

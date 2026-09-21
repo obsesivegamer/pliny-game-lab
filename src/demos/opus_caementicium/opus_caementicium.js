@@ -23,6 +23,8 @@
  *   Sea Foam:          #88D49E
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class OpusCaementiciumEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -32,6 +34,7 @@ export class OpusCaementiciumEngine {
     this.width = canvas.width || 800;
     this.height = canvas.height || 600;
     this.dpr = 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Parameters
     this.pozzolanaRatio = 0.58; // 58% reactive volcanic ash (optimal Pozzuoli ratio)
@@ -91,6 +94,11 @@ export class OpusCaementiciumEngine {
   // =========================================================================
   // VIEWPORT LAYOUT & SIZING
   // =========================================================================
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   resize(width, height, dpr = 1) {
     this.width = width;
     this.height = height;
@@ -1027,25 +1035,34 @@ export class OpusCaementiciumEngine {
   // -------------------------------------------------------------------------
   renderPanelBanner(ctx, x, y, title, subtitle) {
     ctx.save();
-    ctx.font = 'bold 12px monospace';
+    const narrow = (this.width / this.uiScale()) < 560;
+    ctx.font = narrow ? 'bold 10px monospace' : 'bold 12px monospace';
     ctx.fillStyle = '#D4AF37'; // Gold
-    ctx.fillText(title, x, y);
+    ctx.fillText(narrow ? title.split(':')[0] : title, x, y);
 
-    ctx.font = '10px monospace';
-    ctx.fillStyle = '#A0A0A0';
-    ctx.fillText(subtitle, x, y + 14);
+    if (!narrow) {
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#A0A0A0';
+      ctx.fillText(subtitle, x, y + 14);
+    }
     ctx.restore();
   }
 
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
     // Top-center Roman Pliny quotation banner
-    ctx.font = 'italic 11px Georgia, serif';
-    ctx.fillStyle = 'rgba(212, 175, 55, 0.7)';
+    ctx.font = narrow ? 'italic 9.5px Georgia, serif' : 'italic 11px Georgia, serif';
+    ctx.fillStyle = 'rgba(212, 175, 55, 0.75)';
     ctx.textAlign = 'center';
     ctx.fillText(
-      '"The moment it touches the sea and is submerged, it becomes a stone which resists the waves..." — Pliny (NH XXXV.47)',
-      this.width * 0.5,
+      narrow ? 'OPUS CAEMENTICIUM — Pliny (NH XXXV.47)' : '"The moment it touches the sea and is submerged, it becomes a stone..." — Pliny (NH XXXV.47)',
+      sw * 0.5,
       14
     );
     ctx.restore();
@@ -1200,6 +1217,7 @@ export class OpusCaementiciumEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer && typeof document !== 'undefined') {
       this.controlsContainer.innerHTML = '';
     }

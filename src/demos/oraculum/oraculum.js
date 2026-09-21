@@ -6,6 +6,8 @@
 // rising from subterranean limestone fissures beneath Apollo's Temple at Delphi, uttering
 // prophecies in dactylic hexameter verse while seated upon the sacred bronze tripod over the chasm.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class OraculumEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -194,6 +196,7 @@ export class OraculumEngine {
 
     // DOM Controls Initialization
     this.initControls();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -1077,12 +1080,17 @@ export class OraculumEngine {
 
   renderProphecyBanner(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
 
     // Classical Inscription Stone Tablet at top
-    const bannerW = Math.min(680, w - 40);
-    const bannerH = 104;
-    const bannerX = (w - bannerW) * 0.5;
-    const bannerY = 24;
+    const bannerW = Math.min(680, sw - 32);
+    const bannerH = narrow ? 84 : 104;
+    const bannerX = (sw - bannerW) * 0.5;
+    const bannerY = narrow ? 12 : 24;
 
     // Semi-translucent dark marble plaque
     ctx.fillStyle = 'rgba(10, 7, 16, 0.78)';
@@ -1096,41 +1104,42 @@ export class OraculumEngine {
     // Inner gold meander filigree corners
     ctx.strokeStyle = '#d4af37';
     ctx.lineWidth = 1;
-    const cornerSize = 10;
+    const cornerSize = narrow ? 6 : 10;
     // Top-left
     ctx.strokeRect(bannerX + 4, bannerY + 4, cornerSize, cornerSize);
     // Top-right
-    ctx.strokeRect(bannerX + bannerW - 14, bannerY + 4, cornerSize, cornerSize);
+    ctx.strokeRect(bannerX + bannerW - (cornerSize + 4), bannerY + 4, cornerSize, cornerSize);
     // Bottom-left
-    ctx.strokeRect(bannerX + 4, bannerY + bannerH - 14, cornerSize, cornerSize);
+    ctx.strokeRect(bannerX + 4, bannerY + bannerH - (cornerSize + 4), cornerSize, cornerSize);
     // Bottom-right
-    ctx.strokeRect(bannerX + bannerW - 14, bannerY + bannerH - 14, cornerSize, cornerSize);
+    ctx.strokeRect(bannerX + bannerW - (cornerSize + 4), bannerY + bannerH - (cornerSize + 4), cornerSize, cornerSize);
 
     // Title: Oracular Hexameter
     ctx.textAlign = 'center';
     ctx.fillStyle = '#d4af37';
-    ctx.font = "600 11px 'JetBrains Mono', monospace";
-    ctx.letterSpacing = '2px';
+    ctx.font = `600 ${narrow ? 9 : 11}px 'JetBrains Mono', monospace`;
+    ctx.letterSpacing = narrow ? '1px' : '2px';
     const tranceLabel = this.tranceState === 'ENTHOUSIASMOS' ? '⚡ PYTHIAN ENTHOUSIASMOS ⚡' : 'DELPHIC ORACULUM';
-    ctx.fillText(`${tranceLabel} — ${this.currentProphecy.meter.toUpperCase()}`, bannerX + bannerW * 0.5, bannerY + 20);
+    ctx.fillText(narrow ? tranceLabel : `${tranceLabel} — ${this.currentProphecy.meter.toUpperCase()}`, bannerX + bannerW * 0.5, bannerY + (narrow ? 16 : 20));
 
     // Main Greek Prophecy Line (Glowing Gold)
     ctx.fillStyle = '#f1c40f';
-    ctx.font = "bold 17px 'Cinzel', 'Times New Roman', serif";
+    ctx.font = `bold ${narrow ? 13 : 17}px 'Cinzel', 'Times New Roman', serif`;
     ctx.shadowColor = '#9b59b6';
     ctx.shadowBlur = 8;
-    ctx.fillText(this.currentProphecy.greek, bannerX + bannerW * 0.5, bannerY + 44);
+    ctx.fillText(this.currentProphecy.greek, bannerX + bannerW * 0.5, bannerY + (narrow ? 36 : 44));
     ctx.shadowBlur = 0;
 
     // Latin Equivalent / Hexameter Verse
     ctx.fillStyle = '#d2b4de';
-    ctx.font = "italic 12px 'Cinzel', serif";
-    ctx.fillText(this.currentProphecy.latin, bannerX + bannerW * 0.5, bannerY + 65);
+    ctx.font = `italic ${narrow ? 10 : 12}px 'Cinzel', serif`;
+    ctx.fillText(this.currentProphecy.latin, bannerX + bannerW * 0.5, bannerY + (narrow ? 54 : 65));
 
     // Scansion & Translation
     ctx.fillStyle = '#8c909e';
-    ctx.font = "11px 'JetBrains Mono', monospace";
-    ctx.fillText(`Meter: ${this.currentProphecy.scansion} | "${this.currentProphecy.english}"`, bannerX + bannerW * 0.5, bannerY + 88);
+    ctx.font = `${narrow ? 9 : 11}px 'JetBrains Mono', monospace`;
+    const engText = narrow && this.currentProphecy.english.length > 40 ? `${this.currentProphecy.english.slice(0, 38)}...` : this.currentProphecy.english;
+    ctx.fillText(narrow ? `"${engText}"` : `Meter: ${this.currentProphecy.scansion} | "${this.currentProphecy.english}"`, bannerX + bannerW * 0.5, bannerY + (narrow ? 72 : 88));
 
     ctx.restore();
   }
@@ -1148,6 +1157,10 @@ export class OraculumEngine {
     this.chasmY = this.height * 0.82;
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   reset() {
     this.time = 0;
     this.tranceState = 'CONTEMPLATION';
@@ -1161,6 +1174,7 @@ export class OraculumEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.clearVapors();
     this.particles = [];
     this.runes = [];

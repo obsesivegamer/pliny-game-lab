@@ -37,6 +37,8 @@
  *  - Pure ES Module, zero external dependencies, safe headless execution guard.
  */
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // ============================================================================
 // MATERIAL SCIENCE OF ANTIQUITY & HISTORICAL TABLES
 // ============================================================================
@@ -2737,6 +2739,7 @@ export class MechanicaEngine {
     // Initialize Active Machine & Controls
     this.initSystem();
     this.buildControls();
+    attachTouchBridge(this, canvas);
   }
 
   initSystem() {
@@ -3345,39 +3348,49 @@ export class MechanicaEngine {
 
   renderHUD(ctx) {
     ctx.save();
-    const w = this.width;
-    const h = this.height;
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // 1. Top Architectural Cartouche Title Block
-    this.renderTitleCartouche(ctx, 24, 24);
+    this.renderTitleCartouche(ctx, narrow ? 12 : 24, narrow ? 12 : 24, narrow, sw);
 
-    // 2. Mechanical Advantage (MA) Badge
-    this.renderMABadge(ctx, w - 190, 24);
-
-    // 3. Peak Structural Stress Gauge Bar
-    this.renderStressGauge(ctx, w - 190, 80);
-
-    // 4. Tachometer / Rotational RPM Dial (for Aeolipile or Gear Train)
-    if (this.aeolipile || this.gearTruss) {
-      this.renderRPMGauge(ctx, w - 110, 160);
+    // 2. Mechanical Advantage (MA) Badge & Stress Gauge
+    if (narrow) {
+      this.renderMABadge(ctx, 12, 66, true);
+      this.renderStressGauge(ctx, 146, 66, true, sw);
+      if ((this.aeolipile || this.gearTruss) && sh > 480) {
+        this.renderRPMGauge(ctx, sw - 45, 84);
+      }
+      if (sh > 560) {
+        this.renderScholiaBanner(ctx, 12, sh - 48, sw - 24);
+      }
+    } else {
+      this.renderMABadge(ctx, sw - 190, 24);
+      this.renderStressGauge(ctx, sw - 190, 80);
+      if (this.aeolipile || this.gearTruss) {
+        this.renderRPMGauge(ctx, sw - 110, 160);
+      }
+      this.renderScholiaBanner(ctx, 24, sh - 52, sw - 48);
     }
-
-    // 5. Historical Vitruvian Citation Box (Bottom Banner)
-    this.renderScholiaBanner(ctx, 24, h - 52);
 
     ctx.restore();
   }
 
-  renderTitleCartouche(ctx, x, y) {
+  renderTitleCartouche(ctx, x, y, narrow = false, sw = 800) {
     ctx.save();
     ctx.translate(x, y);
 
+    const cartW = narrow ? Math.min(sw - 24, 290) : 290;
+
     // Blueprint Cartouche Plaque
     ctx.fillStyle = 'rgba(12, 20, 31, 0.85)';
-    ctx.fillRect(0, 0, 290, 48);
+    ctx.fillRect(0, 0, cartW, 48);
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(0, 0, 290, 48);
+    ctx.strokeRect(0, 0, cartW, 48);
 
     // Classical Epigraphy
     ctx.fillStyle = '#D4AF37';
@@ -3395,7 +3408,7 @@ export class MechanicaEngine {
     ctx.restore();
   }
 
-  renderMABadge(ctx, x, y) {
+  renderMABadge(ctx, x, y, compact = false) {
     ctx.save();
     ctx.translate(x, y);
 
@@ -3406,25 +3419,28 @@ export class MechanicaEngine {
     else if (this.activePreset === 'Compound Gear Train & Truss') ma = 16.0;
     else if (this.activePreset === 'Hero Steam Turbine (Aeolipile)') ma = 1.0;
 
+    const w = compact ? 124 : 165;
+    const h = compact ? 40 : 48;
+
     // Cartouche Box
     ctx.fillStyle = 'rgba(12, 20, 31, 0.85)';
-    ctx.fillRect(0, 0, 165, 48);
+    ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = '#00F0FF';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(0, 0, 165, 48);
+    ctx.strokeRect(0, 0, w, h);
 
     ctx.fillStyle = '#00F0FF';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText('MECHANICAL ADVANTAGE', 8, 15);
+    ctx.font = compact ? 'bold 8.5px monospace' : 'bold 10px monospace';
+    ctx.fillText(compact ? 'MECH ADV' : 'MECHANICAL ADVANTAGE', 8, compact ? 13 : 15);
 
     ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(`MA = ${ma.toFixed(1)}:1`, 8, 36);
+    ctx.font = compact ? 'bold 13px monospace' : 'bold 16px monospace';
+    ctx.fillText(`MA = ${ma.toFixed(1)}:1`, 8, compact ? 30 : 36);
 
     ctx.restore();
   }
 
-  renderStressGauge(ctx, x, y) {
+  renderStressGauge(ctx, x, y, compact = false, sw = 800) {
     ctx.save();
     ctx.translate(x, y);
 
@@ -3444,22 +3460,25 @@ export class MechanicaEngine {
 
     const stressRatio = Math.min(1.0, maxStress / Math.max(1.0, limitStress));
 
+    const w = compact ? Math.min(165, sw - x - 12) : 165;
+    const h = compact ? 40 : 44;
+
     // Gauge container
     ctx.fillStyle = 'rgba(12, 20, 31, 0.85)';
-    ctx.fillRect(0, 0, 165, 44);
+    ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = '#D4AF37';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(0, 0, 165, 44);
+    ctx.strokeRect(0, 0, w, h);
 
     ctx.fillStyle = '#D4AF37';
     ctx.font = '9px monospace';
-    ctx.fillText(`PEAK STRESS: ${maxStress.toFixed(0)} / ${limitStress} MPa`, 8, 14);
+    ctx.fillText(`STRESS: ${maxStress.toFixed(0)}/${limitStress} MPa`, 6, compact ? 12 : 14);
 
     // Progress Bar Track
-    const barW = 149;
-    const barH = 12;
+    const barW = Math.max(20, w - 16);
+    const barH = compact ? 10 : 12;
     ctx.fillStyle = '#141D2B';
-    ctx.fillRect(8, 22, barW, barH);
+    ctx.fillRect(8, compact ? 18 : 22, barW, barH);
 
     // Color gradient based on fracture proximity
     let fillCol = '#00F0FF';
@@ -3468,9 +3487,9 @@ export class MechanicaEngine {
     else if (stressRatio > 0.40) fillCol = '#D4AF37';
 
     ctx.fillStyle = fillCol;
-    ctx.fillRect(8, 22, barW * stressRatio, barH);
+    ctx.fillRect(8, compact ? 18 : 22, barW * stressRatio, barH);
     ctx.strokeStyle = '#394B61';
-    ctx.strokeRect(8, 22, barW, barH);
+    ctx.strokeRect(8, compact ? 18 : 22, barW, barH);
 
     ctx.restore();
   }
@@ -3535,10 +3554,10 @@ export class MechanicaEngine {
     ctx.restore();
   }
 
-  renderScholiaBanner(ctx, x, y) {
+  renderScholiaBanner(ctx, x, y, customW) {
     ctx.save();
     ctx.translate(x, y);
-    const w = this.width - 48;
+    const w = customW || (this.width - 48);
 
     let scholia = MECHANICA_SCHOLIA.polyspaston;
     if (this.activePreset === 'Hero Steam Turbine (Aeolipile)') scholia = MECHANICA_SCHOLIA.aeolipile;
@@ -3582,7 +3601,12 @@ export class MechanicaEngine {
     this.initSystem();
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }

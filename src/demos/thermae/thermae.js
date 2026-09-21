@@ -1,3 +1,5 @@
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // Thermae: Roman Baths Hypocaust & Thermal Conduction Engine
 // Pliny Game Lab — Pavilion VIII: Architectura & Structura
 // Grounded in Vitruvius (De Architectura Book V.10: "De balnearum dispositionibus et partibus")
@@ -42,6 +44,7 @@ export class ThermaeEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Parameters & Roman Engineering Controls
     this.fireRate = 75; // 10% - 100% (praefurnium furnace intensity)
@@ -543,6 +546,7 @@ export class ThermaeEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.steamPool = [];
     this.emberPool = [];
     this.temperature = null;
@@ -558,6 +562,10 @@ export class ThermaeEngine {
       }
       this.audioCtx = null;
     }
+  }
+
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
   }
 
   getEntityCount() {
@@ -1622,11 +1630,16 @@ export class ThermaeEngine {
   // -------------------------------------------------------------------------
   renderTelemetryHUD(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = (w || this.width) / ui;
+    const sh = (h || this.height) / ui;
+    const narrow = sw < 560;
 
-    const hudX = 20;
-    const hudY = 20;
-    const hudW = 270;
-    const hudH = 150;
+    const hudX = narrow ? 10 : 20;
+    const hudY = narrow ? 10 : 20;
+    const hudW = narrow ? Math.min(sw - 20, 240) : 270;
+    const hudH = narrow ? 128 : 150;
 
     // Semi-translucent dark slate Roman parchment box
     ctx.fillStyle = 'rgba(12, 14, 20, 0.88)';
@@ -1638,16 +1651,18 @@ export class ThermaeEngine {
     // Header Title
     ctx.font = 'bold 11px "Cinzel", serif';
     ctx.fillStyle = '#d4af37';
-    ctx.fillText('THERMAE ROMANAE • HYPOCAUSTVM', hudX + 10, hudY + 18);
+    ctx.fillText(narrow ? 'THERMAE ROMANAE' : 'THERMAE ROMANAE • HYPOCAUSTVM', hudX + 10, hudY + 18);
 
-    // View Mode Badge
-    ctx.font = 'bold 9px "JetBrains Mono", monospace';
-    ctx.fillStyle = this.viewMode === 'heatmap' ? '#ffc107' : '#3bd6c6';
-    ctx.fillText(
-      `VIEW: [ ${this.viewMode.toUpperCase()} ]`,
-      hudX + 10,
-      hudY + 34
-    );
+    // View Mode Badge on desktop
+    if (!narrow) {
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.fillStyle = this.viewMode === 'heatmap' ? '#ffc107' : '#3bd6c6';
+      ctx.fillText(
+        `VIEW: [ ${this.viewMode.toUpperCase()} ]`,
+        hudX + 10,
+        hudY + 34
+      );
+    }
 
     // Compute live average room temperatures
     const gw = this.gridW;
@@ -1659,35 +1674,46 @@ export class ThermaeEngine {
     const hypoAvg = T[38 * gw + 35] || 145.0;
     const hearthT = T[38 * gw + 10] || 520.0;
 
-    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.font = narrow ? '9px "JetBrains Mono", monospace' : '10px "JetBrains Mono", monospace';
 
-    // Praefurnium Temperature & Fire Rate
-    ctx.fillStyle = '#ff8888';
-    ctx.fillText(`PRAEFVRNIVM:  ${Math.round(hearthT)}°C (${this.fireRate}% FIRE)`, hudX + 10, hudY + 52);
+    if (narrow) {
+      ctx.fillStyle = '#ff8888';
+      ctx.fillText(`HEARTH:     ${Math.round(hearthT)}°C (${this.fireRate}% FIRE)`, hudX + 10, hudY + 36);
 
-    // Caldarium Hot Room (Caldarium Red #DC3545)
-    ctx.fillStyle = '#dc3545';
-    ctx.fillText(`CALDARIVM:    ${caldAvg.toFixed(1)}°C (HOT BATH)`, hudX + 10, hudY + 68);
+      ctx.fillStyle = '#dc3545';
+      ctx.fillText(`CALDARIVM:  ${caldAvg.toFixed(1)}°C (HOT)`, hudX + 10, hudY + 52);
 
-    // Tepidarium Warm Room (Tepidarium Yellow #FFC107)
-    ctx.fillStyle = '#ffc107';
-    ctx.fillText(`TEPIDARIVM:   ${tepidAvg.toFixed(1)}°C (WARM HALL)`, hudX + 10, hudY + 84);
+      ctx.fillStyle = '#ffc107';
+      ctx.fillText(`TEPIDARIVM: ${tepidAvg.toFixed(1)}°C (WARM)`, hudX + 10, hudY + 68);
 
-    // Frigidarium Cold Room (Frigidarium Blue #007BFF)
-    ctx.fillStyle = '#007bff';
-    ctx.fillText(`FRIGIDARIVM:  ${frigAvg.toFixed(1)}°C (NATATIO)`, hudX + 10, hudY + 100);
+      ctx.fillStyle = '#007bff';
+      ctx.fillText(`FRIGIDARIVM: ${frigAvg.toFixed(1)}°C (COLD)`, hudX + 10, hudY + 84);
 
-    // Hypocaust Pilae Heat & Flue Draft
-    ctx.fillStyle = '#e6e8ee';
-    ctx.fillText(`HYPOCAVSTVM:  ${hypoAvg.toFixed(0)}°C (DRAFT: ${this.draftVenting}%)`, hudX + 10, hudY + 116);
+      ctx.fillStyle = '#e6e8ee';
+      ctx.fillText(`DRAFT:      ${this.draftVenting}% | ENT: ${this.getEntityCount()}`, hudX + 10, hudY + 100);
+    } else {
+      ctx.fillStyle = '#ff8888';
+      ctx.fillText(`PRAEFVRNIVM:  ${Math.round(hearthT)}°C (${this.fireRate}% FIRE)`, hudX + 10, hudY + 52);
 
-    // Entity Count (Grid Cells + Steam + Embers)
-    ctx.fillStyle = '#8c909e';
-    ctx.fillText(`ENTITIES:     ${this.getEntityCount()} (HEAT+STEAM)`, hudX + 10, hudY + 132);
+      ctx.fillStyle = '#dc3545';
+      ctx.fillText(`CALDARIVM:    ${caldAvg.toFixed(1)}°C (HOT BATH)`, hudX + 10, hudY + 68);
+
+      ctx.fillStyle = '#ffc107';
+      ctx.fillText(`TEPIDARIVM:   ${tepidAvg.toFixed(1)}°C (WARM HALL)`, hudX + 10, hudY + 84);
+
+      ctx.fillStyle = '#007bff';
+      ctx.fillText(`FRIGIDARIVM:  ${frigAvg.toFixed(1)}°C (NATATIO)`, hudX + 10, hudY + 100);
+
+      ctx.fillStyle = '#e6e8ee';
+      ctx.fillText(`HYPOCAVSTVM:  ${hypoAvg.toFixed(0)}°C (DRAFT: ${this.draftVenting}%)`, hudX + 10, hudY + 116);
+
+      ctx.fillStyle = '#8c909e';
+      ctx.fillText(`ENTITIES:     ${this.getEntityCount()} (HEAT+STEAM)`, hudX + 10, hudY + 132);
+    }
 
     // Mini Thermal Gradient Color Legend Bar at the bottom
     const barX = hudX + 10;
-    const barY = hudY + 140;
+    const barY = narrow ? hudY + 114 : hudY + 140;
     const barW = hudW - 20;
     const barH = 4;
 

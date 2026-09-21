@@ -4,6 +4,8 @@
 // circle-circle intersections, magnetic point snapping, dynamic theorem presets
 // from Euclid's Elements (Στοιχεῖα, c. 300 BC), and dark parchment blueprint styling.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // -----------------------------------------------------------------------------
 // Constants & Theme Palette (Parchment Dark Blueprint)
 // -----------------------------------------------------------------------------
@@ -699,6 +701,7 @@ export class EuclidEngine {
     // DOM Controls & Initial State Setup
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   // ---------------------------------------------------------------------------
@@ -778,6 +781,10 @@ export class EuclidEngine {
     }
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   update(dt = 0.016) {
     this.dt = dt;
     this.time += dt;
@@ -850,6 +857,7 @@ export class EuclidEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.autoPlay = false;
     if (this.audioCtx) {
       try {
@@ -1609,21 +1617,28 @@ export class EuclidEngine {
 
   renderHUD(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
 
     // 1. Top Header Bar
+    const headerH = narrow ? 86 : 76;
     ctx.fillStyle = 'rgba(10, 13, 20, 0.88)';
-    ctx.fillRect(0, 0, w, 76);
+    ctx.fillRect(0, 0, sw, headerH);
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0, 76.5);
-    ctx.lineTo(w, 76.5);
+    ctx.moveTo(0, headerH + 0.5);
+    ctx.lineTo(sw, headerH + 0.5);
     ctx.stroke();
 
     // Title & Greek Banner
-    ctx.font = 'bold 15px Cinzel, "Palatino Linotype", Georgia, serif';
+    ctx.font = `bold ${narrow ? 12 : 15}px Cinzel, "Palatino Linotype", Georgia, serif`;
     ctx.fillStyle = EUCLID_PALETTE.gold;
-    ctx.fillText('ΕΥΚΛΕΙΔΗΣ — ΣΤΟΙΧΕΙΑ (EUCLID\'S ELEMENTS)', 20, 24);
+    ctx.textAlign = 'left';
+    ctx.fillText(narrow ? 'ΕΥΚΛΕΙΔΗΣ — ΣΤΟΙΧΕΙΑ' : 'ΕΥΚΛΕΙΔΗΣ — ΣΤΟΙΧΕΙΑ (EUCLID\'S ELEMENTS)', 16, 22);
 
     // Theorem Information
     if (this.isTheoremMode) {
@@ -1633,39 +1648,47 @@ export class EuclidEngine {
       const steps = th.buildSteps(cx, cy);
       const curStep = steps[Math.min(this.currentTheoremStep, steps.length - 1)];
 
-      ctx.font = '12px Cinzel, Georgia, serif';
+      ctx.font = `${narrow ? 10.5 : 12}px Cinzel, Georgia, serif`;
       ctx.fillStyle = EUCLID_PALETTE.cyan;
-      ctx.fillText(`${th.name} — [Step ${this.currentTheoremStep + 1}/${steps.length}]`, 20, 44);
+      ctx.fillText(`${th.name} — [Step ${this.currentTheoremStep + 1}/${steps.length}]`, 16, narrow ? 40 : 44);
 
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = `${narrow ? 9.5 : 11}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       ctx.fillStyle = EUCLID_PALETTE.silver;
-      ctx.fillText(curStep ? curStep.instruction : '', 20, 62);
+      const instr = curStep ? curStep.instruction : '';
+      ctx.fillText(narrow && instr.length > 50 ? `${instr.slice(0, 48)}...` : instr, 16, narrow ? 58 : 62);
     } else {
-      ctx.font = '12px Cinzel, Georgia, serif';
+      ctx.font = `${narrow ? 10.5 : 12}px Cinzel, Georgia, serif`;
       ctx.fillStyle = EUCLID_PALETTE.cyan;
-      ctx.fillText(`Free Euclidean Construction Mode — Tool: ${this.activeTool.toUpperCase()}`, 20, 44);
+      ctx.fillText(`Free Mode — Tool: ${this.activeTool.toUpperCase()}`, 16, narrow ? 40 : 44);
 
-      ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = `${narrow ? 9.5 : 11}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       ctx.fillStyle = EUCLID_PALETTE.silver;
-      ctx.fillText('Click & drag to construct straightedge lines, compass circles, or drop geometric points.', 20, 62);
+      ctx.fillText('Click & drag to construct lines, circles, points.', 16, narrow ? 58 : 62);
     }
 
-    // Entity Count Readout (Top Right)
-    const entityText = `Entities: ${this.getEntityCount()} (Pts: ${this.points.length} | Lines: ${this.lines.length} | ⊙: ${this.circles.length} | ∩: ${this.intersections.length})`;
-    ctx.font = '11px JetBrains Mono, monospace';
-    ctx.fillStyle = EUCLID_PALETTE.amber;
-    ctx.textAlign = 'right';
-    ctx.fillText(entityText, w - 20, 24);
+    if (!narrow) {
+      // Entity Count Readout (Top Right)
+      const entityText = `Entities: ${this.getEntityCount()} (Pts: ${this.points.length} | Lines: ${this.lines.length} | ⊙: ${this.circles.length})`;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.fillStyle = EUCLID_PALETTE.amber;
+      ctx.textAlign = 'right';
+      ctx.fillText(entityText, sw - 20, 24);
 
-    // Snap & Audio Indicator
-    ctx.fillStyle = this.magneticSnapEnabled ? EUCLID_PALETTE.cyan : EUCLID_PALETTE.dim;
-    ctx.fillText(`Magnetic Snap: ${this.magneticSnapEnabled ? 'ON' : 'OFF'}`, w - 20, 44);
+      // Snap & Audio Indicator
+      ctx.fillStyle = this.magneticSnapEnabled ? EUCLID_PALETTE.cyan : EUCLID_PALETTE.dim;
+      ctx.fillText(`Magnetic Snap: ${this.magneticSnapEnabled ? 'ON' : 'OFF'}`, sw - 20, 44);
+    } else {
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.fillStyle = EUCLID_PALETTE.amber;
+      ctx.textAlign = 'left';
+      ctx.fillText(`Entities: ${this.getEntityCount()} | Snap: ${this.magneticSnapEnabled ? 'ON' : 'OFF'}`, 16, 74);
+    }
 
     // Bottom Navigation Bar Hints
     ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(166, 180, 201, 0.65)';
     ctx.font = '10px Cinzel, Georgia, serif';
-    ctx.fillText('1-5: Theorems | Space/N: Next Step | P: Point | S/L: Straightedge | C: Compass | X: Clear', 20, h - 14);
+    ctx.fillText(narrow ? 'Tap/Drag: Construct | Next Step' : '1-5: Theorems | Space/N: Next Step | P: Point | S/L: Straightedge | C: Compass | X: Clear', 16, sh - 14);
 
     ctx.restore();
   }

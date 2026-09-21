@@ -4,6 +4,8 @@
 // Parabolic polished bronze mirror beam collimation and rotation.
 // Rendering: Volumetric golden-white light shaft #FFF8DC sweeping across midnight ocean #050814 with drifting fog particles.
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 const TWO_PI = Math.PI * 2;
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
@@ -68,6 +70,7 @@ export class PharosEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Parameters
     this.collimationDeg = 14.0; // Half-spread angle in degrees (tight ~4° to wide ~40°)
@@ -489,6 +492,10 @@ export class PharosEngine {
   /* LIFECYCLE METHODS                                                          */
   /* -------------------------------------------------------------------------- */
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   resize(width, height, dpr = 1) {
     this.width = width;
     this.height = height;
@@ -538,6 +545,7 @@ export class PharosEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -1586,63 +1594,77 @@ export class PharosEngine {
 
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Top Header Banner
+    const pad = 10;
+    const boxW = narrow ? Math.min(sw - 20, 260) : 310;
+    const boxH = narrow ? 104 : 126;
+
     ctx.fillStyle = 'rgba(5, 8, 20, 0.78)';
-    ctx.fillRect(10, 10, 310, 126);
+    ctx.fillRect(pad, pad, boxW, boxH);
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.45)';
     ctx.lineWidth = 1.0;
-    ctx.strokeRect(10, 10, 310, 126);
+    ctx.strokeRect(pad, pad, boxW, boxH);
 
     // Classical Greek Header
     ctx.fillStyle = '#D4AF37';
-    ctx.font = 'bold 13px "Cinzel", "Times New Roman", serif';
-    ctx.fillText('PHAROS ALEXANDRINUS', 22, 30);
+    ctx.font = 'bold 12px "Cinzel", "Times New Roman", serif';
+    ctx.fillText('PHAROS ALEXANDRINUS', pad + 10, pad + 18);
 
-    ctx.fillStyle = 'rgba(255, 248, 220, 0.7)';
-    ctx.font = '10px monospace';
-    ctx.fillText('WONDER OF THE ANCIENT MEDITERRANEAN', 22, 44);
+    if (!narrow) {
+      ctx.fillStyle = 'rgba(255, 248, 220, 0.7)';
+      ctx.font = '10px monospace';
+      ctx.fillText('WONDER OF THE ANCIENT MEDITERRANEAN', pad + 10, pad + 32);
+    }
 
     // Telemetry lines
     const beamDeg = ((this.beamAngle * RAD2DEG) % 360 + 360) % 360;
     const opticalRangeStadia = ((this.beamRange * 0.25) * (1.0 - this.fogDensity * 0.45)).toFixed(0);
 
     ctx.fillStyle = '#FFF8DC';
-    ctx.font = '11px monospace';
+    ctx.font = narrow ? '10px monospace' : '11px monospace';
 
-    ctx.fillText(`• Optical Azimuth : ${beamDeg.toFixed(1)}°`, 22, 64);
-    ctx.fillText(`• Collimation Cone: ±${this.collimationDeg.toFixed(1)}° (${(this.collimationDeg * 2).toFixed(1)}° total)`, 22, 79);
-    ctx.fillText(`• Visual Range    : ${opticalRangeStadia} Stadia (~${(opticalRangeStadia * 0.185).toFixed(1)} km)`, 22, 94);
+    const yStart = narrow ? pad + 34 : pad + 52;
+    const lineH = narrow ? 15 : 16;
+    ctx.fillText(`• Azimuth   : ${beamDeg.toFixed(1)}° (±${this.collimationDeg.toFixed(0)}°)`, pad + 10, yStart);
+    ctx.fillText(`• Range     : ${opticalRangeStadia} Stadia (~${(opticalRangeStadia * 0.185).toFixed(1)} km)`, pad + 10, yStart + lineH);
 
     // Ships guided status
     ctx.fillStyle = '#2ECC71';
-    ctx.fillText(`• Vessels Guided  : ${this.shipsGuided} safe into port`, 22, 110);
+    ctx.fillText(`• Guided    : ${this.shipsGuided} safe`, pad + 10, yStart + lineH * 2);
     if (this.totalShipsLost > 0) {
       ctx.fillStyle = '#FF5252';
-      ctx.fillText(`• Lost to Shoals  : ${this.totalShipsLost}`, 22, 124);
+      ctx.fillText(`• Lost      : ${this.totalShipsLost}`, pad + 10, yStart + lineH * 3);
     } else {
       ctx.fillStyle = '#48CAE4';
-      ctx.fillText(`• Harbor Approach : Clear of wrecks`, 22, 124);
+      ctx.fillText(`• Approach  : Clear`, pad + 10, yStart + lineH * 3);
     }
 
-    // Weather HUD (Top Right)
-    const rightBoxW = 200;
-    const rightX = this.width - rightBoxW - 12;
+    if (!narrow) {
+      // Weather HUD (Top Right)
+      const rightBoxW = 200;
+      const rightX = sw - rightBoxW - 12;
 
-    ctx.fillStyle = 'rgba(5, 8, 20, 0.78)';
-    ctx.fillRect(rightX, 10, rightBoxW, 72);
-    ctx.strokeStyle = this.isStorm ? 'rgba(255, 87, 34, 0.6)' : 'rgba(72, 202, 228, 0.35)';
-    ctx.strokeRect(rightX, 10, rightBoxW, 72);
+      ctx.fillStyle = 'rgba(5, 8, 20, 0.78)';
+      ctx.fillRect(rightX, 10, rightBoxW, 72);
+      ctx.strokeStyle = this.isStorm ? 'rgba(255, 87, 34, 0.6)' : 'rgba(72, 202, 228, 0.35)';
+      ctx.strokeRect(rightX, 10, rightBoxW, 72);
 
-    ctx.fillStyle = this.isStorm ? '#FF7043' : '#48CAE4';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText(this.isStorm ? '⚡ MEDITERRANEAN SQUALL' : '🌊 CALM COASTAL SWELL', rightX + 14, 28);
+      ctx.fillStyle = this.isStorm ? '#FF7043' : '#48CAE4';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(this.isStorm ? '⚡ MEDITERRANEAN SQUALL' : '🌊 CALM COASTAL SWELL', rightX + 14, 28);
 
-    ctx.fillStyle = '#E0F7FA';
-    ctx.font = '10px monospace';
-    ctx.fillText(`Fog Density  : ${(this.fogDensity * 100).toFixed(0)}%`, rightX + 14, 44);
-    ctx.fillText(`Vessels Track: ${this.shipsInBeam} in beam`, rightX + 14, 58);
-    ctx.fillText(`Wind Velocity: ${this.windSpeed.toFixed(0)} knots`, rightX + 14, 72);
+      ctx.fillStyle = '#E0F7FA';
+      ctx.font = '10px monospace';
+      ctx.fillText(`Fog Density  : ${(this.fogDensity * 100).toFixed(0)}%`, rightX + 14, 44);
+      ctx.fillText(`Vessels Track: ${this.shipsInBeam} in beam`, rightX + 14, 58);
+      ctx.fillText(`Wind Velocity: ${this.windSpeed.toFixed(0)} knots`, rightX + 14, 72);
+    }
 
     ctx.restore();
   }

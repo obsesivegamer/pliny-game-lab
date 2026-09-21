@@ -1,6 +1,8 @@
 // Silva: Algorithmic Space-Colonization Botany, Auxin Hormone Transport & Dendrochronology
 // Grounded in Pliny the Elder's Naturalis Historia (Books XII–XVII: Arboriculture, Sacred Groves & Forest Ecology)
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 /**
  * Botanical Species Profiles
  * Configured for Mediterranean arboriculture celebrated in Roman antiquity.
@@ -219,6 +221,7 @@ export class SilvaEngine {
 
     this.buildControls();
     this.reset();
+    attachTouchBridge(this, canvas);
   }
 
   initSunbeams() {
@@ -814,12 +817,17 @@ export class SilvaEngine {
     }
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   getEntityCount() {
     const activeAttractorCount = this.attractors.filter(a => a.active).length;
     return this.nodes.length + this.leaves.length + activeAttractorCount + this.fallingParticles.length;
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -1229,20 +1237,26 @@ export class SilvaEngine {
    */
   renderCrossSectionOverlay(ctx, w, h) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = w / ui;
+    const sh = h / ui;
+    const narrow = sw < 560;
+
     // Dim background
     ctx.fillStyle = 'rgba(5, 7, 10, 0.82)';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, sw, sh);
 
     const spec = SPECIES_PRESETS[this.speciesKey];
-    const centerX = w * 0.46;
-    const centerY = h * 0.50;
-    const maxRadius = Math.min(w * 0.26, h * 0.38);
+    const centerX = narrow ? sw * 0.5 : sw * 0.40;
+    const centerY = narrow ? sh * 0.36 : sh * 0.50;
+    const maxRadius = narrow ? Math.min(sw * 0.28, sh * 0.20) : Math.min(sw * 0.22, sh * 0.36);
 
     // Outer framing tablet
-    const tabletW = maxRadius * 2 + 320;
-    const tabletH = maxRadius * 2 + 100;
-    const tabletX = centerX - maxRadius - 40;
-    const tabletY = centerY - maxRadius - 50;
+    const tabletW = narrow ? Math.min(sw - 24, 420) : Math.min(sw - 40, maxRadius * 2 + 320);
+    const tabletH = narrow ? Math.min(sh - 30, 520) : Math.min(sh - 40, maxRadius * 2 + 100);
+    const tabletX = Math.max(12, (sw - tabletW) / 2);
+    const tabletY = Math.max(15, (sh - tabletH) / 2);
 
     ctx.fillStyle = 'rgba(18, 20, 28, 0.96)';
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
@@ -1332,8 +1346,8 @@ export class SilvaEngine {
     ctx.fill();
 
     // Telemetry & Legend Column
-    const legX = centerX + maxRadius + 30;
-    let legY = tabletY + 80;
+    const legX = narrow ? tabletX + 24 : centerX + maxRadius + 30;
+    let legY = narrow ? centerY + maxRadius + 24 : tabletY + 80;
 
     const drawItem = (label, val, color = '#e6e8ee') => {
       ctx.font = '10px "JetBrains Mono", monospace';
@@ -1342,7 +1356,7 @@ export class SilvaEngine {
       ctx.font = '11px "JetBrains Mono", monospace';
       ctx.fillStyle = color;
       ctx.fillText(val, legX, legY + 14);
-      legY += 32;
+      legY += narrow ? 26 : 32;
     };
 
     drawItem('AGE DURATION', `${this.treeAgeYears} Annual Growth Rings`, '#d4af37');
@@ -1351,13 +1365,15 @@ export class SilvaEngine {
     drawItem('WOOD BULK DENSITY', `${spec.woodDensity} kg/m³`);
     drawItem('AUXIN APICAL INDEX', `${(spec.apicalDominance * 100).toFixed(0)}% Basipetal Gradient`);
 
-    // Historical Ring Marker Highlight
-    ctx.font = '10px "Cinzel", serif';
-    ctx.fillStyle = '#e04040';
-    ctx.fillText('🌋 79 AD: VESUVIUS VOLCANIC TEPHRA ANOMALY', legX, legY + 10);
-    ctx.font = '9px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#8c909e';
-    ctx.fillText('Pyroclastic thermal shock detected in outer cambium.', legX, legY + 24);
+    if (!narrow || sh > 500) {
+      // Historical Ring Marker Highlight
+      ctx.font = '10px "Cinzel", serif';
+      ctx.fillStyle = '#e04040';
+      ctx.fillText('🌋 79 AD: VESUVIUS VOLCANIC TEPHRA ANOMALY', legX, legY + 10);
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#8c909e';
+      ctx.fillText('Pyroclastic thermal shock detected in outer cambium.', legX, legY + 24);
+    }
 
     ctx.restore();
   }
@@ -1369,24 +1385,10 @@ export class SilvaEngine {
     this.isMouseDown = true;
     this.mousePos = pos;
 
-    // Check if clicking inside Cross-Section Overlay close button
+    // Check if clicking inside Cross-Section Overlay
     if (this.inspectingRings) {
-      const maxRadius = Math.min(this.width * 0.26, this.height * 0.38);
-      const tabletW = maxRadius * 2 + 320;
-      const tabletX = this.width * 0.46 - maxRadius - 40;
-      const tabletY = this.height * 0.50 - maxRadius - 50;
-      const closeBtnX = tabletX + tabletW - 36;
-      const closeBtnY = tabletY + 20;
-
-      if (pos.x >= closeBtnX && pos.x <= closeBtnX + 24 && pos.y >= closeBtnY && pos.y <= closeBtnY + 24) {
-        this.inspectingRings = false;
-        return;
-      }
-      // Clicking outside tablet closes overlay
-      if (pos.x < tabletX || pos.x > tabletX + tabletW || pos.y < tabletY || pos.y > tabletY + maxRadius * 2 + 100) {
-        this.inspectingRings = false;
-        return;
-      }
+      this.inspectingRings = false;
+      return;
     }
 
     // Sky interaction: Scatter 16 Light Attractors around click position!

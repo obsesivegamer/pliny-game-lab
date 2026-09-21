@@ -2,6 +2,8 @@
 // Ancient Greek Maritime Navigation & Vortex Fluid Simulation
 // Odysseus' Penteconter navigating between the Sucking Maw and the Serpentine Crags
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export class ScyllaCharybdisEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -89,6 +91,7 @@ export class ScyllaCharybdisEngine {
 
     // Setup UI Controls
     this.initControls();
+    attachTouchBridge(this, canvas);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -416,6 +419,10 @@ export class ScyllaCharybdisEngine {
     return this.vortexParticles.length + this.sprayParticles.length + this.debrisList.length + headSegmentsCount;
   }
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   reset() {
     this.time = 0;
     this.charybdisCycleTimer = 0;
@@ -428,6 +435,7 @@ export class ScyllaCharybdisEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {
       this.controlsContainer.innerHTML = '';
     }
@@ -1574,10 +1582,15 @@ export class ScyllaCharybdisEngine {
 
   renderHUD(ctx) {
     ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
 
     // Top status strip
     const pad = 16;
-    const boxW = 260;
+    const boxW = narrow ? Math.min(sw - 32, 220) : 260;
     const boxH = 88;
 
     ctx.fillStyle = 'rgba(6, 12, 22, 0.78)';
@@ -1596,7 +1609,7 @@ export class ScyllaCharybdisEngine {
     ctx.font = '11px monospace';
     ctx.fillText(`PENTECONTER HULL: ${Math.max(0, Math.round(this.ship.hull))}%`, pad + 10, pad + 36);
 
-    const barW = 140;
+    const barW = narrow ? 110 : 140;
     const barH = 7;
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fillRect(pad + 10, pad + 42, barW, barH);
@@ -1612,7 +1625,7 @@ export class ScyllaCharybdisEngine {
     for (let i = 0; i < 6; i++) {
       ctx.fillStyle = i < this.ship.crew ? '#D4AF37' : '#555555';
       ctx.beginPath();
-      ctx.arc(pad + 145 + i * 14, pad + 63, 4.5, 0, Math.PI * 2);
+      ctx.arc(pad + (narrow ? 125 : 145) + i * (narrow ? 11 : 14), pad + 63, 4, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -1628,24 +1641,26 @@ export class ScyllaCharybdisEngine {
       ctx.fillText('HELM: STEERING EAST', pad + 10, pad + 81);
     }
 
-    // Top-Right Charybdis State indicator
-    const trW = 210;
-    const trH = 50;
-    const trX = this.width - trW - pad;
-    ctx.fillStyle = 'rgba(6, 12, 22, 0.78)';
-    ctx.strokeStyle = this.charybdisPhase === 'SWALLOW' ? 'rgba(72, 202, 228, 0.4)' : 'rgba(255, 90, 95, 0.5)';
-    ctx.fillRect(trX, pad, trW, trH);
-    ctx.strokeRect(trX, pad, trW, trH);
+    if (!narrow) {
+      // Top-Right Charybdis State indicator
+      const trW = 210;
+      const trH = 50;
+      const trX = sw - trW - pad;
+      ctx.fillStyle = 'rgba(6, 12, 22, 0.78)';
+      ctx.strokeStyle = this.charybdisPhase === 'SWALLOW' ? 'rgba(72, 202, 228, 0.4)' : 'rgba(255, 90, 95, 0.5)';
+      ctx.fillRect(trX, pad, trW, trH);
+      ctx.strokeRect(trX, pad, trW, trH);
 
-    ctx.fillStyle = this.charybdisPhase === 'SWALLOW' ? '#48CAE4' : (this.charybdisPhase === 'SPOUT' ? '#FF5A5F' : '#FFBF69');
-    ctx.font = 'bold 11px monospace';
-    const phaseLabel = this.charybdisPhase === 'SWALLOW' ? 'CHARYBDIS: SUCKING ABYSS' : (this.charybdisPhase === 'SPOUT' ? 'CHARYBDIS: FOAM GEYSER' : 'CHARYBDIS: SLACK CHURN');
-    ctx.fillText(phaseLabel, trX + 10, pad + 20);
+      ctx.fillStyle = this.charybdisPhase === 'SWALLOW' ? '#48CAE4' : (this.charybdisPhase === 'SPOUT' ? '#FF5A5F' : '#FFBF69');
+      ctx.font = 'bold 11px monospace';
+      const phaseLabel = this.charybdisPhase === 'SWALLOW' ? 'CHARYBDIS: SUCKING ABYSS' : (this.charybdisPhase === 'SPOUT' ? 'CHARYBDIS: FOAM GEYSER' : 'CHARYBDIS: SLACK CHURN');
+      ctx.fillText(phaseLabel, trX + 10, pad + 20);
 
-    const cycleRemaining = Math.max(0, this.charybdisCyclePeriod - this.charybdisCycleTimer);
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.font = '10px monospace';
-    ctx.fillText(`CYCLE NEXT: ${cycleRemaining.toFixed(1)}s`, trX + 10, pad + 38);
+      const cycleRemaining = Math.max(0, this.charybdisCyclePeriod - this.charybdisCycleTimer);
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.font = '10px monospace';
+      ctx.fillText(`CYCLE NEXT: ${cycleRemaining.toFixed(1)}s`, trX + 10, pad + 38);
+    }
 
     ctx.restore();
   }

@@ -3,6 +3,8 @@
 // Grounded in Polybius (Histories Book X.45–47) and Pliny the Elder (Naturalis Historia)
 // Zero external dependencies — pure ES module
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 const TWO_PI = Math.PI * 2;
 const DEG2RAD = Math.PI / 180;
 
@@ -61,6 +63,8 @@ export class SignalFireEngine {
     this.width = canvas ? canvas.width || 800 : 800;
     this.height = canvas ? canvas.height || 600 : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+
+    attachTouchBridge(this, canvas);
 
     // Simulation Modes & Parameters
     this.mode = 'night'; // 'night' (torches & dusk sky) or 'day' (smoke columns & sunlit mountains)
@@ -254,11 +258,14 @@ export class SignalFireEngine {
 
     // Reposition Polybius HUD to bottom-left with safe padding
     if (this.hud) {
-      this.hud.w = Math.min(220, w * 0.32);
+      const ui = this.uiScale();
+      const sw = w / ui;
+      const sh = h / ui;
+      this.hud.w = Math.max(160, Math.min(220, sw * 0.32));
       this.hud.cellSize = Math.floor((this.hud.w - 32) / 5);
       this.hud.h = this.hud.cellSize * 5 + 38;
       this.hud.x = 22;
-      this.hud.y = Math.max(14, h - this.hud.h - 22);
+      this.hud.y = Math.max(14, sh - this.hud.h - 22);
     }
   }
 
@@ -550,6 +557,10 @@ export class SignalFireEngine {
   /* LIFECYCLE & CONTRACT METHODS                                               */
   /* -------------------------------------------------------------------------- */
 
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   resize(width, height, dpr) {
     this.width = width;
     this.height = height;
@@ -586,6 +597,7 @@ export class SignalFireEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     if (this.controlsContainer && typeof document !== 'undefined') {
       this.controlsContainer.innerHTML = '';
     }
@@ -980,11 +992,8 @@ export class SignalFireEngine {
     // 6. Particles (Torch flames, glowing embers, day smoke columns)
     this.renderParticles(ctx);
 
-    // 7. Interactive Polybius 5x5 Matrix HUD (Parchment & Bronze tablet)
-    this.renderPolybiusHUD(ctx);
-
-    // 8. Telemetry Header Banner & Decoded Message Ribbon
-    this.renderTelemetryRibbon(ctx, w, h);
+    // 7. Interactive Polybius 5x5 Matrix HUD & Telemetry Ribbon
+    this.renderHUD(ctx);
 
     ctx.restore();
   }
@@ -1459,7 +1468,8 @@ export class SignalFireEngine {
     ctx.fillStyle = '#ffd700';
     ctx.font = 'bold 10px "JetBrains Mono", serif';
     ctx.textAlign = 'left';
-    ctx.fillText('POLYBII TELEGRAPHUS (5x5)', h.x + 10, h.y + 16);
+    const narrow = h.w < 160;
+    ctx.fillText(narrow ? 'POLYBII (5x5)' : 'POLYBII TELEGRAPHUS (5x5)', h.x + 10, h.y + 16);
 
     // Active Row and Column highlight beams
     const activeRow = (this.currentSymbol && !this.currentSymbol.isSpace) ? this.currentSymbol.row : null;
@@ -1525,16 +1535,27 @@ export class SignalFireEngine {
     ctx.restore();
   }
 
+  renderHUD(ctx) {
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    ctx.save();
+    ctx.scale(ui, ui);
+    this.renderPolybiusHUD(ctx);
+    this.renderTelemetryRibbon(ctx, sw, sh);
+    ctx.restore();
+  }
+
   renderTelemetryRibbon(ctx, w, h) {
     ctx.save();
 
-    // Top Message Bar & Terminal Decoded Output
-    const barH = 58;
+    const narrow = w < 560;
+    const barH = narrow ? 44 : 58;
     const barY = 12;
-    const barX = Math.max(this.hud.x + this.hud.w + 16, w * 0.28);
-    const barW = w - barX - 18;
+    const barX = narrow ? 14 : Math.max(this.hud.x + this.hud.w + 16, w * 0.28);
+    const barW = narrow ? (w - 28) : (w - barX - 18);
 
-    if (barW > 160) {
+    if (barW > 120) {
       // Background Plate
       const barGrad = ctx.createLinearGradient(barX, barY, barX + barW, barY + barH);
       barGrad.addColorStop(0, 'rgba(14, 12, 16, 0.88)');
@@ -1559,38 +1580,50 @@ export class SignalFireEngine {
         ctx.strokeRect(barX, barY, barW, barH);
       }
 
-      // Origin Message Stream
-      ctx.font = 'bold 10px "JetBrains Mono", monospace';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#a89878';
-      ctx.fillText('ORIGIN TRANSMISSION:', barX + 12, barY + 18);
+      if (narrow) {
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#a89878';
+        ctx.fillText(`TX: ${this.messageText}`, barX + 8, barY + 16);
 
-      // Render message letters with active cursor highlight
-      let textX = barX + 145;
-      for (let i = 0; i < this.messageText.length; i++) {
-        const ch = this.messageText[i];
-        if (i === this.transmitIndex && this.isTransmitting) {
-          ctx.fillStyle = '#ff8c00';
-          ctx.font = 'bold 12px "JetBrains Mono", monospace';
-        } else if (i < this.transmitIndex) {
-          ctx.fillStyle = '#6e6556';
-          ctx.font = '10px "JetBrains Mono", monospace';
-        } else {
-          ctx.fillStyle = '#dcd2b8';
-          ctx.font = '10px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('RX (ROMA):', barX + 8, barY + 32);
+        ctx.fillStyle = '#3bd6c6';
+        ctx.fillText(`"${this.decodedOutput || '---'}"`, barX + 75, barY + 32);
+      } else {
+        // Origin Message Stream
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#a89878';
+        ctx.fillText('ORIGIN TRANSMISSION:', barX + 12, barY + 18);
+
+        // Render message letters with active cursor highlight
+        let textX = barX + 145;
+        for (let i = 0; i < this.messageText.length; i++) {
+          const ch = this.messageText[i];
+          if (i === this.transmitIndex && this.isTransmitting) {
+            ctx.fillStyle = '#ff8c00';
+            ctx.font = 'bold 12px "JetBrains Mono", monospace';
+          } else if (i < this.transmitIndex) {
+            ctx.fillStyle = '#6e6556';
+            ctx.font = '10px "JetBrains Mono", monospace';
+          } else {
+            ctx.fillStyle = '#dcd2b8';
+            ctx.font = '10px "JetBrains Mono", monospace';
+          }
+          ctx.fillText(ch, textX, barY + 18);
+          textX += 9;
         }
-        ctx.fillText(ch, textX, barY + 18);
-        textX += 9;
+
+        // Terminal Reception Decoded at Rome
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('DECODED AT ROMA (ARX):', barX + 12, barY + 40);
+
+        ctx.fillStyle = '#3bd6c6';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.fillText(`"${this.decodedOutput || '---'}"`, barX + 165, barY + 40);
       }
-
-      // Terminal Reception Decoded at Rome
-      ctx.font = 'bold 10px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#ffd700';
-      ctx.fillText('DECODED AT ROMA (ARX):', barX + 12, barY + 40);
-
-      ctx.fillStyle = '#3bd6c6';
-      ctx.font = 'bold 11px "JetBrains Mono", monospace';
-      ctx.fillText(`"${this.decodedOutput || '---'}"`, barX + 165, barY + 40);
     }
 
     ctx.restore();
@@ -1604,37 +1637,42 @@ export class SignalFireEngine {
     this.initAudio();
     this.isMouseDown = true;
     this.mousePos = pos;
+    if (!pos) return;
+
+    const ui = this.uiScale();
+    const uiX = pos.x / ui;
+    const uiY = pos.y / ui;
 
     // Check if clicked inside Polybius 5x5 Grid HUD
     const h = this.hud;
-    const startX = h.x + 24;
-    const startY = h.y + 32;
-    const cs = h.cellSize;
+    if (h) {
+      const startX = h.x + 24;
+      const startY = h.y + 32;
+      const cs = h.cellSize;
 
-    if (pos && pos.x >= startX && pos.x <= startX + cs * 5 && pos.y >= startY && pos.y <= startY + cs * 5) {
-      const c = Math.floor((pos.x - startX) / cs);
-      const r = Math.floor((pos.y - startY) / cs);
-      if (r >= 0 && r < 5 && c >= 0 && c < 5) {
-        const clickedLetter = POLYBIUS_GRID[r][c];
-        this.playSound('click');
-        // Transmit clicked letter immediately
-        this.transmitSingleLetter(clickedLetter);
-        return;
+      if (uiX >= startX && uiX <= startX + cs * 5 && uiY >= startY && uiY <= startY + cs * 5) {
+        const c = Math.floor((uiX - startX) / cs);
+        const r = Math.floor((uiY - startY) / cs);
+        if (r >= 0 && r < 5 && c >= 0 && c < 5) {
+          const clickedLetter = POLYBIUS_GRID[r][c];
+          this.playSound('click');
+          // Transmit clicked letter immediately
+          this.transmitSingleLetter(clickedLetter);
+          return;
+        }
       }
     }
 
     // Check if clicked on a watchtower
-    if (pos) {
-      for (let i = 0; i < this.towers.length; i++) {
-        const t = this.towers[i];
-        const dx = pos.x - t.x;
-        const dy = pos.y - (t.y - 25);
-        if (Math.hypot(dx, dy) < 40) {
-          // Fire celebration flare from watchtower
-          this.emitReceptionBurst(t.x, t.y - 48);
-          this.playSound('relay', i);
-          return;
-        }
+    for (let i = 0; i < this.towers.length; i++) {
+      const t = this.towers[i];
+      const dx = pos.x - t.x;
+      const dy = pos.y - (t.y - 25);
+      if (Math.hypot(dx, dy) < 40) {
+        // Fire celebration flare from watchtower
+        this.emitReceptionBurst(t.x, t.y - 48);
+        this.playSound('relay', i);
+        return;
       }
     }
   }
@@ -1658,18 +1696,24 @@ export class SignalFireEngine {
     this.mousePos = pos;
     if (!pos) return;
 
+    const ui = this.uiScale();
+    const uiX = pos.x / ui;
+    const uiY = pos.y / ui;
+
     // Track hover over Polybius grid
     const h = this.hud;
-    const startX = h.x + 24;
-    const startY = h.y + 32;
-    const cs = h.cellSize;
+    if (h) {
+      const startX = h.x + 24;
+      const startY = h.y + 32;
+      const cs = h.cellSize;
 
-    if (pos.x >= startX && pos.x <= startX + cs * 5 && pos.y >= startY && pos.y <= startY + cs * 5) {
-      const c = Math.floor((pos.x - startX) / cs);
-      const r = Math.floor((pos.y - startY) / cs);
-      h.hoverCell = { r, c };
-    } else {
-      h.hoverCell = null;
+      if (uiX >= startX && uiX <= startX + cs * 5 && uiY >= startY && uiY <= startY + cs * 5) {
+        const c = Math.floor((uiX - startX) / cs);
+        const r = Math.floor((uiY - startY) / cs);
+        h.hoverCell = { r, c };
+      } else {
+        h.hoverCell = null;
+      }
     }
   }
 

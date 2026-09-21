@@ -2,6 +2,8 @@
 // Grounded in Pliny the Elder's Naturalis Historia (Book XXXV: Painting, Colors & Mineral Pigments)
 // and Vitruvius' De Architectura (Book VII: Plaster Stucco & Fresco Painting)
 
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 export const PIGMENTUM_PRESETS = {
   MYSTERIES: 'Villa of the Mysteries (Pompeian Red)',
   LIVIA: 'Garden of Livia (Acanthus & Birds)',
@@ -149,6 +151,7 @@ export class PigmentumEngine {
     this.width = canvas ? canvas.width : 800;
     this.height = canvas ? canvas.height : 600;
     this.dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    attachTouchBridge(this, canvas);
 
     // Simulation Clock
     this.simTime = 0;
@@ -1138,6 +1141,48 @@ export class PigmentumEngine {
 
     // 7. Interactive brush cursor & current pigment swatch
     this.renderBrushCursor(ctx);
+
+    // 8. Classical Fresco Studio HUD
+    this.renderHUD(ctx);
+  }
+
+  renderHUD(ctx) {
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const pad = 12;
+    const boxW = narrow ? Math.min(sw - 24, 230) : 260;
+    const boxH = narrow ? 52 : 62;
+
+    ctx.fillStyle = 'rgba(28, 22, 18, 0.85)';
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(pad, pad, boxW, boxH);
+    ctx.strokeRect(pad, pad, boxW, boxH);
+
+    ctx.fillStyle = '#D4AF37';
+    ctx.font = 'bold 11px Cinzel, serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('PIGMENTUM • BUON FRESCO', pad + 10, pad + 16);
+
+    const pig = PIGMENTS[this.selectedPigmentKey] || {};
+    const pigName = pig.name ? pig.name.split(' ')[0] : 'Pigment';
+    const humidPct = Math.round(this.intonacoHumidity * 100);
+
+    ctx.fillStyle = '#E8DFD1';
+    ctx.font = narrow ? '9px monospace' : '10px monospace';
+    ctx.fillText(`Intonaco: ${humidPct}% (${this.intonacoHumidity > 0.4 ? 'Wet' : 'Dry'}) | ${pigName}`, pad + 10, pad + 32);
+
+    if (!narrow) {
+      ctx.fillStyle = '#88D49E';
+      ctx.fillText(`Entities: ${this.getEntityCount()} (Strokes+Fissures)`, pad + 10, pad + 48);
+    }
+
+    ctx.restore();
   }
 
   drawSingleStrokeNode(ctx, node, isBaked = false) {
@@ -1409,6 +1454,10 @@ export class PigmentumEngine {
   // -------------------------------------------------------------------------
   // Lifecycle Requirements
   // -------------------------------------------------------------------------
+  uiScale() {
+    return Math.max(1, this.dpr || 1);
+  }
+
   resize(width, height, dpr = 1) {
     this.width = width || 800;
     this.height = height || 600;
@@ -1423,6 +1472,7 @@ export class PigmentumEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.strokeNodes = [];
     this.colorMixSamplePoints = [];
     this.splatters = [];

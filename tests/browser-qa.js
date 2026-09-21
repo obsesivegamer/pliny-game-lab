@@ -8,10 +8,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BASE_URL = 'http://localhost:8000';
-const SCREENSHOT_DIR = path.join(__dirname, '..', '.audit', 'screenshots');
-const SETTLE_MS = 2500;  // Wait for engine to render a few frames
-const VIEWPORT = { width: 1280, height: 800 };
+const BASE_URL = process.env.BASE_URL || 'http://localhost:8000';
+const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || path.join(__dirname, '..', '.audit', 'screenshots');
+const SETTLE_MS = parseInt(process.env.SETTLE_MS || '2500', 10);
+const VIEWPORT = {
+  width: parseInt(process.env.VIEWPORT_WIDTH || '1280', 10),
+  height: parseInt(process.env.VIEWPORT_HEIGHT || '800', 10),
+  deviceScaleFactor: parseFloat(process.env.DEVICE_SCALE_FACTOR || '1')
+};
 
 // All 50 engine keys in order
 const ENGINE_KEYS = [
