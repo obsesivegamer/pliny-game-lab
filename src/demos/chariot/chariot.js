@@ -2118,10 +2118,6 @@ export class ChariotEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   update(dt) {
     const clampedDt = Math.min(0.05, dt);
 

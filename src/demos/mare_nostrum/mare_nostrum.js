@@ -605,10 +605,6 @@ export class MareNostrumEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   resize(width, height, dpr = 1) {
     const oldW = this.width || 800;
     const oldH = this.height || 600;

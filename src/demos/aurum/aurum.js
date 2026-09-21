@@ -350,10 +350,6 @@ export class AurumEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   depositPaydirtScoop(count = 65) {
     this.paydirtDepositedCount += count;
     const isSluice = (this.mode === 'sluice');
@@ -1518,7 +1514,7 @@ export class AurumEngine {
       ctx.globalAlpha = bannerAlpha;
       ctx.font = 'bold 12px Cinzel, serif';
       const textW = ctx.measureText(this.bannerText).width;
-      const bX = (this.width - textW) * 0.5;
+      const bX = (sw - textW) * 0.5;
       const bY = 32;
 
       ctx.fillStyle = 'rgba(14, 16, 24, 0.92)';

@@ -886,10 +886,6 @@ export class AntikytheraEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   destroy() {
     detachTouchBridge(this, this.canvas);
     if (this.controlsContainer) {

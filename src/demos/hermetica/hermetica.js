@@ -539,10 +539,6 @@ export class HermeticaEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   resize(width, height, dpr = 1) {
     this.width = width || (this.canvas ? this.canvas.width : 800);
     this.height = height || (this.canvas ? this.canvas.height : 600);

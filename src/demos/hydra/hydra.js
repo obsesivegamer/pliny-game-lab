@@ -246,10 +246,6 @@ export class HydraEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   getEntityCount() {
     let count = 0;
     if (this.trunk) {

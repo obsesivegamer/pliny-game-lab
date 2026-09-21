@@ -976,7 +976,7 @@ export class AuroraEngine {
 
     ctx.fillStyle = hudGrad;
     ctx.beginPath();
-    ctx.roundRect ? ctx.roundRect(hudX, hudY, hudW, hudH, 8) : ctx.rect(hudX, hudY, hudW, hudH);
+    ctx.roundRect(hudX, hudY, hudW, hudH, 8);
     ctx.fill();
 
     // Cyber-Gold border
@@ -993,37 +993,39 @@ export class AuroraEngine {
     // Pliny the Elder Quote
     ctx.fillStyle = '#b0b8d0';
     ctx.font = 'italic 10px serif';
-    ctx.fillText('“In caelo trabes ac chasmata...”', hudX + 12, hudY + 38);
+    ctx.fillText(narrow ? '“In caelo trabes ac chasmata...”' : '“In caelo trabes ac chasmata visa...” (Plin. II.33)', hudX + 12, narrow ? hudY + 38 : hudY + 40);
 
     // Telemetry lines
     ctx.font = '10px monospace';
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Solar Wind:', hudX + 12, hudY + 58);
+    ctx.fillText(narrow ? 'Solar Wind:' : 'Solar Wind Velocity :', hudX + 12, narrow ? hudY + 58 : hudY + 62);
     ctx.fillStyle = '#39ff14';
-    ctx.fillText(`${Math.round(this.solarWindStrength)} km/s`, hudX + 105, hudY + 58);
+    ctx.fillText(narrow ? `${Math.round(this.solarWindStrength)} km/s` : `${Math.round(this.solarWindStrength)} km/s (Fast Stream)`, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 58 : hudY + 62);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('B_z Coup  :', hudX + 12, hudY + 74);
+    ctx.fillText(narrow ? 'B_z Coup  :' : 'Interplanetary B_z  :', hudX + 12, narrow ? hudY + 74 : hudY + 79);
     const bzVal = (-3.2 - (this.solarWindStrength / 300) * 2.1).toFixed(1);
     ctx.fillStyle = '#ff80df';
-    ctx.fillText(`${bzVal} nT`, hudX + 105, hudY + 74);
+    ctx.fillText(narrow ? `${bzVal} nT` : `${bzVal} nT (Southward Coup)`, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 74 : hudY + 79);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Oval Lat  :', hudX + 12, hudY + 90);
+    ctx.fillText(narrow ? 'Oval Lat  :' : 'Auroral Oval Lat    :', hudX + 12, narrow ? hudY + 90 : hudY + 96);
     ctx.fillStyle = '#00ffff';
-    ctx.fillText(`67.5° N`, hudX + 105, hudY + 90);
+    ctx.fillText(narrow ? '67.5° N' : `67.5° N (Dipole: ${(this.dipoleTilt * 180 / Math.PI).toFixed(1)}°)`, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 90 : hudY + 96);
 
     ctx.fillStyle = '#8c909e';
-    ctx.fillText('Emission  :', hudX + 12, hudY + 106);
-    const specLabel = this.colorShift < 0.4 ? 'OI 557nm [Grn]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purp]');
+    ctx.fillText(narrow ? 'Emission  :' : 'Spectral Emission   :', hudX + 12, narrow ? hudY + 106 : hudY + 113);
+    const specLabel = narrow
+      ? (this.colorShift < 0.4 ? 'OI 557nm [Grn]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purp]'))
+      : (this.colorShift < 0.4 ? 'OI 557.7nm [Green]' : (this.colorShift < 0.7 ? 'N2+ 391nm [Cyan]' : 'OI 630nm [Purple]'));
     ctx.fillStyle = this.colorShift < 0.4 ? '#39ff14' : (this.colorShift < 0.7 ? '#00ffff' : '#bf40bf');
-    ctx.fillText(specLabel, hudX + 105, hudY + 106);
+    ctx.fillText(specLabel, narrow ? hudX + 105 : hudX + 144, narrow ? hudY + 106 : hudY + 113);
 
-    if (!narrow || hudH > 140) {
+    if (!narrow) {
       ctx.fillStyle = '#8c909e';
-      ctx.fillText('Entities  :', hudX + 12, hudY + 122);
+      ctx.fillText('Simulated Entities  :', hudX + 12, hudY + 130);
       ctx.fillStyle = '#d4af37';
-      ctx.fillText(`${this.getEntityCount()} nodes/ions`, hudX + 105, hudY + 122);
+      ctx.fillText(`${this.getEntityCount()} nodes & ions`, hudX + 144, hudY + 130);
     }
 
     ctx.restore();
@@ -1081,10 +1083,6 @@ export class AuroraEngine {
 
   uiScale() {
     return Math.max(1, this.dpr || 1);
-  }
-
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   destroy() {

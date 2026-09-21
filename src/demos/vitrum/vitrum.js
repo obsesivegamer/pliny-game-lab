@@ -385,10 +385,6 @@ export class VitrumEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   resize(width, height, dpr) {
     this.width = width;
     this.height = height;

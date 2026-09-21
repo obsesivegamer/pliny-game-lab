@@ -258,11 +258,14 @@ export class SignalFireEngine {
 
     // Reposition Polybius HUD to bottom-left with safe padding
     if (this.hud) {
-      this.hud.w = Math.min(220, w * 0.32);
+      const ui = this.uiScale();
+      const sw = w / ui;
+      const sh = h / ui;
+      this.hud.w = Math.min(220, sw * 0.32);
       this.hud.cellSize = Math.floor((this.hud.w - 32) / 5);
       this.hud.h = this.hud.cellSize * 5 + 38;
       this.hud.x = 22;
-      this.hud.y = Math.max(14, h - this.hud.h - 22);
+      this.hud.y = Math.max(14, sh - this.hud.h - 22);
     }
   }
 
@@ -556,10 +559,6 @@ export class SignalFireEngine {
 
   uiScale() {
     return Math.max(1, this.dpr || 1);
-  }
-
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   resize(width, height, dpr) {
@@ -1536,8 +1535,14 @@ export class SignalFireEngine {
   }
 
   renderHUD(ctx) {
+    const ui = this.uiScale();
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    ctx.save();
+    ctx.scale(ui, ui);
     this.renderPolybiusHUD(ctx);
-    this.renderTelemetryRibbon(ctx, this.width, this.height);
+    this.renderTelemetryRibbon(ctx, sw, sh);
+    ctx.restore();
   }
 
   renderTelemetryRibbon(ctx, w, h) {
@@ -1631,37 +1636,42 @@ export class SignalFireEngine {
     this.initAudio();
     this.isMouseDown = true;
     this.mousePos = pos;
+    if (!pos) return;
+
+    const ui = this.uiScale();
+    const uiX = pos.x / ui;
+    const uiY = pos.y / ui;
 
     // Check if clicked inside Polybius 5x5 Grid HUD
     const h = this.hud;
-    const startX = h.x + 24;
-    const startY = h.y + 32;
-    const cs = h.cellSize;
+    if (h) {
+      const startX = h.x + 24;
+      const startY = h.y + 32;
+      const cs = h.cellSize;
 
-    if (pos && pos.x >= startX && pos.x <= startX + cs * 5 && pos.y >= startY && pos.y <= startY + cs * 5) {
-      const c = Math.floor((pos.x - startX) / cs);
-      const r = Math.floor((pos.y - startY) / cs);
-      if (r >= 0 && r < 5 && c >= 0 && c < 5) {
-        const clickedLetter = POLYBIUS_GRID[r][c];
-        this.playSound('click');
-        // Transmit clicked letter immediately
-        this.transmitSingleLetter(clickedLetter);
-        return;
+      if (uiX >= startX && uiX <= startX + cs * 5 && uiY >= startY && uiY <= startY + cs * 5) {
+        const c = Math.floor((uiX - startX) / cs);
+        const r = Math.floor((uiY - startY) / cs);
+        if (r >= 0 && r < 5 && c >= 0 && c < 5) {
+          const clickedLetter = POLYBIUS_GRID[r][c];
+          this.playSound('click');
+          // Transmit clicked letter immediately
+          this.transmitSingleLetter(clickedLetter);
+          return;
+        }
       }
     }
 
     // Check if clicked on a watchtower
-    if (pos) {
-      for (let i = 0; i < this.towers.length; i++) {
-        const t = this.towers[i];
-        const dx = pos.x - t.x;
-        const dy = pos.y - (t.y - 25);
-        if (Math.hypot(dx, dy) < 40) {
-          // Fire celebration flare from watchtower
-          this.emitReceptionBurst(t.x, t.y - 48);
-          this.playSound('relay', i);
-          return;
-        }
+    for (let i = 0; i < this.towers.length; i++) {
+      const t = this.towers[i];
+      const dx = pos.x - t.x;
+      const dy = pos.y - (t.y - 25);
+      if (Math.hypot(dx, dy) < 40) {
+        // Fire celebration flare from watchtower
+        this.emitReceptionBurst(t.x, t.y - 48);
+        this.playSound('relay', i);
+        return;
       }
     }
   }
@@ -1685,18 +1695,24 @@ export class SignalFireEngine {
     this.mousePos = pos;
     if (!pos) return;
 
+    const ui = this.uiScale();
+    const uiX = pos.x / ui;
+    const uiY = pos.y / ui;
+
     // Track hover over Polybius grid
     const h = this.hud;
-    const startX = h.x + 24;
-    const startY = h.y + 32;
-    const cs = h.cellSize;
+    if (h) {
+      const startX = h.x + 24;
+      const startY = h.y + 32;
+      const cs = h.cellSize;
 
-    if (pos.x >= startX && pos.x <= startX + cs * 5 && pos.y >= startY && pos.y <= startY + cs * 5) {
-      const c = Math.floor((pos.x - startX) / cs);
-      const r = Math.floor((pos.y - startY) / cs);
-      h.hoverCell = { r, c };
-    } else {
-      h.hoverCell = null;
+      if (uiX >= startX && uiX <= startX + cs * 5 && uiY >= startY && uiY <= startY + cs * 5) {
+        const c = Math.floor((uiX - startX) / cs);
+        const r = Math.floor((uiY - startY) / cs);
+        h.hoverCell = { r, c };
+      } else {
+        h.hoverCell = null;
+      }
     }
   }
 

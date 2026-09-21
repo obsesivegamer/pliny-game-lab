@@ -821,10 +821,6 @@ export class SilvaEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   getEntityCount() {
     const activeAttractorCount = this.attractors.filter(a => a.active).length;
     return this.nodes.length + this.leaves.length + activeAttractorCount + this.fallingParticles.length;

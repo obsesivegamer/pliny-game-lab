@@ -401,10 +401,6 @@ export class CavernaEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   // -------------------------------------------------------------------------
   // Simulation Step: Water Seepage, Droplet Kinematics, Karst Precipitation
   // -------------------------------------------------------------------------
@@ -1008,6 +1004,46 @@ export class CavernaEngine {
 
     // 9. Dynamic Torchlight / Lantern Radiance Following Cursor
     this.renderTorchRadiance(ctx);
+
+    // 10. Responsive On-Canvas HUD Telemetry
+    this.renderHUD(ctx);
+
+    ctx.restore();
+  }
+
+  renderHUD(ctx) {
+    ctx.save();
+    const ui = this.uiScale();
+    ctx.scale(ui, ui);
+    const sw = this.width / ui;
+    const sh = this.height / ui;
+    const narrow = sw < 560;
+
+    const cardW = narrow ? Math.min(sw - 28, 280) : 310;
+    const cardH = narrow ? 66 : 74;
+
+    ctx.fillStyle = 'rgba(12, 10, 16, 0.82)';
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(14, 14, cardW, cardH, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffd700';
+    ctx.font = `bold ${narrow ? 11 : 12}px Cinzel, serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText(narrow ? 'CAVERNA • SPELEOTHEMS' : 'CAVERNA • SUBTERRANEAN KARST', 24, 32);
+
+    ctx.fillStyle = '#a0aec0';
+    ctx.font = `${narrow ? 9 : 10}px "JetBrains Mono", monospace`;
+    ctx.fillText(`PRESET: ${this.currentPreset.toUpperCase()}`, 24, narrow ? 48 : 50);
+
+    const pillars = this.speleothems.filter(s => s.type === 'column' || s.isPillar).length;
+    const stalactites = this.speleothems.filter(s => s.type === 'stalactite').length;
+    const stalagmites = this.speleothems.filter(s => s.type === 'stalagmite').length;
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText(narrow ? `COL: ${pillars} | TITE: ${stalactites} | MITE: ${stalagmites}` : `PILLARS: ${pillars} | STALACTITES: ${stalactites} | STALAGMITES: ${stalagmites}`, 24, narrow ? 62 : 68);
 
     ctx.restore();
   }

@@ -1,3 +1,5 @@
+import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+
 // Thermae: Roman Baths Hypocaust & Thermal Conduction Engine
 // Pliny Game Lab — Pavilion VIII: Architectura & Structura
 // Grounded in Vitruvius (De Architectura Book V.10: "De balnearum dispositionibus et partibus")
@@ -32,8 +34,6 @@ const MAT_FRIGIDARIUM_WATER = 8;
 const MAT_MASONRY = 9;
 const MAT_HEARTH = 10;
 const MAT_ROOF = 11;
-
-import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
 
 export class ThermaeEngine {
   constructor(canvas, ctx, controlsContainer) {
@@ -546,6 +546,7 @@ export class ThermaeEngine {
   }
 
   destroy() {
+    detachTouchBridge(this, this.canvas);
     this.steamPool = [];
     this.emberPool = [];
     this.temperature = null;
@@ -561,15 +562,10 @@ export class ThermaeEngine {
       }
       this.audioCtx = null;
     }
-    detachTouchBridge(this, this.canvas);
   }
 
   uiScale() {
     return Math.max(1, this.dpr || 1);
-  }
-
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
   }
 
   getEntityCount() {
@@ -1655,37 +1651,69 @@ export class ThermaeEngine {
     // Header Title
     ctx.font = 'bold 11px "Cinzel", serif';
     ctx.fillStyle = '#d4af37';
-    ctx.fillText('THERMAE ROMANAE', hudX + 10, hudY + 18);
+    ctx.fillText(narrow ? 'THERMAE ROMANAE' : 'THERMAE ROMANAE • HYPOCAUSTVM', hudX + 10, hudY + 18);
+
+    // View Mode Badge on desktop
+    if (!narrow) {
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.fillStyle = this.viewMode === 'heatmap' ? '#ffc107' : '#3bd6c6';
+      ctx.fillText(
+        `VIEW: [ ${this.viewMode.toUpperCase()} ]`,
+        hudX + 10,
+        hudY + 34
+      );
+    }
 
     // Compute live average room temperatures
     const gw = this.gridW;
     const T = this.temperature;
 
-    const caldAvg = T ? (T[23 * gw + 30] || 52.0) : 52.0;
-    const tepidAvg = T ? (T[24 * gw + 60] || 36.0) : 36.0;
-    const frigAvg = T ? (T[21 * gw + 86] || 18.5) : 18.5;
-    const hearthT = T ? (T[38 * gw + 10] || 520.0) : 520.0;
+    const caldAvg = T[23 * gw + 30] || 52.0;
+    const tepidAvg = T[24 * gw + 60] || 36.0;
+    const frigAvg = T[21 * gw + 86] || 18.5;
+    const hypoAvg = T[38 * gw + 35] || 145.0;
+    const hearthT = T[38 * gw + 10] || 520.0;
 
     ctx.font = narrow ? '9px "JetBrains Mono", monospace' : '10px "JetBrains Mono", monospace';
 
-    ctx.fillStyle = '#ff8888';
-    ctx.fillText(`HEARTH:     ${Math.round(hearthT)}°C (${this.fireRate}% FIRE)`, hudX + 10, hudY + 36);
+    if (narrow) {
+      ctx.fillStyle = '#ff8888';
+      ctx.fillText(`HEARTH:     ${Math.round(hearthT)}°C (${this.fireRate}% FIRE)`, hudX + 10, hudY + 36);
 
-    ctx.fillStyle = '#dc3545';
-    ctx.fillText(`CALDARIVM:  ${caldAvg.toFixed(1)}°C (HOT)`, hudX + 10, hudY + 52);
+      ctx.fillStyle = '#dc3545';
+      ctx.fillText(`CALDARIVM:  ${caldAvg.toFixed(1)}°C (HOT)`, hudX + 10, hudY + 52);
 
-    ctx.fillStyle = '#ffc107';
-    ctx.fillText(`TEPIDARIVM: ${tepidAvg.toFixed(1)}°C (WARM)`, hudX + 10, hudY + 68);
+      ctx.fillStyle = '#ffc107';
+      ctx.fillText(`TEPIDARIVM: ${tepidAvg.toFixed(1)}°C (WARM)`, hudX + 10, hudY + 68);
 
-    ctx.fillStyle = '#007bff';
-    ctx.fillText(`FRIGIDARIVM:${frigAvg.toFixed(1)}°C (COLD)`, hudX + 10, hudY + 84);
+      ctx.fillStyle = '#007bff';
+      ctx.fillText(`FRIGIDARIVM: ${frigAvg.toFixed(1)}°C (COLD)`, hudX + 10, hudY + 84);
 
-    ctx.fillStyle = '#e6e8ee';
-    ctx.fillText(`DRAFT:      ${this.draftVenting}% | ENT: ${this.getEntityCount()}`, hudX + 10, hudY + 100);
+      ctx.fillStyle = '#e6e8ee';
+      ctx.fillText(`DRAFT:      ${this.draftVenting}% | ENT: ${this.getEntityCount()}`, hudX + 10, hudY + 100);
+    } else {
+      ctx.fillStyle = '#ff8888';
+      ctx.fillText(`PRAEFVRNIVM:  ${Math.round(hearthT)}°C (${this.fireRate}% FIRE)`, hudX + 10, hudY + 52);
+
+      ctx.fillStyle = '#dc3545';
+      ctx.fillText(`CALDARIVM:    ${caldAvg.toFixed(1)}°C (HOT BATH)`, hudX + 10, hudY + 68);
+
+      ctx.fillStyle = '#ffc107';
+      ctx.fillText(`TEPIDARIVM:   ${tepidAvg.toFixed(1)}°C (WARM HALL)`, hudX + 10, hudY + 84);
+
+      ctx.fillStyle = '#007bff';
+      ctx.fillText(`FRIGIDARIVM:  ${frigAvg.toFixed(1)}°C (NATATIO)`, hudX + 10, hudY + 100);
+
+      ctx.fillStyle = '#e6e8ee';
+      ctx.fillText(`HYPOCAVSTVM:  ${hypoAvg.toFixed(0)}°C (DRAFT: ${this.draftVenting}%)`, hudX + 10, hudY + 116);
+
+      ctx.fillStyle = '#8c909e';
+      ctx.fillText(`ENTITIES:     ${this.getEntityCount()} (HEAT+STEAM)`, hudX + 10, hudY + 132);
+    }
 
     // Mini Thermal Gradient Color Legend Bar at the bottom
     const barX = hudX + 10;
-    const barY = hudY + 114;
+    const barY = narrow ? hudY + 114 : hudY + 140;
     const barW = hudW - 20;
     const barH = 4;
 

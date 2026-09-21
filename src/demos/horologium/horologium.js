@@ -424,10 +424,6 @@ export class HorologiumEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   // Destroy / Cleanup
   destroy() {
     detachTouchBridge(this, this.canvas);

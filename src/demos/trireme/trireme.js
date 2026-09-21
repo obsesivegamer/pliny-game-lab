@@ -581,10 +581,6 @@ export class TriremeEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   getEntityCount() {
     // Number of ships + active wake particles + projectile bolts
     return this.ships.length + this.wakeParticles.length + this.bolts.length;
@@ -2019,7 +2015,7 @@ export class TriremeEngine {
     ctx.font = `bold ${narrow ? 11 : 12}px sans-serif`;
     ctx.fillStyle = '#FFD700'; // Roman Gold
     ctx.textAlign = 'left';
-    ctx.fillText('TRIREME HELM', 24, 32);
+    ctx.fillText(narrow ? 'TRIREME HELM' : 'TRIREME NAVAL HELM', 24, 32);
 
     if (this.playerShip && !this.playerShip.isDestroyed) {
       const speedKnots = (Math.sqrt(this.playerShip.vx * this.playerShip.vx + this.playerShip.vy * this.playerShip.vy) * 0.12).toFixed(1);
@@ -2027,17 +2023,18 @@ export class TriremeEngine {
       ctx.fillStyle = '#E0FAFF';
       ctx.fillText(`SPEED:   ${speedKnots} kn`, 24, 49);
       ctx.fillText(`CADENCE: ${this.cadence} SPM`, 24, 65);
-      const rudderDir = this.rudderAngle < 0 ? 'Port' : (this.rudderAngle > 0 ? 'Stbd' : 'Center');
-      ctx.fillText(`RUDDER:  ${Math.abs(this.rudderAngle).toFixed(0)}° ${rudderDir}`, 24, 81);
+      const rudderText = this.rudderAngle > 0.05 ? 'PORT' : (this.rudderAngle < -0.05 ? 'STBD' : 'AHEAD');
+      ctx.fillText(`RUDDER:  ${rudderText}`, 24, 81);
     } else {
-      ctx.font = '11px sans-serif';
-      ctx.fillStyle = '#FF5A5F';
-      ctx.fillText('FLAGSHIP COMPROMISED', 24, 55);
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#FF4444';
+      ctx.fillText('STATUS: SUNK IN ACTION', 24, 56);
     }
 
     // Top-Right Fleet Score & Kills
     const badgeW = narrow ? 120 : 151;
     const badgeX = sw - badgeW - 14;
+    ctx.fillStyle = 'rgba(0, 18, 38, 0.78)';
     ctx.beginPath();
     ctx.roundRect(badgeX, 14, badgeW, 62, 6);
     ctx.fill();
@@ -2045,13 +2042,13 @@ export class TriremeEngine {
 
     ctx.font = `bold ${narrow ? 10 : 11}px sans-serif`;
     ctx.fillStyle = '#D4AF37';
-    ctx.fillText('FLEET', badgeX + 10, 32);
+    ctx.fillText(narrow ? 'FLEET' : 'FLEET ENGAGEMENT', badgeX + 10, 32);
 
     ctx.font = `${narrow ? 9.5 : 11}px monospace`;
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`SUNK: ${this.enemiesSunk}`, badgeX + 10, 50);
+    ctx.fillText(narrow ? `SUNK: ${this.enemiesSunk}` : `WARSHIPS SUNK: ${this.enemiesSunk}`, badgeX + 10, 50);
     const activeEnemies = this.ships.filter(s => !s.isPlayer && !s.isDestroyed).length;
-    ctx.fillText(`LEFT: ${activeEnemies}`, badgeX + 10, 65);
+    ctx.fillText(narrow ? `LEFT: ${activeEnemies}` : `HOSTILES LEFT: ${activeEnemies}`, badgeX + 10, 65);
 
     // Bottom Center Ramming Status Banner
     if (this.isRammingSpeed) {
@@ -2063,14 +2060,14 @@ export class TriremeEngine {
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.roundRect(bx, by, bannerWidth, 34, 4);
+      ctx.roundRect(bx, by, bannerWidth, 34, 6);
       ctx.fill();
       ctx.stroke();
 
       ctx.font = `bold ${narrow ? 11 : 13}px sans-serif`;
       ctx.fillStyle = '#FFD700';
       ctx.textAlign = 'center';
-      ctx.fillText('⚔️ FULL RAMMING SPEED! ⚔️', sw * 0.5, by + 21);
+      ctx.fillText(narrow ? '⚔️ FULL RAMMING SPEED! ⚔️' : '⚔️ FULL RAMMING SPEED ENGAGED! ⚔️', sw * 0.5, by + 21);
     }
 
     ctx.restore();

@@ -665,10 +665,6 @@ export class EratosthenesEngine {
     return Math.max(1, this.dpr || 1);
   }
 
-  worldView() {
-    return { x: 0, y: 0, w: this.width, h: this.height };
-  }
-
   update(dt) {
     this.elapsed += dt;
 
@@ -1344,10 +1340,12 @@ export class EratosthenesEngine {
   }
 
   renderSieveHeader(ctx) {
-    const w = this.width;
+    const ui = this.uiScale();
+    const w = this.width / ui;
     const narrow = w < 560;
 
     ctx.save();
+    ctx.scale(ui, ui);
     ctx.fillStyle = '#ffd700';
     ctx.font = `bold ${narrow ? 12 : 16}px Cinzel, serif`;
     ctx.textAlign = 'left';
@@ -1361,7 +1359,9 @@ export class EratosthenesEngine {
     let statusText = `Sifting with Prime p = ${this.currentPrime}`;
     let statusColor = '#ffd700';
     if (this.sieveState === 'FINISHED') {
-      statusText = `🏆 Primes Found up to ${this.gridLimit}!`;
+      statusText = narrow
+        ? `🏆 Primes Found up to ${this.gridLimit}!`
+        : `🏆 All ${this.primesFound.length} Primes Found up to ${this.gridLimit}!`;
       statusColor = '#3bd6c6';
     } else if (this.sieveState === 'MARK_MULTIPLES') {
       statusText = `Eliminating multiples: ${this.currentPrime} × k ...`;
