@@ -745,7 +745,7 @@ export class ThermaeEngine {
       s.spin += s.spinSpeed * dt;
 
       // Buoyancy acceleration (hot air rises faster, then slows as it cools)
-      s.vy *= 0.985;
+      s.vy *= Math.pow(0.985, dt * 60);
 
       // Alpha envelope: quick fade-in, long soft billowy fade-out
       if (progress < 0.2) {

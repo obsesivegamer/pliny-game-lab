@@ -14,6 +14,16 @@
 
 import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
 
+// Material palette used to tint sandbox monuments (column, arch, wall).
+const MATERIALS = {
+  marble: { base: '#ECEFF1', accent: '#D5C7A9', shade: '#C5B796', label: 'Marmor (Marble)' },
+  limestone: { base: '#D9CBA3', accent: '#C2A878', shade: '#A98A5C', label: 'Calx (Limestone)' },
+  brick: { base: '#A0522D', accent: '#8B3A1D', shade: '#6E2E17', label: 'Later (Brick)' }
+};
+
+const LAYOUT_STORAGE_KEY = 'pliny-forum-builder-layout-v1';
+const MAX_UNDO_HISTORY = 30;
+
 export class ForumBuilderEngine {
   constructor(canvas, ctx, controlsContainer) {
     this.canvas = canvas;
@@ -37,9 +47,14 @@ export class ForumBuilderEngine {
 
     // Simulation Pace & Tool Selection
     this.simSpeed = 1.0;
-    this.activeTool = 'road'; // 'road', 'insula', 'baths', 'temple', 'fountain', 'demolish'
+    this.activeTool = 'road'; // 'road', 'insula', 'baths', 'temple', 'fountain', 'column', 'arch', 'wall', 'demolish'
     this.activePreset = 'colonia';
     this.showWaterOverlay = true;
+
+    // Sandbox Mode: material palette, grid snap, and undo history
+    this.activeMaterial = 'marble'; // 'marble', 'limestone', 'brick'
+    this.snapToGrid = true;
+    this.placementHistory = []; // { x, y, prevType, prevDensity, prevMaterial } most-recent-last
 
     // State Tracking
     this.grid = [];
@@ -86,7 +101,8 @@ export class ForumBuilderEngine {
         row.push({
           x: c,
           y: r,
-          type: 'empty', // 'empty', 'road', 'insula', 'baths', 'temple', 'fountain', 'forum'
+          type: 'empty', // 'empty', 'road', 'insula', 'baths', 'temple', 'fountain', 'forum', 'column', 'arch', 'wall'
+          material: 'marble', // 'marble', 'limestone', 'brick' — applied to sandbox monuments
           isCardo,
           isDecumanus,
           density: 1, // 1 to 4 for insula
@@ -115,7 +131,7 @@ export class ForumBuilderEngine {
     this.controlsContainer.innerHTML = `
       <div class="control-group">
         <label>
-          <span>CIVIC STRUCTURE</span>
+          <span>BUILDING PALETTE</span>
           <span id="forum-tool-label" style="color: var(--accent-gold, #d4af37); font-weight:600;">Via (Road)</span>
         </label>
         <div class="control-btn-grid" style="grid-template-columns: repeat(3, 1fr); gap: 4px;">
@@ -124,7 +140,19 @@ export class ForumBuilderEngine {
           <button class="sub-btn" data-tool="baths">♨️ Baths [3]</button>
           <button class="sub-btn" data-tool="temple">🏛️ Temple [4]</button>
           <button class="sub-btn" data-tool="fountain">⛲ Fountain [5]</button>
+          <button class="sub-btn" data-tool="column">🏛️ Column [6]</button>
+          <button class="sub-btn" data-tool="arch">🎪 Arch [7]</button>
+          <button class="sub-btn" data-tool="wall">🧱 Wall [8]</button>
           <button class="sub-btn" data-tool="demolish">⛏️ Demolish [X]</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>MATERIAL</label>
+        <div class="control-btn-grid" style="grid-template-columns: repeat(3, 1fr); gap: 4px;">
+          <button class="sub-btn active" data-material="marble">⬜ Marble</button>
+          <button class="sub-btn" data-material="limestone">🟨 Limestone</button>
+          <button class="sub-btn" data-material="brick">🟧 Brick</button>
         </div>
       </div>
 
@@ -142,6 +170,27 @@ export class ForumBuilderEngine {
           <button class="sub-btn active" id="btn-water-overlay">💧 Water Radius</button>
           <button class="sub-btn" id="btn-clear-plan">🧹 Clear Plan</button>
         </div>
+      </div>
+
+      <div class="control-group">
+        <label>SANDBOX MODE</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: #2C1B18; color: #F1C40F; border: 1px solid #D4AF37; border-radius: 4px; padding: 6px 8px; margin-bottom: 6px;">
+          <span style="font-size: 0.75rem;">🧲 Grid Snap</span>
+          <button class="sub-btn active" id="btn-grid-snap" style="margin: 0;">ON</button>
+        </div>
+        <div class="control-btn-grid" style="grid-template-columns: repeat(2, 1fr); gap: 4px;">
+          <button class="sub-btn" id="btn-undo">↩️ Undo</button>
+          <button class="sub-btn" id="btn-clear-all">🗑️ Clear All</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>SAVE / LOAD LAYOUT</label>
+        <div class="control-btn-grid" style="grid-template-columns: repeat(2, 1fr); gap: 4px;">
+          <button class="sub-btn" id="btn-save-layout">💾 Save</button>
+          <button class="sub-btn" id="btn-load-layout">📂 Load</button>
+        </div>
+        <span id="layout-status" style="display:block; font-size: 0.7rem; color: var(--text-muted, #888); margin-top: 4px; min-height: 1em;"></span>
       </div>
 
       <div class="control-group">
@@ -172,21 +221,23 @@ export class ForumBuilderEngine {
     // Tool Selector buttons
     const toolButtons = this.controlsContainer.querySelectorAll('[data-tool]');
     const toolLabel = this.controlsContainer.querySelector('#forum-tool-label');
-    const toolNames = {
-      road: 'Via (Road)',
-      insula: 'Insula (Housing)',
-      baths: 'Thermae (Baths)',
-      temple: 'Templum (Temple)',
-      fountain: 'Lacus (Fountain)',
-      demolish: 'Demolish Tool'
-    };
 
     toolButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         toolButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.activeTool = btn.dataset.tool;
-        if (toolLabel) toolLabel.textContent = toolNames[this.activeTool] || this.activeTool;
+        if (toolLabel) toolLabel.textContent = this.toolLabel(this.activeTool);
+      });
+    });
+
+    // Material Selector buttons
+    const materialButtons = this.controlsContainer.querySelectorAll('[data-material]');
+    materialButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        materialButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.activeMaterial = btn.dataset.material;
       });
     });
 
@@ -209,11 +260,55 @@ export class ForumBuilderEngine {
       });
     }
 
-    // Clear Plan Button
+    // Clear Plan Button (restores baseline cardo/decumanus + forum)
     const clearBtn = this.controlsContainer.querySelector('#btn-clear-plan');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         this.applyPreset('empty');
+      });
+    }
+
+    // Grid Snap Toggle
+    const snapBtn = this.controlsContainer.querySelector('#btn-grid-snap');
+    if (snapBtn) {
+      snapBtn.addEventListener('click', () => {
+        this.snapToGrid = !this.snapToGrid;
+        snapBtn.classList.toggle('active', this.snapToGrid);
+        snapBtn.textContent = this.snapToGrid ? 'ON' : 'OFF';
+      });
+    }
+
+    // Undo Button
+    const undoBtn = this.controlsContainer.querySelector('#btn-undo');
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => {
+        this.undoLastPlacement();
+      });
+    }
+
+    // Clear All Button (full sandbox wipe, no baseline roads)
+    const clearAllBtn = this.controlsContainer.querySelector('#btn-clear-all');
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener('click', () => {
+        this.clearAllBuildings();
+      });
+    }
+
+    // Save Layout Button
+    const saveBtn = this.controlsContainer.querySelector('#btn-save-layout');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const ok = this.saveLayout();
+        this.setLayoutStatus(ok ? 'Layout saved.' : 'Save failed.');
+      });
+    }
+
+    // Load Layout Button
+    const loadBtn = this.controlsContainer.querySelector('#btn-load-layout');
+    if (loadBtn) {
+      loadBtn.addEventListener('click', () => {
+        const ok = this.loadLayout();
+        this.setLayoutStatus(ok ? 'Layout loaded.' : 'No saved layout found.');
       });
     }
 
@@ -227,6 +322,27 @@ export class ForumBuilderEngine {
         this.applyPreset(this.activePreset);
       });
     });
+  }
+
+  toolLabel(toolKey) {
+    const toolNames = {
+      road: 'Via (Road)',
+      insula: 'Insula (Housing)',
+      baths: 'Thermae (Baths)',
+      temple: 'Templum (Temple)',
+      fountain: 'Lacus (Fountain)',
+      column: 'Columna (Column)',
+      arch: 'Arcus (Arch)',
+      wall: 'Murus (Wall)',
+      demolish: 'Demolish Tool'
+    };
+    return toolNames[toolKey] || toolKey;
+  }
+
+  setLayoutStatus(message) {
+    if (!this.controlsContainer || typeof document === 'undefined') return;
+    const statusEl = this.controlsContainer.querySelector('#layout-status');
+    if (statusEl) statusEl.textContent = message;
   }
 
   updateDomTelemetry() {
@@ -1075,6 +1191,15 @@ export class ForumBuilderEngine {
           case 'fountain':
             this.drawFountainTile(ctx, pos.x, pos.y, cs, cell);
             break;
+          case 'column':
+            this.drawColumnTile(ctx, pos.x, pos.y, cs, cell);
+            break;
+          case 'arch':
+            this.drawArchTile(ctx, pos.x, pos.y, cs, cell);
+            break;
+          case 'wall':
+            this.drawWallTile(ctx, pos.x, pos.y, cs, cell);
+            break;
         }
 
         ctx.restore();
@@ -1304,6 +1429,123 @@ export class ForumBuilderEngine {
     ctx.fill();
   }
 
+  /** Resolve the material palette for a cell, defaulting to marble. */
+  materialPalette(cell) {
+    return MATERIALS[cell.material] || MATERIALS.marble;
+  }
+
+  drawColumnTile(ctx, x, y, cs, cell) {
+    // Freestanding classical column monument — material-tinted per sandbox selection
+    const mat = this.materialPalette(cell);
+    const pad = 3;
+    const bx = x + pad;
+    const by = y + pad;
+    const bw = cs - pad * 2;
+    const bh = cs - pad * 2;
+
+    // Square plinth base
+    ctx.fillStyle = mat.shade;
+    ctx.fillRect(bx, by + bh * 0.82, bw, bh * 0.18);
+
+    // Fluted column shaft
+    const shaftW = bw * 0.32;
+    const shaftX = bx + (bw - shaftW) / 2;
+    ctx.fillStyle = mat.base;
+    ctx.fillRect(shaftX, by + bh * 0.14, shaftW, bh * 0.7);
+
+    // Flute lines for classical detail
+    ctx.strokeStyle = mat.shade;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(shaftX + shaftW * 0.35, by + bh * 0.14);
+    ctx.lineTo(shaftX + shaftW * 0.35, by + bh * 0.84);
+    ctx.moveTo(shaftX + shaftW * 0.65, by + bh * 0.14);
+    ctx.lineTo(shaftX + shaftW * 0.65, by + bh * 0.84);
+    ctx.stroke();
+
+    // Capital
+    ctx.fillStyle = mat.accent;
+    ctx.fillRect(bx + bw * 0.2, by, bw * 0.6, bh * 0.14);
+  }
+
+  drawArchTile(ctx, x, y, cs, cell) {
+    // Triumphal arch spanning the cell — material-tinted per sandbox selection
+    const mat = this.materialPalette(cell);
+    const pad = 2;
+    const bx = x + pad;
+    const by = y + pad;
+    const bw = cs - pad * 2;
+    const bh = cs - pad * 2;
+
+    // Outer masonry block
+    ctx.fillStyle = mat.base;
+    ctx.fillRect(bx, by, bw, bh);
+
+    // Attic frieze band on top
+    ctx.fillStyle = mat.accent;
+    ctx.fillRect(bx, by, bw, bh * 0.2);
+
+    // Carved archway opening (barrel vault silhouette)
+    const archCx = bx + bw * 0.5;
+    const archBaseY = by + bh * 0.95;
+    const archR = bw * 0.28;
+    ctx.fillStyle = '#1C1917';
+    ctx.beginPath();
+    ctx.moveTo(archCx - archR, archBaseY);
+    ctx.lineTo(archCx - archR, by + bh * 0.55);
+    ctx.arc(archCx, by + bh * 0.55, archR, Math.PI, 0);
+    ctx.lineTo(archCx + archR, archBaseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Keystone accent
+    ctx.fillStyle = mat.shade;
+    ctx.fillRect(archCx - 2, by + bh * 0.55 - archR - 2, 4, 4);
+  }
+
+  drawWallTile(ctx, x, y, cs, cell) {
+    // Defensive/boundary wall segment — material-tinted per sandbox selection
+    const mat = this.materialPalette(cell);
+    const pad = 1;
+    const bx = x + pad;
+    const by = y + pad;
+    const bw = cs - pad * 2;
+    const bh = cs - pad * 2;
+
+    ctx.fillStyle = mat.shade;
+    ctx.fillRect(bx, by, bw, bh);
+
+    // Coursed masonry block rows
+    ctx.strokeStyle = mat.accent;
+    ctx.lineWidth = 1;
+    const rowH = bh / 3;
+    for (let i = 1; i < 3; i++) {
+      const ry = by + rowH * i;
+      ctx.beginPath();
+      ctx.moveTo(bx, ry);
+      ctx.lineTo(bx + bw, ry);
+      ctx.stroke();
+    }
+    // Offset vertical joints (running bond)
+    ctx.beginPath();
+    ctx.moveTo(bx + bw * 0.5, by);
+    ctx.lineTo(bx + bw * 0.5, by + rowH);
+    ctx.moveTo(bx + bw * 0.25, by + rowH);
+    ctx.lineTo(bx + bw * 0.25, by + rowH * 2);
+    ctx.moveTo(bx + bw * 0.75, by + rowH);
+    ctx.lineTo(bx + bw * 0.75, by + rowH * 2);
+    ctx.moveTo(bx + bw * 0.5, by + rowH * 2);
+    ctx.lineTo(bx + bw * 0.5, by + bh);
+    ctx.stroke();
+
+    // Crenellation cap along the top
+    ctx.fillStyle = mat.base;
+    const merlonW = bw / 5;
+    for (let i = 0; i < 5; i += 2) {
+      ctx.fillRect(bx + i * merlonW, by - 1, merlonW, 3);
+    }
+  }
+
   renderCitizens(ctx) {
     const cs = this.cellSize;
 
@@ -1376,8 +1618,19 @@ export class ForumBuilderEngine {
   renderCursor(ctx) {
     if (!this.hoverGrid.valid) return;
 
-    const pos = this.gridToScreen(this.hoverGrid.x, this.hoverGrid.y);
     const cs = this.cellSize;
+    // Grid Snap ON (default): ghost locks to the exact cell rectangle (placement is always
+    // cell-based regardless). Grid Snap OFF: the ghost follows the raw cursor with a dashed
+    // outline for a looser sandbox feel, while the click still resolves to the hovered cell.
+    const snapped = this.gridToScreen(this.hoverGrid.x, this.hoverGrid.y);
+    const pos = this.snapToGrid
+      ? snapped
+      : {
+          x: this.mousePos.x - cs / 2,
+          y: this.mousePos.y - cs / 2,
+          cx: this.mousePos.x,
+          cy: this.mousePos.y
+        };
 
     ctx.save();
     if (this.activeTool === 'demolish') {
@@ -1395,15 +1648,33 @@ export class ForumBuilderEngine {
       ctx.lineTo(pos.x + 4, pos.y + cs - 4);
       ctx.stroke();
     } else {
-      ctx.strokeStyle = '#D4AF37';
+      ctx.strokeStyle = this.snapToGrid ? '#D4AF37' : 'rgba(212, 175, 55, 0.7)';
       ctx.fillStyle = 'rgba(212, 175, 55, 0.18)';
       ctx.lineWidth = 2;
+      if (!this.snapToGrid) ctx.setLineDash([3, 3]);
       ctx.fillRect(pos.x, pos.y, cs, cs);
       ctx.strokeRect(pos.x, pos.y, cs, cs);
+      ctx.setLineDash([]);
 
-      // Structure preview ghost if empty
+      // Ghost preview of the building about to be placed, rendered with the actual tile art
       const cell = this.grid[this.hoverGrid.y][this.hoverGrid.x];
-      if (cell.type === 'empty') {
+      const ghostDrawFns = {
+        insula: this.drawInsulaTile,
+        baths: this.drawBathsTile,
+        temple: this.drawTempleTile,
+        fountain: this.drawFountainTile,
+        column: this.drawColumnTile,
+        arch: this.drawArchTile,
+        wall: this.drawWallTile
+      };
+      const drawFn = ghostDrawFns[this.activeTool];
+      if (cell.type === 'empty' && drawFn) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        const ghostCell = { ...cell, material: this.activeMaterial, density: 1 };
+        drawFn.call(this, ctx, pos.x, pos.y, cs, ghostCell);
+        ctx.restore();
+      } else if (cell.type === 'empty') {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.font = '10px serif';
         ctx.textAlign = 'center';
@@ -1510,7 +1781,7 @@ export class ForumBuilderEngine {
       if (this.hoverGrid.x !== this.lastPlacedCell.x || this.hoverGrid.y !== this.lastPlacedCell.y) {
         if (this.activeTool === 'demolish' || pos.button === 2) {
           this.demolishCell(this.hoverGrid.x, this.hoverGrid.y);
-        } else if (this.activeTool === 'road' || this.activeTool === 'insula') {
+        } else if (this.activeTool === 'road' || this.activeTool === 'insula' || this.activeTool === 'wall') {
           this.placeStructure(this.hoverGrid.x, this.hoverGrid.y, this.activeTool);
         }
         this.lastPlacedCell = { x: this.hoverGrid.x, y: this.hoverGrid.y };
@@ -1536,10 +1807,18 @@ export class ForumBuilderEngine {
       this.selectTool('temple');
     } else if (key === '5' || key === 'f' || key === 'F') {
       this.selectTool('fountain');
+    } else if (key === '6') {
+      this.selectTool('column');
+    } else if (key === '7') {
+      this.selectTool('arch');
+    } else if (key === '8') {
+      this.selectTool('wall');
     } else if (key === 'x' || key === 'X' || key === 'd' || key === 'D') {
       this.selectTool('demolish');
     } else if (key === 'c' || key === 'C') {
       this.applyPreset('empty');
+    } else if (key === 'z' || key === 'Z' || key === 'u' || key === 'U') {
+      this.undoLastPlacement();
     } else if (key === ' ') {
       this.simSpeed = (this.simSpeed === 0 ? 1.0 : 0);
       const speedSlider = this.controlsContainer?.querySelector('#speed-slider');
@@ -1570,25 +1849,38 @@ export class ForumBuilderEngine {
       btn.classList.toggle('active', btn.dataset.tool === toolKey);
     });
 
-    const toolLabel = this.controlsContainer.querySelector('#forum-tool-label');
-    const toolNames = {
-      road: 'Via (Road)',
-      insula: 'Insula (Housing)',
-      baths: 'Thermae (Baths)',
-      temple: 'Templum (Temple)',
-      fountain: 'Lacus (Fountain)',
-      demolish: 'Demolish Tool'
-    };
-    if (toolLabel) toolLabel.textContent = toolNames[toolKey] || toolKey;
+    const toolLabelEl = this.controlsContainer.querySelector('#forum-tool-label');
+    if (toolLabelEl) toolLabelEl.textContent = this.toolLabel(toolKey);
+  }
+
+  // =========================================================================
+  // SANDBOX: PLACEMENT, UNDO HISTORY, CLEAR & LAYOUT PERSISTENCE
+  // =========================================================================
+
+  /** Push a snapshot of a cell's prior state onto the bounded undo stack. */
+  pushUndoRecord(gx, gy, cell) {
+    this.placementHistory.push({
+      x: gx,
+      y: gy,
+      prevType: cell.type,
+      prevDensity: cell.density,
+      prevMaterial: cell.material
+    });
+    if (this.placementHistory.length > MAX_UNDO_HISTORY) {
+      this.placementHistory.shift();
+    }
   }
 
   placeStructure(gx, gy, type) {
     const cell = this.grid[gy][gx];
-    if (cell.type === type) return;
+    if (cell.type === type && cell.material === this.activeMaterial) return;
+
+    this.pushUndoRecord(gx, gy, cell);
 
     cell.type = type;
     cell.animScale = 0.4;
     cell.density = (type === 'insula' ? 1 : 0);
+    cell.material = this.activeMaterial;
 
     this.spawnConstructionDust(gx, gy);
     this.playStoneSound();
@@ -1601,6 +1893,8 @@ export class ForumBuilderEngine {
     const cell = this.grid[gy][gx];
     if (cell.type === 'empty') return;
 
+    this.pushUndoRecord(gx, gy, cell);
+
     cell.type = 'empty';
     cell.density = 0;
 
@@ -1609,6 +1903,88 @@ export class ForumBuilderEngine {
 
     this.recomputeCityMetrics();
     this.updateDomTelemetry();
+  }
+
+  /** Undo the most recent placement or demolition, restoring the cell's prior state. */
+  undoLastPlacement() {
+    const record = this.placementHistory.pop();
+    if (!record) return;
+
+    const cell = this.grid[record.y] && this.grid[record.y][record.x];
+    if (!cell) return;
+
+    cell.type = record.prevType;
+    cell.density = record.prevDensity;
+    cell.material = record.prevMaterial;
+    cell.animScale = 1.0;
+
+    this.recomputeCityMetrics();
+    this.updateDomTelemetry();
+  }
+
+  /** Full sandbox wipe: every cell (including baseline roads) reset to empty. */
+  clearAllBuildings() {
+    this.initGrid();
+    this.citizens = [];
+    this.particles = [];
+    this.placementHistory = [];
+    this.recomputeCityMetrics();
+    this.updateDomTelemetry();
+  }
+
+  /** Serialize the grid (type/density/material) to localStorage. Returns success. */
+  saveLayout() {
+    try {
+      if (typeof localStorage === 'undefined') return false;
+      const cells = [];
+      for (let r = 0; r < this.rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+          const cell = this.grid[r][c];
+          if (cell.type === 'empty') continue;
+          cells.push({ x: c, y: r, type: cell.type, density: cell.density, material: cell.material });
+        }
+      }
+      const payload = { version: 1, cols: this.cols, rows: this.rows, cells };
+      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(payload));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /** Restore a previously saved layout from localStorage. Returns success. */
+  loadLayout() {
+    try {
+      if (typeof localStorage === 'undefined') return false;
+      const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
+      if (!raw) return false;
+      const payload = JSON.parse(raw);
+      if (!payload || !Array.isArray(payload.cells)) return false;
+
+      this.initGrid();
+      // Restore the fundamental Cardo & Decumanus axes so citizen pathfinding stays valid
+      for (let r = 0; r < this.rows; r++) this.grid[r][this.cardoX].type = 'road';
+      for (let c = 0; c < this.cols; c++) this.grid[this.decumanusY][c].type = 'road';
+      this.grid[this.decumanusY][this.cardoX].type = 'forum';
+
+      for (const entry of payload.cells) {
+        if (entry.y < 0 || entry.y >= this.rows || entry.x < 0 || entry.x >= this.cols) continue;
+        const cell = this.grid[entry.y][entry.x];
+        cell.type = entry.type;
+        cell.density = entry.density || 0;
+        cell.material = entry.material || 'marble';
+      }
+
+      this.citizens = [];
+      this.particles = [];
+      this.placementHistory = [];
+      this.recomputeCityMetrics();
+      this.spawnInitialCitizens(12);
+      this.updateDomTelemetry();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // =========================================================================

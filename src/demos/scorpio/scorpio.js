@@ -817,8 +817,8 @@ export class ScorpioEngine {
       if (p.y <= 0) {
         p.y = 0;
         p.vy = -p.vy * 0.38;
-        p.vx *= 0.65;
-        p.vz *= 0.65;
+        p.vx *= Math.pow(0.65, dt * 60);
+        p.vz *= Math.pow(0.65, dt * 60);
       }
     }
 

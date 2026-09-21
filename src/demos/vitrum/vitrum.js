@@ -693,7 +693,7 @@ export class VitrumEngine {
           if (Math.abs(dy) > innerRad) {
             // Collision with internal viscoelastic glass boundary
             p.vy = -Math.sign(dy) * Math.abs(p.vy) * 0.7;
-            p.vx *= 0.85;
+            p.vx *= Math.pow(0.85, dt * 60);
             p.y = s.y + Math.sign(dy) * innerRad;
             p.life -= 0.15; // Energy transfer to glass
           }

@@ -314,7 +314,7 @@ export class PythagorasEngine {
         if (Math.abs(this.y[i]) > this.envelope[i]) {
           this.envelope[i] = Math.abs(this.y[i]);
         } else {
-          this.envelope[i] *= 0.9995;
+          this.envelope[i] *= Math.pow(0.9995, dt * 60);
         }
       }
     }

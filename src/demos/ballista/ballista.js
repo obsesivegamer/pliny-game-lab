@@ -19,8 +19,13 @@ export class BallistaEngine {
     this.tension = 1200; // Winch tension: 100N to 2000N
     this.elevation = 32; // Launch elevation angle: 0° to 75°
     this.wind = 15; // Crosswind deflection: -50 to 50 m/s
-    this.gravity = 440; // Simulated gravity (px/s^2)
-    this.ammoType = 'heavy'; // 'heavy', 'pitch', 'triple'
+    this.baseGravity = 440; // Simulated gravity at normal strength (px/s^2)
+    this.gravityMode = 'normal'; // 'normal', 'low', 'zero' (sandbox gravity toggle)
+    this.gravity = this.baseGravity; // Effective simulated gravity (px/s^2)
+    this.ammoType = 'heavy'; // 'heavy', 'pitch', 'triple', 'explosive'
+
+    // Sandbox / Free-Aim Mode
+    this.sandboxMode = false; // Free aim: drag sets both angle AND power
 
     // Ballista Mechanics State
     this.recoil = 0; // Recoil displacement (px)
@@ -43,7 +48,9 @@ export class BallistaEngine {
     this.audioCtx = null;
 
     // Initialize UI and Simulation State
-    this.initControls();
+    if (typeof document !== 'undefined') {
+      this.buildControls(this.controlsContainer);
+    }
     this.reset();
     attachTouchBridge(this, canvas);
   }
@@ -110,49 +117,72 @@ export class BallistaEngine {
     }
   }
 
-  initControls() {
-    if (!this.controlsContainer || typeof document === 'undefined') return;
+  buildControls(container) {
+    const target = container || this.controlsContainer;
+    if (!target || typeof document === 'undefined') return;
+    this.controlsContainer = target;
 
-    this.controlsContainer.innerHTML = `
+    target.innerHTML = `
       <div class="control-group">
         <label>Ammunition Type</label>
         <div class="control-btn-grid" id="ballista-ammo-selector">
-          <button class="sub-btn active" data-ammo="heavy" title="Armor-Piercing Iron Bolt">🏹 Heavy Bolt</button>
-          <button class="sub-btn" data-ammo="pitch" title="Incendiary Pitch Bolt">🔥 Pitch Bolt</button>
+          <button class="sub-btn active" data-ammo="heavy" title="Armor-Piercing Iron/Stone Bolt">🏹 Stone Bolt</button>
+          <button class="sub-btn" data-ammo="pitch" title="Incendiary Pitch Bolt">🔥 Fire Bolt</button>
+          <button class="sub-btn" data-ammo="explosive" title="Naphtha-Filled Clay Grenade">💥 Explosive</button>
           <button class="sub-btn" data-ammo="triple" title="Triple Scythian Volley">🎯 Triple Spread</button>
         </div>
       </div>
 
       <div class="control-group">
         <label>
-          <span>Torsion Winch Tension</span>
-          <span id="ballista-tension-val">${this.tension} N</span>
+          <span>Torsion Winch Tension (Power)</span>
+          <span id="ballista-tension-val" style="color: #F1C40F;">${this.tension} N</span>
         </label>
-        <input type="range" id="ballista-tension" min="100" max="2000" step="25" value="${this.tension}">
+        <input type="range" id="ballista-tension" min="100" max="2000" step="25" value="${this.tension}"
+          style="accent-color: #D4AF37;">
       </div>
 
       <div class="control-group">
         <label>
-          <span>Launch Elevation Angle</span>
-          <span id="ballista-elevation-val">${this.elevation}°</span>
+          <span>Launch Angle (Fine-Tune)</span>
+          <span id="ballista-elevation-val" style="color: #F1C40F;">${this.elevation}°</span>
         </label>
-        <input type="range" id="ballista-elevation" min="0" max="75" step="1" value="${this.elevation}">
+        <input type="range" id="ballista-elevation" min="0" max="75" step="0.5" value="${this.elevation}"
+          style="accent-color: #D4AF37;">
       </div>
 
       <div class="control-group">
         <label>
-          <span>Crosswind Deflection</span>
-          <span id="ballista-wind-val">${this.wind > 0 ? '+' + this.wind : this.wind} m/s</span>
+          <span>Crosswind Deflection (Live)</span>
+          <span id="ballista-wind-val" style="color: #F1C40F;">${this.wind > 0 ? '+' + this.wind : this.wind} m/s</span>
         </label>
-        <input type="range" id="ballista-wind" min="-50" max="50" step="2" value="${this.wind}">
+        <input type="range" id="ballista-wind" min="-50" max="50" step="2" value="${this.wind}"
+          style="accent-color: #D4AF37;">
+      </div>
+
+      <div class="control-group">
+        <label>Sandbox Gravity</label>
+        <div class="control-btn-grid" id="ballista-gravity-selector">
+          <button class="sub-btn active" data-gravity="normal" title="Standard Earth Gravity">🌍 Normal</button>
+          <button class="sub-btn" data-gravity="low" title="Lunar-Style Low Gravity">🌙 Low</button>
+          <button class="sub-btn" data-gravity="zero" title="Zero-G Sandbox">✨ Zero-G</button>
+        </div>
+      </div>
+
+      <div class="control-group" style="display: flex; align-items: center; justify-content: space-between;">
+        <span>Free-Aim Sandbox</span>
+        <button id="ballista-sandbox-toggle" class="sub-btn" title="Drag on the field to set angle AND power freely"
+          style="background-color: #2C1B18; color: #F1C40F; border: 1px solid #D4AF37; padding: 6px 12px;">
+          OFF
+        </button>
       </div>
 
       <div class="control-group" style="margin-top: 4px; display: flex; flex-direction: column; gap: 6px;">
         <button id="ballista-fire-btn" class="sub-btn" style="background: rgba(200, 50, 50, 0.35); border-color: var(--accent-crimson, #c83232); color: #fff; font-weight: bold; padding: 9px;">
           ⚡ FIRE BALLISTA (Space)
         </button>
-        <button id="ballista-rebuild-btn" class="sub-btn" style="border-color: var(--accent-gold, #d4af37); padding: 7px;">
-          🛡️ Rebuild Barbarian Stronghold
+        <button id="ballista-reset-btn" class="sub-btn" style="border-color: var(--accent-gold, #d4af37); padding: 7px;">
+          🛡️ Reset / Rebuild Stronghold
         </button>
       </div>
 
@@ -164,7 +194,7 @@ export class BallistaEngine {
     `;
 
     // Ammunition Buttons
-    const ammoBtns = this.controlsContainer.querySelectorAll('#ballista-ammo-selector .sub-btn');
+    const ammoBtns = target.querySelectorAll('#ballista-ammo-selector .sub-btn');
     ammoBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         ammoBtns.forEach(b => b.classList.remove('active'));
@@ -174,9 +204,9 @@ export class BallistaEngine {
       });
     });
 
-    // Tension Slider
-    const tensionSlider = this.controlsContainer.querySelector('#ballista-tension');
-    const tensionVal = this.controlsContainer.querySelector('#ballista-tension-val');
+    // Tension Slider (Power)
+    const tensionSlider = target.querySelector('#ballista-tension');
+    const tensionVal = target.querySelector('#ballista-tension-val');
     if (tensionSlider) {
       tensionSlider.addEventListener('input', (e) => {
         this.tension = parseFloat(e.target.value);
@@ -185,9 +215,9 @@ export class BallistaEngine {
       });
     }
 
-    // Elevation Slider
-    const elevSlider = this.controlsContainer.querySelector('#ballista-elevation');
-    const elevVal = this.controlsContainer.querySelector('#ballista-elevation-val');
+    // Elevation Slider (Fine-Tune Angle)
+    const elevSlider = target.querySelector('#ballista-elevation');
+    const elevVal = target.querySelector('#ballista-elevation-val');
     if (elevSlider) {
       elevSlider.addEventListener('input', (e) => {
         this.elevation = parseFloat(e.target.value);
@@ -196,9 +226,9 @@ export class BallistaEngine {
       });
     }
 
-    // Crosswind Slider
-    const windSlider = this.controlsContainer.querySelector('#ballista-wind');
-    const windVal = this.controlsContainer.querySelector('#ballista-wind-val');
+    // Crosswind Slider (Real-Time)
+    const windSlider = target.querySelector('#ballista-wind');
+    const windVal = target.querySelector('#ballista-wind-val');
     if (windSlider) {
       windSlider.addEventListener('input', (e) => {
         this.wind = parseFloat(e.target.value);
@@ -206,23 +236,65 @@ export class BallistaEngine {
       });
     }
 
+    // Gravity Mode Buttons
+    const gravityBtns = target.querySelectorAll('#ballista-gravity-selector .sub-btn');
+    gravityBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        gravityBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.setGravityMode(btn.dataset.gravity);
+      });
+    });
+
+    // Free-Aim Sandbox Toggle
+    const sandboxBtn = target.querySelector('#ballista-sandbox-toggle');
+    if (sandboxBtn) {
+      sandboxBtn.addEventListener('click', () => {
+        this.sandboxMode = !this.sandboxMode;
+        sandboxBtn.textContent = this.sandboxMode ? 'ON' : 'OFF';
+        sandboxBtn.style.backgroundColor = this.sandboxMode ? '#3a2a12' : '#2C1B18';
+        sandboxBtn.classList.toggle('active', this.sandboxMode);
+      });
+    }
+
     // Fire Button
-    const fireBtn = this.controlsContainer.querySelector('#ballista-fire-btn');
+    const fireBtn = target.querySelector('#ballista-fire-btn');
     if (fireBtn) {
       fireBtn.addEventListener('click', () => {
         this.fire();
       });
     }
 
-    // Rebuild Button
-    const rebuildBtn = this.controlsContainer.querySelector('#ballista-rebuild-btn');
-    if (rebuildBtn) {
-      rebuildBtn.addEventListener('click', () => {
+    // Reset/Rebuild Button
+    const resetBtn = target.querySelector('#ballista-reset-btn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
         this.reset();
       });
     }
 
     this.updateTelemetry();
+  }
+
+  // Sandbox gravity toggle: normal Earth-like gravity, low lunar-style gravity, or zero-G freefall
+  setGravityMode(mode) {
+    this.gravityMode = mode;
+    if (mode === 'zero') {
+      this.gravity = 0;
+    } else if (mode === 'low') {
+      this.gravity = this.baseGravity * 0.35;
+    } else {
+      this.gravity = this.baseGravity;
+    }
+    this.syncGravityButtons();
+  }
+
+  syncGravityButtons() {
+    if (!this.controlsContainer || typeof document === 'undefined') return;
+    const gravityBtns = this.controlsContainer.querySelectorAll('#ballista-gravity-selector .sub-btn');
+    gravityBtns.forEach(b => {
+      b.classList.toggle('active', b.dataset.gravity === this.gravityMode);
+    });
   }
 
   updateTelemetry() {
@@ -243,6 +315,7 @@ export class BallistaEngine {
   getBoltMass(type) {
     if (type === 'heavy') return 1.6; // 1.6 kg dense forged iron head
     if (type === 'pitch') return 0.85; // 0.85 kg pitch-wrapped incendiary
+    if (type === 'explosive') return 1.1; // 1.1 kg naphtha-filled clay grenade
     return 0.52; // 0.52 kg light Scythian bolt
   }
 
@@ -523,6 +596,19 @@ export class BallistaEngine {
         damage: 95,
         color: '#ff6611'
       });
+    } else if (this.ammoType === 'explosive') {
+      // Naphtha-Filled Clay Grenade (heavy drag, detonates on any impact)
+      this.spawnBolt({
+        x: muzzle.x,
+        y: muzzle.y,
+        vx: Math.cos(rad) * speed,
+        vy: -Math.sin(rad) * speed,
+        mass: m,
+        drag: 0.003,
+        type: 'explosive',
+        damage: 60,
+        color: '#5a3a1a'
+      });
     } else {
       // Heavy Iron Bolt
       this.spawnBolt({
@@ -677,14 +763,18 @@ export class BallistaEngine {
       }
 
       // Check Collision with Target Blocks (Continuous Segment Sweep)
-      this.checkBoltBlockCollisions(b);
+      this.checkBoltBlockCollisions(b, dt);
 
       // Check Ground Impact
       if (b.y >= groundY) {
         b.y = groundY;
         b.active = false;
-        this.spawnImpactParticles(b.x, b.y, '#9e8c6e', 12);
-        this.playSound('impact_stone');
+        if (b.type === 'explosive') {
+          this.explode(b.x, b.y);
+        } else {
+          this.spawnImpactParticles(b.x, b.y, '#9e8c6e', 12);
+          this.playSound('impact_stone');
+        }
       }
 
       // Offscreen Boundary Check
@@ -694,7 +784,7 @@ export class BallistaEngine {
     }
   }
 
-  checkBoltBlockCollisions(bolt) {
+  checkBoltBlockCollisions(bolt, dt) {
     if (!bolt.active) return;
 
     for (let i = 0; i < this.blocks.length; i++) {
@@ -740,14 +830,81 @@ export class BallistaEngine {
         // Heavy bolt armor piercing handling
         if (bolt.type === 'heavy' && bolt.pierceCount > 0) {
           bolt.pierceCount--;
-          bolt.vx *= 0.65;
-          bolt.vy *= 0.65;
+          const pierceDamp = Math.pow(0.65, dt * 60);
+          bolt.vx *= pierceDamp;
+          bolt.vy *= pierceDamp;
         } else {
+          // Explosive grenades detonate in an area-of-effect blast on any impact
+          if (bolt.type === 'explosive') {
+            this.explode(bolt.x, bolt.y);
+          }
           bolt.active = false;
           break;
         }
       }
     }
+  }
+
+  // Area-of-effect blast for the explosive grenade ammo type
+  explode(x, y, radius = 70, damage = 140) {
+    for (let i = 0; i < this.blocks.length; i++) {
+      const block = this.blocks[i];
+      if (!block.active) continue;
+
+      const cx = block.x + block.w * 0.5;
+      const cy = block.y + block.h * 0.5;
+      const dx = cx - x;
+      const dy = cy - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > radius) continue;
+
+      const falloff = 1 - dist / radius;
+      const angle = Math.atan2(dy, dx);
+      const pushSpeed = 260 * falloff;
+
+      block.settled = false;
+      block.vx += Math.cos(angle) * pushSpeed;
+      block.vy += Math.sin(angle) * pushSpeed - 40 * falloff;
+      block.vAngle += (Math.random() - 0.5) * 6 * falloff;
+      block.hp -= damage * falloff;
+
+      if (block.material === 'wood' && Math.random() < 0.6 * falloff) {
+        block.onFire = true;
+      }
+
+      if (block.hp <= 0) {
+        block.active = false;
+        this.shatterBlock(block, Math.cos(angle) * pushSpeed, Math.sin(angle) * pushSpeed);
+      }
+    }
+
+    // Blast visuals: flash, fireball, and rolling smoke
+    this.spawnImpactParticles(x, y, '#ffcf6b', 26);
+    for (let i = 0; i < 18; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 160 + 60;
+      this.fireParticles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 40,
+        radius: Math.random() * 6 + 3,
+        life: 0.5,
+        maxLife: 0.5
+      });
+    }
+    for (let i = 0; i < 10; i++) {
+      this.smokeParticles.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y: y + (Math.random() - 0.5) * 10,
+        vx: (Math.random() - 0.5) * 30 + this.wind * 0.5,
+        vy: -Math.random() * 60 - 20,
+        radius: Math.random() * 10 + 6,
+        life: 1.1,
+        maxLife: 1.1
+      });
+    }
+    this.playSound('impact_stone');
   }
 
   segmentIntersectsRect(x1, y1, x2, y2, rect) {
@@ -872,9 +1029,9 @@ export class BallistaEngine {
       // Physics Integration if not settled
       if (!b.settled) {
         b.vy += this.gravity * dt;
-        b.vx *= 0.985;
-        b.vy *= 0.99;
-        b.vAngle *= 0.96;
+        b.vx *= Math.pow(0.985, dt * 60);
+        b.vy *= Math.pow(0.99, dt * 60);
+        b.vAngle *= Math.pow(0.96, dt * 60);
 
         b.x += b.vx * dt;
         b.y += b.vy * dt;
@@ -884,8 +1041,8 @@ export class BallistaEngine {
         if (b.y + b.h >= groundY) {
           b.y = groundY - b.h;
           b.vy = -b.vy * 0.22;
-          b.vx *= 0.72;
-          b.vAngle *= 0.65;
+          b.vx *= Math.pow(0.72, dt * 60);
+          b.vAngle *= Math.pow(0.65, dt * 60);
 
           if (Math.abs(b.vy) < 10 && Math.abs(b.vx) < 5) {
             b.settled = true;
@@ -930,7 +1087,7 @@ export class BallistaEngine {
                 b.x += overlapX * 0.5;
                 other.x -= overlapX * 0.5;
               }
-              b.vx *= 0.8;
+              b.vx *= Math.pow(0.8, dt * 60);
             }
           }
         }
@@ -947,7 +1104,7 @@ export class BallistaEngine {
 
       d.vy += this.gravity * dt;
       d.vx += (this.wind * 0.1) * dt;
-      d.vx *= 0.98;
+      d.vx *= Math.pow(0.98, dt * 60);
       d.x += d.vx * dt;
       d.y += d.vy * dt;
       d.angle += d.vAngle * dt;
@@ -955,8 +1112,8 @@ export class BallistaEngine {
       if (d.y + d.h >= groundY) {
         d.y = groundY - d.h;
         d.vy = -d.vy * 0.3;
-        d.vx *= 0.7;
-        d.vAngle *= 0.7;
+        d.vx *= Math.pow(0.7, dt * 60);
+        d.vAngle *= Math.pow(0.7, dt * 60);
       }
 
       d.life -= dt;
@@ -984,7 +1141,7 @@ export class BallistaEngine {
       const f = this.fireParticles[i];
       f.x += f.vx * dt;
       f.y += f.vy * dt;
-      f.radius *= 0.97;
+      f.radius *= Math.pow(0.97, dt * 60);
       f.life -= dt;
       if (f.life <= 0) {
         this.fireParticles.splice(i, 1);
@@ -1155,10 +1312,13 @@ export class BallistaEngine {
     ctx.beginPath();
     ctx.moveTo(simX, simY);
 
+    const dragCoeffs = { heavy: 0.0011, pitch: 0.0022, explosive: 0.003, triple: 0.0014 };
+    const dragCoeff = dragCoeffs[this.ammoType] || 0.0014;
+
     for (let step = 0; step < 55; step++) {
       const relVx = simVx - this.wind * 2.2;
       const speedRel = Math.sqrt(relVx * relVx + simVy * simVy);
-      const drag = (this.ammoType === 'heavy' ? 0.0011 : 0.0022) * speedRel * speedRel;
+      const drag = dragCoeff * speedRel * speedRel;
 
       simVx -= (relVx / (speedRel || 1)) * drag * dtSim;
       simVy += (this.gravity - (simVy / (speedRel || 1)) * drag) * dtSim;
@@ -1249,7 +1409,7 @@ export class BallistaEngine {
       // Vapor / Motion Trail
       if (b.trail.length > 1) {
         ctx.save();
-        ctx.strokeStyle = b.type === 'pitch' ? 'rgba(255, 90, 20, 0.35)' : 'rgba(200, 205, 220, 0.25)';
+        ctx.strokeStyle = b.type === 'pitch' || b.type === 'explosive' ? 'rgba(255, 90, 20, 0.35)' : 'rgba(200, 205, 220, 0.25)';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(b.trail[0].x, b.trail[0].y);
@@ -1265,37 +1425,60 @@ export class BallistaEngine {
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle);
 
-      // Wooden Ash Shaft
-      ctx.fillStyle = '#7a5a3a';
-      ctx.fillRect(-b.length, -1.8, b.length, 3.6);
-
-      // Bronze/Iron Armor-Piercing Head (Pyramidal Roman Bodkin)
-      ctx.fillStyle = b.type === 'heavy' ? '#2a2e36' : (b.type === 'pitch' ? '#ff4400' : '#d4af37');
-      ctx.beginPath();
-      ctx.moveTo(0, -3.5);
-      ctx.lineTo(8, 0);
-      ctx.lineTo(0, 3.5);
-      ctx.closePath();
-      ctx.fill();
-
-      // Incendiary Pitch Wrap
-      if (b.type === 'pitch') {
-        ctx.fillStyle = '#ff7700';
+      if (b.type === 'explosive') {
+        // Naphtha-Filled Clay Grenade Pot with Sparking Fuse
+        ctx.fillStyle = '#5a3a1a';
         ctx.beginPath();
-        ctx.arc(-6, 0, 4.5, 0, Math.PI * 2);
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#caa15a';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffcf6b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-4, -5);
+        ctx.lineTo(-7, -9);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ff9d2e';
+        ctx.beginPath();
+        ctx.arc(-7, -9, 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Wooden Ash Shaft
+        ctx.fillStyle = '#7a5a3a';
+        ctx.fillRect(-b.length, -1.8, b.length, 3.6);
+
+        // Bronze/Iron Armor-Piercing Head (Pyramidal Roman Bodkin)
+        ctx.fillStyle = b.type === 'heavy' ? '#2a2e36' : (b.type === 'pitch' ? '#ff4400' : '#d4af37');
+        ctx.beginPath();
+        ctx.moveTo(0, -3.5);
+        ctx.lineTo(8, 0);
+        ctx.lineTo(0, 3.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Incendiary Pitch Wrap
+        if (b.type === 'pitch') {
+          ctx.fillStyle = '#ff7700';
+          ctx.beginPath();
+          ctx.arc(-6, 0, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Bronze Fletching / Vanes
+        ctx.fillStyle = '#c5a059';
+        ctx.beginPath();
+        ctx.moveTo(-b.length, -3);
+        ctx.lineTo(-b.length + 6, -1.8);
+        ctx.lineTo(-b.length, 0);
+        ctx.lineTo(-b.length + 6, 1.8);
+        ctx.lineTo(-b.length, 3);
+        ctx.closePath();
         ctx.fill();
       }
-
-      // Bronze Fletching / Vanes
-      ctx.fillStyle = '#c5a059';
-      ctx.beginPath();
-      ctx.moveTo(-b.length, -3);
-      ctx.lineTo(-b.length + 6, -1.8);
-      ctx.lineTo(-b.length, 0);
-      ctx.lineTo(-b.length + 6, 1.8);
-      ctx.lineTo(-b.length, 3);
-      ctx.closePath();
-      ctx.fill();
 
       ctx.restore();
     }
@@ -1484,8 +1667,15 @@ export class BallistaEngine {
     ctx.stroke();
 
     // 6. Loaded Projectile resting on slider
-    ctx.fillStyle = this.ammoType === 'heavy' ? '#2a2e36' : (this.ammoType === 'pitch' ? '#ff5500' : '#d4af37');
-    ctx.fillRect(triggerClawX, -1.8, 30, 3.6);
+    if (this.ammoType === 'explosive') {
+      ctx.fillStyle = '#5a3a1a';
+      ctx.beginPath();
+      ctx.arc(triggerClawX + 14, 0, 6, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = this.ammoType === 'heavy' ? '#2a2e36' : (this.ammoType === 'pitch' ? '#ff5500' : '#d4af37');
+      ctx.fillRect(triggerClawX, -1.8, 30, 3.6);
+    }
 
     ctx.restore();
   }
@@ -1573,6 +1763,12 @@ export class BallistaEngine {
       this.setAmmoType('pitch');
     } else if (key === '3') {
       this.setAmmoType('triple');
+    } else if (key === '4') {
+      this.setAmmoType('explosive');
+    } else if (key === 'g' || key === 'G') {
+      const order = ['normal', 'low', 'zero'];
+      const next = order[(order.indexOf(this.gravityMode) + 1) % order.length];
+      this.setGravityMode(next);
     } else if (key === 'r' || key === 'R') {
       this.reset();
     } else if (key === 'ArrowUp') {
@@ -1602,6 +1798,16 @@ export class BallistaEngine {
     this.updateTelemetry();
   }
 
+  setTension(newton) {
+    this.tension = Math.max(100, Math.min(2000, newton));
+    if (!this.controlsContainer) return;
+    const slider = this.controlsContainer.querySelector('#ballista-tension');
+    const val = this.controlsContainer.querySelector('#ballista-tension-val');
+    if (slider) slider.value = this.tension;
+    if (val) val.textContent = `${Math.round(this.tension)} N`;
+    this.updateTelemetry();
+  }
+
   updateAimFromPointer(pos) {
     if (!pos) return;
     const origin = this.getBallistaOrigin();
@@ -1611,6 +1817,14 @@ export class BallistaEngine {
       let angleDeg = Math.round((Math.atan2(dy, dx) * 180) / Math.PI);
       angleDeg = Math.max(0, Math.min(75, angleDeg));
       this.setElevation(angleDeg);
+    }
+
+    // Free-Aim Sandbox: drag distance from the ballista also sets launch power
+    if (this.sandboxMode) {
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = Math.max(120, this.width * 0.4);
+      const t = Math.max(0, Math.min(1, dist / maxDist));
+      this.setTension(Math.round(100 + t * 1900));
     }
   }
 }

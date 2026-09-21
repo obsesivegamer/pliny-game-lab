@@ -2018,9 +2018,11 @@ export class AsterionEntity {
         break;
     }
 
-    // Decay visual screen effects
-    this.screenShake = Math.max(0, this.screenShake - dt * 2.5);
-    this.redVignette = Math.max(0, this.redVignette - dt * 1.5);
+    // Decay visual screen effects (frame-rate independent exponential decay)
+    this.screenShake *= Math.exp(-2.5 * dt);
+    if (this.screenShake < 0.005) this.screenShake = 0;
+    this.redVignette *= Math.exp(-1.5 * dt);
+    if (this.redVignette < 0.005) this.redVignette = 0;
   }
 
   /**
@@ -2154,7 +2156,7 @@ export class AsterionEntity {
    * High-speed sprint directly towards player with lowered horns!
    */
   updateCharge(dt, player, hasLOS, navGrid, audio) {
-    this.hornTilt = lerp(this.hornTilt, 0.45, dt * 6.0); // Lower horns
+    this.hornTilt = lerp(this.hornTilt, 0.45, 1 - Math.exp(-6.0 * dt)); // Lower horns (frame-rate independent)
     this.eyeGlow = 2.0; // Crimson eye flare
 
     if (hasLOS) {
@@ -2370,6 +2372,8 @@ export class LabyrinthusParticleSystem {
   }
 
   update(dt) {
+    // Frame-rate independent damping: 0.95 per frame at 60fps
+    const dampFactor = Math.pow(0.95, dt * 60);
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt;
@@ -2379,8 +2383,8 @@ export class LabyrinthusParticleSystem {
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.95;
-      p.vy *= 0.95;
+      p.vx *= dampFactor;
+      p.vy *= dampFactor;
     }
   }
 }
@@ -4008,12 +4012,107 @@ export class LabyrinthusControls {
 
     root.appendChild(sliderContainer);
 
+    // Difficulty Preset Selector
+    const diffRow = document.createElement('div');
+    diffRow.style.display = 'flex';
+    diffRow.style.justifyContent = 'space-between';
+    diffRow.style.alignItems = 'center';
+    diffRow.style.marginTop = '4px';
+    diffRow.innerHTML = '<span>Difficulty:</span>';
+    const diffSelect = document.createElement('select');
+    diffSelect.style.backgroundColor = '#2C1B18';
+    diffSelect.style.color = '#F1C40F';
+    diffSelect.style.border = '1px solid #D4AF37';
+    diffSelect.style.padding = '3px 6px';
+    diffSelect.style.borderRadius = '3px';
+    diffSelect.innerHTML = `
+      <option value="easy">Apprentice (16x16, slow)</option>
+      <option value="normal" selected>Journeyman (24x24, normal)</option>
+      <option value="hard">Master (32x32, fast)</option>
+    `;
+    diffSelect.onchange = (e) => {
+      if (!this.engine) return;
+      const v = e.target.value;
+      if (v === 'easy') {
+        this.engine.setMazeSize(16, 16);
+        if (this.engine.asterion) {
+          this.engine.asterion.prowlSpeed = 1.0;
+          this.engine.asterion.stalkSpeed = 1.6;
+          this.engine.asterion.chargeSpeed = 3.0;
+          this.engine.asterion.hearingRadius = 6.0;
+        }
+      } else if (v === 'normal') {
+        this.engine.setMazeSize(24, 24);
+        if (this.engine.asterion) {
+          this.engine.asterion.prowlSpeed = 1.4;
+          this.engine.asterion.stalkSpeed = 2.4;
+          this.engine.asterion.chargeSpeed = 4.2;
+          this.engine.asterion.hearingRadius = 9.0;
+        }
+      } else if (v === 'hard') {
+        this.engine.setMazeSize(32, 32);
+        if (this.engine.asterion) {
+          this.engine.asterion.prowlSpeed = 2.0;
+          this.engine.asterion.stalkSpeed = 3.2;
+          this.engine.asterion.chargeSpeed = 5.0;
+          this.engine.asterion.hearingRadius = 12.0;
+        }
+      }
+    };
+    diffRow.appendChild(diffSelect);
+    root.appendChild(diffRow);
+
+    // Toggle Buttons Row (Minimap, Sound)
+    const toggleRow = document.createElement('div');
+    toggleRow.style.display = 'flex';
+    toggleRow.style.gap = '6px';
+    toggleRow.style.marginTop = '4px';
+
+    // Minimap Toggle
+    this.minimapToggleBtn = this.createButton('Minimap: ON', () => {
+      if (!this.engine) return;
+      if (this.engine.minimapVisible === undefined) this.engine.minimapVisible = true;
+      this.engine.minimapVisible = !this.engine.minimapVisible;
+      this.minimapToggleBtn.innerText = this.engine.minimapVisible ? 'Minimap: ON' : 'Minimap: OFF';
+      if (this.engine.hud) {
+        this.engine.hud.showToast(this.engine.minimapVisible ? 'Minimap Enabled' : 'Minimap Hidden');
+      }
+    });
+    this.minimapToggleBtn.style.flex = '1';
+    toggleRow.appendChild(this.minimapToggleBtn);
+
+    // Sound Toggle
+    this.soundToggleBtn = this.createButton('Sound: ON', () => {
+      if (!this.engine || !this.engine.audio) return;
+      const muted = !this.engine.audio.isMuted;
+      this.engine.audio.setMute(muted);
+      if (muted) {
+        this.engine.audio.stopAmbience();
+      } else {
+        this.engine.audio.init();
+        this.engine.audio.startAmbience();
+      }
+      this.soundToggleBtn.innerText = muted ? 'Sound: OFF' : 'Sound: ON';
+    });
+    this.soundToggleBtn.style.flex = '1';
+    toggleRow.appendChild(this.soundToggleBtn);
+
+    root.appendChild(toggleRow);
+
     // Action Buttons Grid
     const btnGrid = document.createElement('div');
     btnGrid.style.display = 'grid';
     btnGrid.style.gridTemplateColumns = '1fr 1fr';
     btnGrid.style.gap = '6px';
     btnGrid.style.marginTop = '4px';
+
+    // New Maze button (regenerates without resetting everything)
+    btnGrid.appendChild(this.createButton('New Maze', () => {
+      if (this.engine) {
+        this.engine.generateLabyrinth();
+        if (this.engine.hud) this.engine.hud.showToast('A new Labyrinth has been forged by Daedalus!');
+      }
+    }));
 
     btnGrid.appendChild(this.createButton('Unspool Thread', () => {
       if (this.engine && this.engine.thread) {
@@ -4034,15 +4133,14 @@ export class LabyrinthusControls {
       if (this.engine) this.engine.dropBreadcrumb();
     }));
 
-    btnGrid.appendChild(this.createButton('Teleport Sanctuary', () => {
-      if (this.engine) this.engine.teleportToSanctuary();
-    }));
-
     btnGrid.appendChild(this.createButton('Reset Labyrinth', () => {
       if (this.engine) this.engine.reset();
     }));
 
     root.appendChild(btnGrid);
+
+    // Mobile D-Pad Controls
+    this.buildMobileControls(root);
 
     // Realtime Telemetry Readout
     this.telemetryDiv = document.createElement('div');
@@ -4114,6 +4212,91 @@ export class LabyrinthusControls {
     btn.onmouseout = () => { btn.style.backgroundColor = '#2C1B18'; };
     btn.onclick = onClick;
     return btn;
+  }
+
+  /**
+   * Builds on-screen D-pad controls for mobile/touch navigation.
+   * Forward, Backward, Turn Left, Turn Right.
+   */
+  buildMobileControls(root) {
+    const section = document.createElement('div');
+    section.style.marginTop = '8px';
+    section.style.borderTop = '1px solid rgba(212, 175, 55, 0.3)';
+    section.style.paddingTop = '8px';
+
+    const label = document.createElement('div');
+    label.innerHTML = '<strong style="color:#F1C40F; letter-spacing:1px; font-size:10px;">MOBILE CONTROLS</strong>';
+    label.style.marginBottom = '6px';
+    section.appendChild(label);
+
+    // D-pad container: 3x3 grid
+    const dpad = document.createElement('div');
+    dpad.style.display = 'grid';
+    dpad.style.gridTemplateColumns = '1fr 1fr 1fr';
+    dpad.style.gridTemplateRows = '1fr 1fr 1fr';
+    dpad.style.gap = '4px';
+    dpad.style.width = '160px';
+    dpad.style.margin = '0 auto';
+
+    const emptyCell = () => {
+      const d = document.createElement('div');
+      return d;
+    };
+
+    const makeDpadBtn = (symbol, keyName) => {
+      const btn = document.createElement('button');
+      btn.innerText = symbol;
+      btn.style.backgroundColor = '#2C1B18';
+      btn.style.color = '#F1C40F';
+      btn.style.border = '1px solid #D4AF37';
+      btn.style.borderRadius = '4px';
+      btn.style.fontSize = '18px';
+      btn.style.fontWeight = 'bold';
+      btn.style.fontFamily = 'monospace';
+      btn.style.height = '44px';
+      btn.style.cursor = 'pointer';
+      btn.style.userSelect = 'none';
+      btn.style.webkitUserSelect = 'none';
+      btn.style.touchAction = 'manipulation';
+
+      const press = (ev) => {
+        ev.preventDefault();
+        btn.style.backgroundColor = '#4A235A';
+        if (this.engine) this.engine.keys[keyName] = true;
+      };
+      const release = (ev) => {
+        ev.preventDefault();
+        btn.style.backgroundColor = '#2C1B18';
+        if (this.engine) this.engine.keys[keyName] = false;
+      };
+
+      btn.addEventListener('mousedown', press);
+      btn.addEventListener('mouseup', release);
+      btn.addEventListener('mouseleave', release);
+      btn.addEventListener('touchstart', press, { passive: false });
+      btn.addEventListener('touchend', release, { passive: false });
+      btn.addEventListener('touchcancel', release, { passive: false });
+
+      return btn;
+    };
+
+    // Row 1: [empty] [Forward] [empty]
+    dpad.appendChild(emptyCell());
+    dpad.appendChild(makeDpadBtn('▲', 'w'));   // Up arrow: forward
+    dpad.appendChild(emptyCell());
+
+    // Row 2: [Turn Left] [empty] [Turn Right]
+    dpad.appendChild(makeDpadBtn('◀', 'a'));   // Left arrow: turn left
+    dpad.appendChild(emptyCell());
+    dpad.appendChild(makeDpadBtn('▶', 'd'));   // Right arrow: turn right
+
+    // Row 3: [empty] [Backward] [empty]
+    dpad.appendChild(emptyCell());
+    dpad.appendChild(makeDpadBtn('▼', 's'));   // Down arrow: backward
+    dpad.appendChild(emptyCell());
+
+    section.appendChild(dpad);
+    root.appendChild(section);
   }
 
   updateTelemetry(fps, player, asterion, dungeon, thread) {
@@ -4216,6 +4399,9 @@ export class LabyrinthusEngine {
 
     // Asterion the Minotaur AI Entity
     this.asterion = new AsterionEntity(12.5, 12.5);
+
+    // Minimap visibility flag (toggled from controls or HUD)
+    this.minimapVisible = true;
 
     // Input States
     this.keys = {};
@@ -4480,8 +4666,8 @@ export class LabyrinthusEngine {
         }
       }
     } else {
-      // Settle head bob when idle
-      this.player.pitchOffset = lerp(this.player.pitchOffset, 0, dt * 10.0);
+      // Settle head bob when idle (frame-rate independent exponential decay)
+      this.player.pitchOffset = lerp(this.player.pitchOffset, 0, 1 - Math.exp(-10.0 * dt));
     }
 
     // Turning Counter-Clockwise (A / ArrowLeft)
@@ -4539,27 +4725,29 @@ export class LabyrinthusEngine {
         timeMs
       );
 
-      // 2. Blueprint Minimap & Threat Radar and 3. Classical Canvas HUD & Epigraphy
+      // 2. Blueprint Minimap & Threat Radar (respects minimapVisible toggle)
       ctx.save();
       const ui = this.uiScale();
       ctx.scale(ui, ui);
       const sw = this.width / ui;
       const sh = this.height / ui;
 
-      this.blueprint.render(
-        ctx,
-        sw,
-        sh,
-        this.map,
-        this.fog,
-        this.mapWidth,
-        this.mapHeight,
-        this.player,
-        this.dungeon,
-        this.asterion,
-        this.thread,
-        timeMs
-      );
+      if (this.minimapVisible !== false || (this.blueprint && this.blueprint.isFullScreen)) {
+        this.blueprint.render(
+          ctx,
+          sw,
+          sh,
+          this.map,
+          this.fog,
+          this.mapWidth,
+          this.mapHeight,
+          this.player,
+          this.dungeon,
+          this.asterion,
+          this.thread,
+          timeMs
+        );
+      }
 
       this.hud.render(
         ctx,
@@ -4573,6 +4761,40 @@ export class LabyrinthusEngine {
       );
       ctx.restore();
 
+      // 4. Compass Direction Hint (cardinal direction text below compass rose)
+      this.renderDirectionHint(ctx);
+
+    } finally {
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Renders a cardinal direction hint text below the compass rose.
+   */
+  renderDirectionHint(ctx) {
+    if (!ctx || this.width <= 0) return;
+    const angle = Math.atan2(this.player.dirY, this.player.dirX);
+    const deg = ((angle * 180 / Math.PI) + 360) % 360;
+
+    // Find closest classical wind direction
+    let closestWind = CLASSICAL_WINDS[0];
+    let minDiff = 999;
+    for (const w of CLASSICAL_WINDS) {
+      let diff = Math.abs(deg - w.deg);
+      if (diff > 180) diff = 360 - diff;
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestWind = w;
+      }
+    }
+
+    ctx.save();
+    try {
+      ctx.fillStyle = 'rgba(212, 175, 55, 0.85)';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(closestWind.symbol + ' - ' + closestWind.latin, this.width - 14, 42);
     } finally {
       ctx.restore();
     }
@@ -4625,6 +4847,18 @@ export class LabyrinthusEngine {
     if (!key) return;
     const k = key.toLowerCase();
     this.keys[k] = true;
+
+    // Escape key: close in-game overlays first, prevent simulator exit
+    if (k === 'escape') {
+      if (e && e.preventDefault) e.preventDefault();
+      // If full-screen blueprint is open, close it
+      if (this.blueprint && this.blueprint.isFullScreen) {
+        this.blueprint.toggleFullScreen();
+        return;
+      }
+      // Otherwise do nothing — prevent Escape from bubbling to simulator
+      return;
+    }
 
     // Toggle blueprint map
     if (k === 'm') {

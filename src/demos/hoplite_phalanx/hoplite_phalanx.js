@@ -977,8 +977,8 @@ export class HoplitePhalanxEngine {
       h.vy += (fy / mass) * dt;
 
       // Damping
-      h.vx *= 0.82;
-      h.vy *= 0.82;
+      h.vx *= Math.pow(0.82, dt * 60);
+      h.vy *= Math.pow(0.82, dt * 60);
 
       h.x += h.vx * dt;
       h.y += h.vy * dt;
@@ -1044,7 +1044,7 @@ export class HoplitePhalanxEngine {
       const pushAcceleration = (netPushDelta * 0.00045);
 
       this.battleLineVelocity += pushAcceleration * dt;
-      this.battleLineVelocity *= 0.88; // Friction of thousands of hobnailed sandals
+      this.battleLineVelocity *= Math.pow(0.88, dt * 60); // Friction of thousands of hobnailed sandals
       this.battleLineOffset += this.battleLineVelocity * dt * 45.0;
 
       // Bound battle line displacement

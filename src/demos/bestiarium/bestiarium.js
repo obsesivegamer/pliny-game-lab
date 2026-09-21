@@ -466,6 +466,187 @@ export function remap(val, inMin, inMax, outMin, outMax) {
 }
 
 // ============================================================================
+// III-B. SPATIAL HASH GRID (PERFORMANCE — O(1) NEIGHBOR QUERIES)
+// ============================================================================
+
+export class SpatialHash {
+  constructor(cellSize = 100) {
+    this.cellSize = cellSize;
+    this.cells = new Map();
+  }
+
+  clear() {
+    this.cells.clear();
+  }
+
+  _key(cx, cy) {
+    return cx + cy * 100003;
+  }
+
+  insert(entity) {
+    if (!entity || !entity.pos) return;
+    const cx = Math.floor(entity.pos.x / this.cellSize);
+    const cy = Math.floor(entity.pos.y / this.cellSize);
+    const key = this._key(cx, cy);
+    let bucket = this.cells.get(key);
+    if (!bucket) {
+      bucket = [];
+      this.cells.set(key, bucket);
+    }
+    bucket.push(entity);
+  }
+
+  query(x, y, radius) {
+    const results = [];
+    const minCx = Math.floor((x - radius) / this.cellSize);
+    const maxCx = Math.floor((x + radius) / this.cellSize);
+    const minCy = Math.floor((y - radius) / this.cellSize);
+    const maxCy = Math.floor((y + radius) / this.cellSize);
+    const rSq = radius * radius;
+
+    for (let cx = minCx; cx <= maxCx; cx++) {
+      for (let cy = minCy; cy <= maxCy; cy++) {
+        const bucket = this.cells.get(this._key(cx, cy));
+        if (bucket) {
+          for (const e of bucket) {
+            const dx = e.pos.x - x;
+            const dy = e.pos.y - y;
+            if (dx * dx + dy * dy <= rSq) {
+              results.push(e);
+            }
+          }
+        }
+      }
+    }
+    return results;
+  }
+}
+
+// ============================================================================
+// III-C. POPULATION HISTORY GRAPH (REAL-TIME LINE CHART)
+// ============================================================================
+
+export class PopulationGraph {
+  constructor(maxSamples = 200) {
+    this.maxSamples = maxSamples;
+    this.history = [];
+    this.timer = 0;
+    this.sampleInterval = 0.5;
+  }
+
+  update(dt, census) {
+    this.timer += dt;
+    if (this.timer >= this.sampleInterval) {
+      this.timer = 0;
+      this.history.push({
+        cervus: census.cervus || 0,
+        leo: census.leo || 0,
+        griffin: census.griffin || 0,
+        basilisk: census.basilisk || 0,
+        monoceros: census.monoceros || 0,
+        elephantus: census.elephantus || 0,
+        flora: census.flora || 0
+      });
+      if (this.history.length > this.maxSamples) {
+        this.history.shift();
+      }
+    }
+  }
+
+  getStabilityScore() {
+    if (this.history.length < 20) return { score: 1.0, label: 'Initializing' };
+    const recent = this.history.slice(-20);
+    const species = ['cervus', 'leo', 'griffin', 'basilisk', 'monoceros', 'elephantus'];
+    let totalVariance = 0;
+    let extinctCount = 0;
+
+    for (const sp of species) {
+      const vals = recent.map(h => h[sp]);
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      if (mean === 0) { extinctCount++; continue; }
+      const variance = vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / vals.length;
+      totalVariance += Math.sqrt(variance) / Math.max(1, mean);
+    }
+
+    const avgCV = totalVariance / Math.max(1, 6 - extinctCount);
+    const stabilityRaw = Math.max(0, 1.0 - avgCV * 1.5 - extinctCount * 0.12);
+    let label;
+    if (extinctCount >= 3) label = 'Collapse';
+    else if (stabilityRaw < 0.25) label = 'Unstable';
+    else if (stabilityRaw < 0.55) label = 'Fluctuating';
+    else if (stabilityRaw < 0.8) label = 'Balanced';
+    else label = 'Thriving';
+
+    return { score: clamp(stabilityRaw, 0, 1), label };
+  }
+
+  render(ctx, gx, gy, gw, gh) {
+    if (this.history.length < 3) return;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(10, 15, 24, 0.92)';
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(gx, gy, gw, gh);
+    ctx.strokeRect(gx, gy, gw, gh);
+
+    ctx.font = '10px "Cinzel", "Times New Roman", serif';
+    ctx.fillStyle = '#d4af37';
+    ctx.fillText('POPULATION CENSUS', gx + 8, gy + 14);
+
+    const stability = this.getStabilityScore();
+    const stabColor = stability.score > 0.6 ? '#4ade80' : stability.score > 0.3 ? '#eab308' : '#ef4444';
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillStyle = stabColor;
+    ctx.fillText(`Stability: ${stability.label} (${(stability.score * 100).toFixed(0)}%)`, gx + gw - 170, gy + 14);
+
+    const plotX = gx + 8;
+    const plotY = gy + 22;
+    const plotW = gw - 16;
+    const plotH = gh - 28;
+
+    let maxVal = 5;
+    for (const h of this.history) {
+      maxVal = Math.max(maxVal, h.cervus, h.leo * 3, h.griffin * 3, h.basilisk * 3, h.monoceros * 3, h.elephantus * 3);
+    }
+
+    const lines = [
+      { key: 'cervus', color: '#d49b42', width: 1.8 },
+      { key: 'leo', color: '#ea580c', width: 1.5 },
+      { key: 'griffin', color: '#eab308', width: 1.2 },
+      { key: 'basilisk', color: '#22c55e', width: 1.2 },
+      { key: 'monoceros', color: '#38bdf8', width: 1.2 },
+      { key: 'elephantus', color: '#94a3b8', width: 1.2 }
+    ];
+
+    for (const line of lines) {
+      ctx.beginPath();
+      ctx.strokeStyle = line.color;
+      ctx.lineWidth = line.width;
+      for (let i = 0; i < this.history.length; i++) {
+        const px = plotX + (i / Math.max(1, this.history.length - 1)) * plotW;
+        const py = plotY + plotH - clamp((this.history[i][line.key] / maxVal) * plotH, 0, plotH);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    ctx.font = '8px "JetBrains Mono", monospace';
+    let lx = plotX;
+    for (const line of lines) {
+      const lastVal = this.history[this.history.length - 1][line.key];
+      ctx.fillStyle = line.color;
+      ctx.fillRect(lx, gy + gh - 10, 8, 4);
+      ctx.fillText(`${lastVal}`, lx + 10, gy + gh - 6);
+      lx += 36;
+    }
+
+    ctx.restore();
+  }
+}
+
+// ============================================================================
 // IV. SCENT TRAIL DIFFUSION GRID (2D SCALAR FIELDS)
 // ============================================================================
 
@@ -1444,7 +1625,7 @@ export class Cervus extends Creature {
 
     // 2. Reynolds Flocking Behaviors with conspecifics (Cervus herd)
     if (!inPanic) {
-      this.applyFlocking(ecosystem.creatures, force);
+      this.applyFlocking(ecosystem, force);
 
       // 3. Foraging on lush flora if hungry
       if (this.energy < this.maxEnergy * 0.85) {
@@ -1461,7 +1642,7 @@ export class Cervus extends Creature {
     this.integratePhysics(dt, targetSpeed);
   }
 
-  applyFlocking(creatures, force) {
+  applyFlocking(ecosystem, force) {
     let sepCount = 0,
       alignCount = 0,
       cohCount = 0;
@@ -1471,8 +1652,11 @@ export class Cervus extends Creature {
 
     const sepDist = this.dna.size * 3.8;
     const neighborDist = this.dna.perceptionRadius * 0.85;
+    const nearby = ecosystem.spatialHash
+      ? ecosystem.spatialHash.query(this.pos.x, this.pos.y, neighborDist)
+      : ecosystem.creatures;
 
-    for (const other of creatures) {
+    for (const other of nearby) {
       if (other === this || other.speciesKey !== 'cervus') continue;
       const d = this.pos.dist(other.pos);
 
@@ -2460,7 +2644,10 @@ export class Elephantus extends Creature {
       ecosystem.spawnParticles(this.pos.x, this.pos.y, 20, '#eab308');
 
       // Knock back and stun threats
-      for (const other of ecosystem.creatures) {
+      const shockTargets = ecosystem.spatialHash
+        ? ecosystem.spatialHash.query(this.pos.x, this.pos.y, this.config.trumpetShockwaveRadius)
+        : ecosystem.creatures;
+      for (const other of shockTargets) {
         if (other !== this && other.pos.dist(this.pos) < this.config.trumpetShockwaveRadius) {
           const knockDir = Vec2.sub(other.pos, this.pos).normalize();
           other.applyForce(knockDir.mult(600));
@@ -3115,6 +3302,7 @@ export class BestiariumEngine {
     this.grassTufts = [];
     this.rocks = [];
     this.nest = null;
+    this.spatialHash = new SpatialHash(120);
 
     // Interactive & Selection State
     this.spawnMode = 'cervus'; // cervus, leo, griffin, basilisk, monoceros, elephantus, flora
@@ -3360,6 +3548,9 @@ export class BestiariumEngine {
     const survivingCreatures = [];
     const births = [];
 
+    this.spatialHash.clear();
+    for (const c of this.creatures) this.spatialHash.insert(c);
+
     const ecosystemContext = {
       width: this.width,
       height: this.height,
@@ -3369,6 +3560,7 @@ export class BestiariumEngine {
       scentGrid: this.scentGrid,
       ponds: this.ponds,
       nest: this.nest,
+      spatialHash: this.spatialHash,
       spawnParticles: (x, y, n, col) => this.spawnParticles(x, y, n, col),
       spawnCarcass: (sp, x, y, bio) => this.spawnCarcass(sp, x, y, bio),
       spawnShockwave: (x, y, r) => this.spawnShockwave(x, y, r)

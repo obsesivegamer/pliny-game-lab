@@ -720,7 +720,7 @@ export class AqueductEngine {
 
       // In the settling tank, Stokes gravity settling pulls silt down
       if (s.x >= basinLeft && s.x <= basinRight) {
-        s.vx *= 0.88; // decelerate in wide chamber
+        s.vx *= Math.pow(0.88, safeDt * 60); // decelerate in wide chamber
         s.vy += 32 * safeDt; // Stokes gravity fall
         if (s.y >= basinFloor - Math.random() * 6) {
           s.y = basinFloor - Math.random() * 4;

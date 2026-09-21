@@ -541,7 +541,7 @@ export class HorologiumEngine {
         const impactTorque = drop.vy * 0.008;
         this.waterwheelSpeed = Math.min(18, this.waterwheelSpeed + impactTorque);
         drop.vx = (Math.random() - 0.5) * 35 + 15;
-        drop.vy *= 0.35;
+        drop.vy *= Math.pow(0.35, safeDt * 60);
         this.triggerSplash(drop.x, drop.y, 1, '#00FFFF');
       }
 

@@ -748,8 +748,8 @@ export class AurumEngine {
           } else if (h <= rHeight && s > rEnd) {
             // Resting against downstream face (inside trap pocket)
             s = rEnd + p.radius;
-            p.vx *= 0.5;
-            p.vy *= 0.5;
+            p.vx *= Math.pow(0.5, dt * 60);
+            p.vy *= Math.pow(0.5, dt * 60);
           } else if (h > rHeight - 4) {
             // Rolling across top crest
             h = rHeight + p.radius;
@@ -767,8 +767,8 @@ export class AurumEngine {
           p.trappedInRiffle = r;
           // Dense gold locks into bed corner
           if (p.type === SEDIMENT_TYPE.GOLD) {
-            p.vx *= 0.82;
-            p.vy *= 0.82;
+            p.vx *= Math.pow(0.82, dt * 60);
+            p.vy *= Math.pow(0.82, dt * 60);
             // Sparkle timer
             p.glintTimer -= dt;
             if (p.glintTimer <= 0) {
@@ -842,8 +842,8 @@ export class AurumEngine {
     const sloshTargetY = this.batea.tiltY * 60;
     this.batea.waterSloshVx += (sloshTargetX - this.batea.waterSloshX) * 15.0 * dt;
     this.batea.waterSloshVy += (sloshTargetY - this.batea.waterSloshY) * 15.0 * dt;
-    this.batea.waterSloshVx *= 0.92;
-    this.batea.waterSloshVy *= 0.92;
+    this.batea.waterSloshVx *= Math.pow(0.92, dt * 60);
+    this.batea.waterSloshVy *= Math.pow(0.92, dt * 60);
     this.batea.waterSloshX += this.batea.waterSloshVx * dt;
     this.batea.waterSloshY += this.batea.waterSloshVy * dt;
 

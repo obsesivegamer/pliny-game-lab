@@ -829,6 +829,10 @@ class ChariotVehicle {
     this.isCrashed = false;
     this.crashTimer = 0;
     this.finishPosition = null;
+    this.finishTime = 0;
+
+    // Collision flash feedback
+    this.collisionFlashTimer = 0;
 
     // 4-horse harness rig
     this.horses = [
@@ -850,10 +854,10 @@ class ChariotVehicle {
   }
 
   whip() {
-    if (this.isCrashed || this.whipCooldown > 0 || this.stamina < 15) return false;
-    this.whipBoostTimer = 1.4;
-    this.whipCooldown = 2.2;
-    this.stamina = Math.max(0, this.stamina - 20);
+    if (this.isCrashed || this.whipCooldown > 0 || this.stamina < 10) return false;
+    this.whipBoostTimer = 1.8;
+    this.whipCooldown = 1.6;
+    this.stamina = Math.max(0, this.stamina - 15);
     return true;
   }
 
@@ -901,6 +905,10 @@ class ChariotVehicle {
   }
 
   update(dt, track, engine) {
+    if (this.collisionFlashTimer > 0) {
+      this.collisionFlashTimer = Math.max(0, this.collisionFlashTimer - dt);
+    }
+
     if (this.isCrashed) {
       this.crashTimer += dt;
       this.speed *= Math.pow(0.85, dt * 60);
@@ -1057,6 +1065,7 @@ class ChariotVehicle {
     if (distToMeta1 < track.rInner + 6 || distToMeta2 < track.rInner + 6) {
       // Clipped the conical metae turning post!
       this.durability -= 65;
+      this.collisionFlashTimer = 0.35;
       engine.audio.playCrash();
       if (this.durability <= 0) {
         this.triggerNaufragium(engine);
@@ -1174,18 +1183,59 @@ class ChariotVehicle {
     ctx.fillStyle = this.trimColor;
     ctx.fillRect(-1.5, -4.5, 3.0, 2.0); // Helmet crest
 
-    // Whip (Flagellum) in driver hand
+    // Whip (Flagellum) in driver hand -- always show handle, animate crack when boosting
+    ctx.strokeStyle = '#2b180d';
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.moveTo(0, 3);
+    ctx.lineTo(4, 6); // Whip handle always visible
+    ctx.stroke();
+
     if (this.whipBoostTimer > 0) {
+      const whipPhase = this.whipBoostTimer * 8;
+      // Animated cracking whip lash
       ctx.strokeStyle = '#2b180d';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.moveTo(0, 3);
-      ctx.quadraticCurveTo(8, 12 + Math.sin(this.wheelRotation * 6) * 4, 18, 8);
+      ctx.moveTo(4, 6);
+      ctx.quadraticCurveTo(10, 14 + Math.sin(whipPhase) * 6, 20, 6 + Math.cos(whipPhase * 1.5) * 4);
       ctx.stroke();
+
+      // Whip crack tip spark
+      const tipX = 20;
+      const tipY = 6 + Math.cos(whipPhase * 1.5) * 4;
+      if (this.whipBoostTimer > 1.2) {
+        ctx.fillStyle = COLOR_GOLD_BRIGHT;
+        ctx.globalAlpha = clamp((this.whipBoostTimer - 1.2) * 4, 0, 1);
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+
+      // Speed lines behind the chariot during boost
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.35)';
+      ctx.lineWidth = 1.0;
+      for (let sl = 0; sl < 3; sl++) {
+        const ly = -6 + sl * 6;
+        ctx.beginPath();
+        ctx.moveTo(-22, ly);
+        ctx.lineTo(-22 - 8 - Math.random() * 6, ly);
+        ctx.stroke();
+      }
     }
 
     ctx.restore(); // End Auriga
     ctx.restore(); // End Currus
+
+    // Collision flash overlay
+    if (this.collisionFlashTimer > 0) {
+      const flashAlpha = clamp(this.collisionFlashTimer / 0.35, 0, 0.7);
+      ctx.fillStyle = `rgba(255, 60, 60, ${flashAlpha})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, 28, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Player indicator marker
     if (this.isPlayer) {
@@ -1637,12 +1687,21 @@ class ChariotHUD {
     if (this.chronicleFeed.length > 5) this.chronicleFeed.pop();
   }
 
-  update(dt) {
+  update(dt, player) {
     for (let i = this.chronicleFeed.length - 1; i >= 0; i--) {
       this.chronicleFeed[i].time -= dt;
       if (this.chronicleFeed[i].time <= 0) {
         this.chronicleFeed.splice(i, 1);
       }
+    }
+
+    // Frame-rate independent gauge smoothing (moved from render)
+    if (player) {
+      const targetStadia = (player.speed / 210.0) * 38.0;
+      const smoothFactor = 1 - Math.pow(0.001, dt);
+      this.speedometerVal = lerp(this.speedometerVal, targetStadia, smoothFactor);
+      const targetG = (Math.pow(player.speed, 2) * (player.isDrifting ? 0.006 : 0.002)) / 9.81;
+      this.lateralGVal = lerp(this.lateralGVal, targetG, smoothFactor);
     }
   }
 
@@ -1650,18 +1709,12 @@ class ChariotHUD {
     const player = engine.playerVehicle;
     const narrow = w < 560;
 
-    // Smooth gauge interpolation
-    if (player) {
-      // Speed in Roman stadia/hour (1 Roman stadium ≈ 185m; speed scale)
-      const targetStadia = (player.speed / 210.0) * 38.0;
-      this.speedometerVal = lerp(this.speedometerVal, targetStadia, 0.12);
-      const targetG = (Math.pow(player.speed, 2) * (player.isDrifting ? 0.006 : 0.002)) / 9.81;
-      this.lateralGVal = lerp(this.lateralGVal, targetG, 0.12);
-    }
-
     this.renderLeaderboard(ctx, 16, 16, engine, narrow);
-    this.renderTelemetryGauges(ctx, 16, h - 88, player, narrow);
+    if (engine.showTelemetry) {
+      this.renderTelemetryGauges(ctx, 16, h - 88, player, narrow);
+    }
     this.renderSpinaLapBanner(ctx, w / 2, 28, engine, narrow);
+    this.renderPositionIndicator(ctx, w, h, engine, narrow);
     if (!narrow) {
       this.renderChronicleTicker(ctx, w / 2, h - 24);
     }
@@ -1816,6 +1869,28 @@ class ChariotHUD {
     ctx.restore();
   }
 
+  renderPositionIndicator(ctx, w, h, engine, narrow) {
+    const sorted = [...engine.chariots].sort((a, b) => b.totalDistance - a.totalDistance);
+    const pos = sorted.findIndex(c => c.isPlayer) + 1;
+    if (pos < 1) return;
+
+    const suffix = pos === 1 ? 'st' : pos === 2 ? 'nd' : pos === 3 ? 'rd' : 'th';
+    const x = narrow ? w - 50 : w - 70;
+    const y0 = narrow ? 24 : 32;
+    const size = narrow ? 28 : 36;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${size}px Cinzel, serif`;
+    ctx.fillStyle = pos === 1 ? COLOR_GOLD_BRIGHT : pos <= 3 ? '#C0C0C0' : '#8B7355';
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(`${pos}${suffix}`, x, y0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
   renderChronicleTicker(ctx, cx, y) {
     if (this.chronicleFeed.length === 0) return;
     const latest = this.chronicleFeed[0];
@@ -1850,6 +1925,7 @@ export class ChariotEngine {
     this.metaTurnSharpness = 1.0;
     this.aiAggressiveness = 1.0;
     this.spectatorWavesActive = true;
+    this.showTelemetry = true;
     this.selectedPlayerFaction = 'prasina'; // Prasina (Greens) by default
 
     // Subsystems
@@ -2157,7 +2233,7 @@ export class ChariotEngine {
     // Update Subsystems
     this.spectators.update(clampedDt, this.spectatorWavesActive);
     this.monuments.update(clampedDt);
-    this.hud.update(clampedDt);
+    this.hud.update(clampedDt, this.playerVehicle);
   }
 
   updateAIChariot(chariot, dt) {

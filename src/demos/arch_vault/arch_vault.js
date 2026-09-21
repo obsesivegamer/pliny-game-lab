@@ -757,8 +757,8 @@ export class ArchVaultEngine {
         if (estBottom > groundY) {
           b.y = groundY - 20;
           b.vy = -b.vy * 0.22; // Restitution
-          b.vx *= 0.85;        // Ground friction
-          b.omega *= 0.8;
+          b.vx *= Math.pow(0.85, dt * 60);        // Ground friction
+          b.omega *= Math.pow(0.8, dt * 60);
           if (Math.abs(b.vy) < 8) b.vy = 0;
         }
 
@@ -786,7 +786,7 @@ export class ArchVaultEngine {
       if (p.y > groundY && p.type === 'stone') {
         p.y = groundY;
         p.vy = -p.vy * 0.3;
-        p.vx *= 0.8;
+        p.vx *= Math.pow(0.8, dt * 60);
       }
     }
   }

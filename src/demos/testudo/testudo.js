@@ -1646,7 +1646,7 @@ class Particle {
       this.vy += 320 * dt;
     } else if (this.type === 'dust') {
       this.vy -= 15 * dt;
-      this.vx *= 0.95;
+      this.vx *= Math.pow(0.95, dt * 60);
     }
   }
 

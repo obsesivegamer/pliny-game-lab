@@ -463,8 +463,10 @@ export class VerletParticle {
   integrate(dt, gravityX, gravityY, damping) {
     if (this.pinned) return;
 
-    this.vx = (this.x - this.oldX) * damping;
-    this.vy = (this.y - this.oldY) * damping;
+    // Frame-rate-independent damping: convert per-frame factor to continuous decay
+    const dtDamping = Math.pow(damping, dt * 60);
+    this.vx = (this.x - this.oldX) * dtDamping;
+    this.vy = (this.y - this.oldY) * dtDamping;
 
     this.oldX = this.x;
     this.oldY = this.y;
@@ -769,8 +771,10 @@ export class FluidParticle {
     if (this.type === 'water') {
       // Hydrodynamic gravity acceleration
       this.vy += gravityY * 42.0 * dt;
-      this.vx *= 0.99;
-      this.vy *= 0.99;
+      // Frame-rate-independent damping
+      const waterDamp = Math.pow(0.99, dt * 60);
+      this.vx *= waterDamp;
+      this.vy *= waterDamp;
       this.alpha = Math.max(0.0, Math.min(1.0, this.life / this.maxLife));
     } else if (this.type === 'steam') {
       // Thermal buoyancy lifting steam plume upward with vortex curl
@@ -905,7 +909,8 @@ export class SpurGear {
       const netTorque = this.appliedTorque + viscousDrag;
       this.alpha = netTorque / Math.max(1e-4, this.inertia);
       this.omega += this.alpha * dt;
-      this.omega *= damping;
+      // Frame-rate-independent damping
+      this.omega *= Math.pow(damping, dt * 60);
     }
 
     this.angle += this.omega * dt;
@@ -915,7 +920,9 @@ export class SpurGear {
     for (const mesh of this.meshPairs) {
       const targetOmega = -this.omega * mesh.ratio;
       // Stiff kinematic gear mesh coupling with slight elastic compliance
-      mesh.gear.omega += (targetOmega - mesh.gear.omega) * 0.52;
+      // Frame-rate-independent lerp: convert per-frame blend to continuous
+      const meshBlend = 1.0 - Math.pow(1.0 - 0.52, dt * 60);
+      mesh.gear.omega += (targetOmega - mesh.gear.omega) * meshBlend;
     }
   }
 
