@@ -708,7 +708,7 @@ export class BombFragment {
     }
 
     this.vy += 9.81 * 2.2 * dt;
-    this.vx *= 0.96;
+    this.vx *= Math.pow(0.96, dt * 60);
     this.x += this.vx * dt * 25;
     this.y += this.vy * dt * 25;
     this.temp = Math.max(30, this.temp - dt * 250);
@@ -928,7 +928,7 @@ export class PyroclasticCurrent {
       this.x += this.vx * dt * 26;
       // Maintain ground contact with turbulent billow lift
       const targetY = surfaceY - this.radius * 0.45 + Math.sin(this.turbulence) * 2.2;
-      this.y += (targetY - this.y) * 0.16;
+      this.y += (targetY - this.y) * (1 - Math.pow(0.84, dt * 60));
     } else {
       this.alive = false;
     }
@@ -1008,7 +1008,7 @@ export class PlumeParticle {
     } else {
       // Reached Neutral Buoyancy Level (Stratosphere): Lateral Umbrella Pine expansion
       this.isUmbrella = true;
-      this.vy *= 0.86; // Vertical motion stalls
+      this.vy *= Math.pow(0.86, dt * 60); // Vertical motion stalls
       // Radial umbrella mushrooming
       const spreadDir = this.vx >= 0 ? 1 : -1;
       this.vx += spreadDir * (1.3 + Math.random() * 2.2) * dt;
@@ -1016,9 +1016,9 @@ export class PlumeParticle {
       this.vx += windSpeed * 2.0 * dt;
     }
 
-    // Aerodynamic dampening
-    this.vx *= 0.96;
-    this.vy *= 0.97;
+    // Aerodynamic dampening (frame-rate independent)
+    this.vx *= Math.pow(0.96, dt * 60);
+    this.vy *= Math.pow(0.97, dt * 60);
 
     this.x += (this.vx + Math.sin(this.wobblePhase) * 0.45) * dt * 21;
     this.y += this.vy * dt * 21;
@@ -1431,7 +1431,7 @@ export class Seismograph {
 
     this.values[this.head] = val;
     this.head = (this.head + 1) % this.bufferSize;
-    this.peakAcceleration = Math.max(Math.abs(val), this.peakAcceleration * 0.98);
+    this.peakAcceleration = Math.max(Math.abs(val), this.peakAcceleration * Math.pow(0.98, dt * 60));
   }
 
   render(ctx, x, y, w, h) {
@@ -2512,7 +2512,7 @@ export class VesuviusEngine {
     // Chamber pressure forces lava bubbles up the central feeder conduit
     if (this.chamberPressure > 5) {
       const bubbleProb = this.chamberPressure * 0.008;
-      if (Math.random() < bubbleProb) {
+      if (Math.random() < (1 - Math.pow(1 - Math.min(1, bubbleProb), dt * 60))) {
         const bx = cX + Math.floor((Math.random() - 0.5) * 10);
         const by = cY - 14;
         const idx = by * w + bx;
@@ -2913,7 +2913,7 @@ export class VesuviusEngine {
       } else {
         const bx = Math.floor(pdc.x);
         if (this.barrierMask && bx >= 0 && bx < this.barrierMask.length && this.barrierMask[bx]) {
-          pdc.vx *= 0.55;
+          pdc.vx *= Math.pow(0.55, dt * 60);
           pdc.life += dt * 1.8;
         }
       }

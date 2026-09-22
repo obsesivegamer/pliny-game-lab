@@ -1209,8 +1209,8 @@ export class TriremeEngine {
     ship.sinkRoll += dt * 0.35;
 
     // Slow drift
-    ship.vx *= 0.94;
-    ship.vy *= 0.94;
+    ship.vx *= Math.pow(0.94, dt * 60);
+    ship.vy *= Math.pow(0.94, dt * 60);
     ship.x += ship.vx * dt;
     ship.y += ship.vy * dt;
 
@@ -1355,8 +1355,8 @@ export class TriremeEngine {
 
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.95;
-      p.vy *= 0.95;
+      p.vx *= Math.pow(0.95, dt * 60);
+      p.vy *= Math.pow(0.95, dt * 60);
       p.size += p.growth * dt;
     }
   }
@@ -1371,8 +1371,8 @@ export class TriremeEngine {
       }
       s.x += s.vx * dt;
       s.y += s.vy * dt;
-      s.vx *= 0.92;
-      s.vy *= 0.92;
+      s.vx *= Math.pow(0.92, dt * 60);
+      s.vy *= Math.pow(0.92, dt * 60);
       s.rot += s.rotSpeed * dt;
     }
   }

@@ -914,7 +914,7 @@ export class ScyllaCharybdisEngine {
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       s.vy += 45.0 * dt; // gravity
-      s.size *= 0.98;
+      s.size *= Math.pow(0.98, dt * 60);
 
       if (s.life <= 0) {
         this.sprayParticles.splice(i, 1);

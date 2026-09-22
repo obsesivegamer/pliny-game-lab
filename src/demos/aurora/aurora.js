@@ -526,8 +526,8 @@ export class AuroraEngine {
 
       // Atmospheric dampening in lower ionosphere
       if (p.y > this.height * 0.45) {
-        p.vx *= 0.96;
-        p.vy *= 0.96;
+        p.vx *= Math.pow(0.96, safeDt * 60);
+        p.vy *= Math.pow(0.96, safeDt * 60);
       }
 
       p.x += p.vx * safeDt;

@@ -966,7 +966,7 @@ export class SiegeTowerEngine {
 
       if (d.y >= this.groundY) {
         d.y = this.groundY;
-        d.vx *= 0.6;
+        d.vx *= Math.pow(0.6, dt * 60);
         d.vy = -d.vy * 0.35;
         if (Math.abs(d.vy) < 25) d.vy = 0;
       }

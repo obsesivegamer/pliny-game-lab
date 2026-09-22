@@ -541,8 +541,8 @@ export class PantheonEngine {
         m.z = (Math.random() - 0.5) * R * 1.5;
       }
       if (Math.hypot(m.x, m.z) > R) {
-        m.x *= 0.95;
-        m.z *= 0.95;
+        m.x *= Math.pow(0.95, dt * 60);
+        m.z *= Math.pow(0.95, dt * 60);
       }
 
       // Check if dust mote is inside the volumetric light beam

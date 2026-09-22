@@ -982,8 +982,8 @@ export class MetallumEngine {
           p2.y += ny * overlap;
 
           // Transfer vertical support
-          p1.vy *= 0.85;
-          p2.vy *= 0.85;
+          p1.vy *= Math.pow(0.85, dt * 60);
+          p2.vy *= Math.pow(0.85, dt * 60);
         }
       }
     }
@@ -1084,7 +1084,7 @@ export class MetallumEngine {
       // Settle in external slag pit
       if (tp.y >= f.slagPitY + f.slagPitH) {
         tp.y = f.slagPitY + f.slagPitH;
-        tp.vx *= 0.5;
+        tp.vx *= Math.pow(0.5, dt * 60);
         tp.vy = 0;
       }
 
@@ -1192,7 +1192,7 @@ export class MetallumEngine {
       if (s.y >= floorY) {
         s.y = floorY;
         s.vy = -Math.abs(s.vy) * 0.42;
-        s.vx *= 0.65;
+        s.vx *= Math.pow(0.65, dt * 60);
         s.bounces++;
       }
 

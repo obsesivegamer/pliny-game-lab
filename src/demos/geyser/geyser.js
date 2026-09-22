@@ -710,7 +710,7 @@ export class GeyserEngine {
             // Splash on ground!
             p.y = currentGroundY;
             p.vy = -p.vy * 0.18; // Inelastic rebound
-            p.vx *= 0.5;
+            p.vx *= Math.pow(0.5, dt * 60);
 
             // Trigger mineral deposition if close to the vent cone
             if (coneU >= 0.15 && coneU <= 0.85) {

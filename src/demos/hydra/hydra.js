@@ -23,6 +23,8 @@ export class HydraEngine {
     this.rigidity = 1.0; // Tentacle Flexibility / Rigidity (0.2 loose to 2.5 stiff)
     this.pulseIntensity = 1.5; // Bioluminescent Pulse Intensity (0.2 to 3.0)
     this.currentFlow = 0.8; // Water Current Flow (-2.0 to 3.0)
+    this.regenSpeed = 1.0; // Regeneration Speed multiplier (0.2 to 3.0)
+    this.bioluminescenceEnabled = true; // Bioluminescence toggle
 
     // Interaction State
     this.mousePos = { x: this.width * 0.5, y: this.height * 0.35 };
@@ -83,7 +85,22 @@ export class HydraEngine {
         <input type="range" id="flow-slider" min="-2.0" max="3.0" step="0.1" value="${this.currentFlow}">
       </div>
 
+      <div class="control-group">
+        <label>Regeneration Speed: <span id="regen-speed-val">${this.regenSpeed.toFixed(1)}</span>x</label>
+        <input type="range" id="regen-speed-slider" min="0.2" max="3.0" step="0.1" value="${this.regenSpeed}">
+      </div>
+
+      <div class="control-group">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="biolum-toggle" ${this.bioluminescenceEnabled ? 'checked' : ''} style="accent-color: #3bd6c6;">
+          Bioluminescence
+        </label>
+      </div>
+
       <div class="control-group" style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+        <button id="sever-btn" class="sub-btn" style="background: rgba(255,51,68,0.18); border-color: #ff3344; color: #ff6677; font-weight: bold; padding: 8px;">
+          ✂️ Sever Random Head
+        </button>
         <button id="mythic-100-btn" class="sub-btn" style="background: rgba(212,175,55,0.18); border-color: #d4af37; color: #ffd700; font-weight: bold; padding: 8px;">
           🐉 Regenerate Mythic Hydra (100 Heads)
         </button>
@@ -147,6 +164,32 @@ export class HydraEngine {
     if (shockBtn) {
       shockBtn.addEventListener('click', () => {
         this.triggerShockwave();
+      });
+    }
+
+    // Sever random head button
+    const severBtn = this.controlsContainer.querySelector('#sever-btn');
+    if (severBtn) {
+      severBtn.addEventListener('click', () => {
+        this.severRandomHead();
+      });
+    }
+
+    // Regeneration speed slider
+    const regenSlider = this.controlsContainer.querySelector('#regen-speed-slider');
+    const regenVal = this.controlsContainer.querySelector('#regen-speed-val');
+    if (regenSlider && regenVal) {
+      regenSlider.addEventListener('input', (e) => {
+        this.regenSpeed = parseFloat(e.target.value);
+        regenVal.textContent = this.regenSpeed.toFixed(1);
+      });
+    }
+
+    // Bioluminescence toggle
+    const biolumToggle = this.controlsContainer.querySelector('#biolum-toggle');
+    if (biolumToggle) {
+      biolumToggle.addEventListener('change', (e) => {
+        this.bioluminescenceEnabled = e.target.checked;
       });
     }
   }
@@ -340,6 +383,16 @@ export class HydraEngine {
     });
   }
 
+  severRandomHead() {
+    if (this.tentacles.length === 0) return;
+    const tIdx = Math.floor(Math.random() * this.tentacles.length);
+    const t = this.tentacles[tIdx];
+    const activeLength = Math.max(4, Math.floor(t.nodeCount * t.growthProgress));
+    const cutIdx = Math.max(2, Math.floor(activeLength * 0.4 + Math.random() * activeLength * 0.3));
+    const cutNode = t.nodes[Math.min(cutIdx, activeLength - 1)];
+    this.severTentacle(tIdx, cutIdx, { x: cutNode.x, y: cutNode.y });
+  }
+
   // ==========================================
   // SOFT-BODY SIMULATION: TRUNK & HYPOSTOME
   // ==========================================
@@ -412,10 +465,11 @@ export class HydraEngine {
       const rw = rightWall[i];
       const t = i / spine.length;
 
-      // Verlet for spine
+      // Verlet for spine (frame-rate-independent damping)
       const sway = (Math.sin(this.time * 1.2 + i * 0.4) * 8 + currentForce) * t * (1.0 / this.rigidity);
-      let vx = (s.x - s.oldX) * 0.93 + (sway * dt * dt);
-      let vy = (s.y - s.oldY) * 0.93 - (20 * t * dt * dt); // Buoyancy upward
+      const trunkDamp = Math.pow(0.93, dt * 60);
+      let vx = (s.x - s.oldX) * trunkDamp + (sway * dt * dt);
+      let vy = (s.y - s.oldY) * trunkDamp - (20 * t * dt * dt); // Buoyancy upward
 
       s.oldX = s.x;
       s.oldY = s.y;
@@ -544,9 +598,9 @@ export class HydraEngine {
     for (let tIdx = this.tentacles.length - 1; tIdx >= 0; tIdx--) {
       const t = this.tentacles[tIdx];
 
-      // Growth morphing for newly budded tentacles
+      // Growth morphing for newly budded tentacles (scaled by regenSpeed)
       if (t.isBudding) {
-        t.budTimer += dt;
+        t.budTimer += dt * this.regenSpeed;
         t.growthProgress = Math.min(1.0, t.budTimer / t.budDuration);
         if (t.growthProgress >= 1.0) {
           t.isBudding = false;
@@ -637,7 +691,8 @@ export class HydraEngine {
         }
       }
 
-      // Neuromuscular undulating wave forces & Verlet step
+      // Neuromuscular undulating wave forces & Verlet step (frame-rate-independent damping)
+      const tentacleDamp = Math.pow(0.92, dt * 60);
       for (let i = 1; i < activeLength; i++) {
         const node = t.nodes[i];
         const segRatio = i / activeLength;
@@ -650,8 +705,8 @@ export class HydraEngine {
         const fx = (Math.cos(perpAngle) * wave + flowX * (0.5 + segRatio * 0.8)) * dt * dt;
         const fy = (Math.sin(perpAngle) * wave - 25 * segRatio) * dt * dt; // Buoyancy lifts tips upward
 
-        const vx = (node.x - node.oldX) * 0.92 + fx;
-        const vy = (node.y - node.oldY) * 0.92 + fy;
+        const vx = (node.x - node.oldX) * tentacleDamp + fx;
+        const vy = (node.y - node.oldY) * tentacleDamp + fy;
 
         node.oldX = node.x;
         node.oldY = node.y;
@@ -871,6 +926,7 @@ export class HydraEngine {
 
   triggerShockwave(massive = false) {
     if (!this.trunk) return;
+    if (!this.bioluminescenceEnabled) return;
     const hypostome = this.trunk.spine[this.trunk.spine.length - 1];
 
     this.shockwaves.push({
@@ -923,6 +979,7 @@ export class HydraEngine {
   }
 
   triggerVascularPulse(originX, originY, intensity = 1.0) {
+    if (!this.bioluminescenceEnabled) return;
     for (const t of this.tentacles) {
       t.shockGlow = Math.max(t.shockGlow, intensity);
       this.fluidParticles.push({
@@ -998,8 +1055,9 @@ export class HydraEngine {
       }
     }
 
-    // Spontaneous vascular pulses along tentacles
-    if (Math.random() < 0.12 * this.pulseIntensity && this.tentacles.length > 0) {
+    // Spontaneous vascular pulses along tentacles (dt-adjusted probability)
+    const pulseProb = 1 - Math.pow(1 - 0.12 * this.pulseIntensity, dt * 60);
+    if (this.bioluminescenceEnabled && Math.random() < pulseProb && this.tentacles.length > 0) {
       const randomTentacle = this.tentacles[Math.floor(Math.random() * this.tentacles.length)];
       this.fluidParticles.push({
         tentacle: randomTentacle,
@@ -1061,9 +1119,10 @@ export class HydraEngine {
         p.angle = hopAngle;
       }
 
-      // Drag & water currents
-      p.vx = (p.vx + flowX * dt) * 0.94;
-      p.vy = (p.vy - 5 * dt) * 0.94; // slight sinking / neutral buoyancy
+      // Drag & water currents (frame-rate-independent damping)
+      const preyDamp = Math.pow(0.94, dt * 60);
+      p.vx = (p.vx + flowX * dt) * preyDamp;
+      p.vy = (p.vy - 5 * dt) * preyDamp; // slight sinking / neutral buoyancy
 
       p.x += p.vx * dt;
       p.y += p.vy * dt;
@@ -1179,10 +1238,11 @@ export class HydraEngine {
         continue;
       }
 
-      // Advect severed nodes through water
+      // Advect severed nodes through water (frame-rate-independent damping)
+      const severedDamp = Math.pow(0.95, dt * 60);
       for (const n of s.nodes) {
-        n.vx = (n.vx + this.currentFlow * 12 * dt) * 0.95;
-        n.vy = (n.vy - 12 * dt) * 0.95;
+        n.vx = (n.vx + this.currentFlow * 12 * dt) * severedDamp;
+        n.vy = (n.vy - 12 * dt) * severedDamp;
         n.x += n.vx * dt;
         n.y += n.vy * dt;
         n.luminescence = s.life / s.maxLife;
@@ -1207,8 +1267,9 @@ export class HydraEngine {
         this.bubbles.splice(i, 1);
         continue;
       }
-      b.vx *= 0.96;
-      b.vy = b.vy * 0.96 - 6 * dt; // gentle rise
+      const bubbleDamp = Math.pow(0.96, dt * 60);
+      b.vx *= bubbleDamp;
+      b.vy = b.vy * bubbleDamp - 6 * dt; // gentle rise
       b.x += b.vx * dt;
       b.y += b.vy * dt;
     }

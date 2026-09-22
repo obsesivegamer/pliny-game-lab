@@ -710,7 +710,7 @@ export class CoralReefEngine {
       spark.y += spark.vy * safeDt;
       spark.vy -= 12 * safeDt; // slight buoyancy
       spark.life -= safeDt * 2.2;
-      spark.size *= 0.96;
+      spark.size *= Math.pow(0.96, safeDt * 60);
       if (spark.life <= 0) {
         this.calcificationSparks.splice(i, 1);
       }
@@ -896,8 +896,8 @@ export class CoralReefEngine {
         boid.frightTimer -= dt;
         boid.vx += boid.frightVx * dt * 2.5;
         boid.vy += boid.frightVy * dt * 2.5;
-        boid.frightVx *= 0.94;
-        boid.frightVy *= 0.94;
+        boid.frightVx *= Math.pow(0.94, dt * 60);
+        boid.frightVy *= Math.pow(0.94, dt * 60);
       }
 
       // Reynolds Boids 3-Rules: Separation, Alignment, Cohesion

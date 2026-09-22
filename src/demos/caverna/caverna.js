@@ -808,8 +808,8 @@ export class CavernaEngine {
       }
 
       // Boundary condition: open cavern outflow on edges
-      this.riverVel[0] *= 0.95;
-      this.riverVel[this.riverCols - 1] *= 0.95;
+      this.riverVel[0] *= Math.pow(0.95, subDt * 60);
+      this.riverVel[this.riverCols - 1] *= Math.pow(0.95, subDt * 60);
 
       for (let i = 0; i < this.riverCols; i++) {
         this.riverHeight[i] += this.riverVel[i] * subDt;

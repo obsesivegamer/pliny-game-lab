@@ -640,8 +640,8 @@ export class OraculumEngine {
     }
 
     // Decay mouse velocity
-    this.mouseVelocity.x *= 0.85;
-    this.mouseVelocity.y *= 0.85;
+    this.mouseVelocity.x *= Math.pow(0.85, stepDt * 60);
+    this.mouseVelocity.y *= Math.pow(0.85, stepDt * 60);
 
     // Step continuous Delphic Chasm emission
     this.emitChasmVapors(stepDt);
@@ -701,7 +701,7 @@ export class OraculumEngine {
       if (p.x < 10) { p.x = 10; p.vx = Math.abs(p.vx) * 0.5; }
       if (p.x > fw - 10) { p.x = fw - 10; p.vx = -Math.abs(p.vx) * 0.5; }
       if (p.y < 10) {
-        p.alpha *= 0.9;
+        p.alpha *= Math.pow(0.9, stepDt * 60);
         if (p.y < -30) p.active = false;
       }
     }
@@ -741,7 +741,7 @@ export class OraculumEngine {
 
       // Boundary cleanup
       if (r.x < 20 || r.x > fw - 20 || r.y < 20) {
-        r.alpha *= 0.92;
+        r.alpha *= Math.pow(0.92, stepDt * 60);
         if (r.y < 0) r.active = false;
       }
     }
@@ -1477,8 +1477,8 @@ class FluidGrid {
 
     // 2. Velocity Diffusion & Damping
     for (let i = 0; i < w * h; i++) {
-      this.u[i] *= 0.985;
-      this.v[i] *= 0.985;
+      this.u[i] *= Math.pow(0.985, dt * 60);
+      this.v[i] *= Math.pow(0.985, dt * 60);
     }
 
     // 3. Pressure Projection (divergence-free incompressibility)

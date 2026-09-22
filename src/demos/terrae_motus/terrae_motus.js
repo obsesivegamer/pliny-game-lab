@@ -937,9 +937,9 @@ export class TerraeMotusEngine {
       block.vx += inertialShear * dt;
 
       // Air drag
-      block.vx *= 0.996;
-      block.vy *= 0.998;
-      block.omega *= 0.985;
+      block.vx *= Math.pow(0.996, dt * 60);
+      block.vy *= Math.pow(0.998, dt * 60);
+      block.omega *= Math.pow(0.985, dt * 60);
 
       // Integrate positions
       block.x += block.vx * dt;
@@ -962,7 +962,7 @@ export class TerraeMotusEngine {
       // 1. Ground collision
       for (const block of this.blocks) {
         if (block.isFoundation) continue;
-        this.collideBlockWithGround(block);
+        this.collideBlockWithGround(block, dt);
       }
 
       // 2. Block vs Block collision (OBB / Contact Manifold)
@@ -985,7 +985,7 @@ export class TerraeMotusEngine {
     }
   }
 
-  collideBlockWithGround(block) {
+  collideBlockWithGround(block, dt) {
     const corners = this.getBlockCorners(block);
     for (const pt of corners) {
       const gX = Math.min(
@@ -1007,7 +1007,7 @@ export class TerraeMotusEngine {
         if (vptY > 0) {
           const impulse = (1 + block.restitution) * vptY;
           block.vy -= impulse * 0.6;
-          block.vx *= 0.85; // Friction
+          block.vx *= Math.pow(0.85, dt * 60); // Friction
           block.omega -= (rX * impulse) * 0.0008;
 
           // Dust burst on hard impact
@@ -1202,8 +1202,8 @@ export class TerraeMotusEngine {
       const p = this.dustParticles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.94;
-      p.vy *= 0.94;
+      p.vx *= Math.pow(0.94, dt * 60);
+      p.vy *= Math.pow(0.94, dt * 60);
       p.radius += p.growth * dt;
       p.life -= p.decay * dt;
 

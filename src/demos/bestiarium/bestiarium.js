@@ -466,6 +466,64 @@ export function remap(val, inMin, inMax, outMin, outMax) {
 }
 
 // ============================================================================
+// III-B. SPATIAL HASH GRID (PERFORMANCE — O(1) NEIGHBOR QUERIES)
+// ============================================================================
+
+export class SpatialHash {
+  constructor(cellSize = 100) {
+    this.cellSize = cellSize;
+    this.cells = new Map();
+  }
+
+  clear() {
+    this.cells.clear();
+  }
+
+  _key(cx, cy) {
+    return cx + cy * 100003;
+  }
+
+  insert(entity) {
+    if (!entity || !entity.pos) return;
+    const cx = Math.floor(entity.pos.x / this.cellSize);
+    const cy = Math.floor(entity.pos.y / this.cellSize);
+    const key = this._key(cx, cy);
+    let bucket = this.cells.get(key);
+    if (!bucket) {
+      bucket = [];
+      this.cells.set(key, bucket);
+    }
+    bucket.push(entity);
+  }
+
+  query(x, y, radius) {
+    const results = [];
+    const pad = this.cellSize;
+    const minCx = Math.floor((x - radius - pad) / this.cellSize);
+    const maxCx = Math.floor((x + radius + pad) / this.cellSize);
+    const minCy = Math.floor((y - radius - pad) / this.cellSize);
+    const maxCy = Math.floor((y + radius + pad) / this.cellSize);
+    const rSq = (radius + pad) * (radius + pad);
+
+    for (let cx = minCx; cx <= maxCx; cx++) {
+      for (let cy = minCy; cy <= maxCy; cy++) {
+        const bucket = this.cells.get(this._key(cx, cy));
+        if (bucket) {
+          for (const e of bucket) {
+            const dx = e.pos.x - x;
+            const dy = e.pos.y - y;
+            if (dx * dx + dy * dy <= rSq) {
+              results.push(e);
+            }
+          }
+        }
+      }
+    }
+    return results;
+  }
+}
+
+// ============================================================================
 // IV. SCENT TRAIL DIFFUSION GRID (2D SCALAR FIELDS)
 // ============================================================================
 
@@ -1444,7 +1502,7 @@ export class Cervus extends Creature {
 
     // 2. Reynolds Flocking Behaviors with conspecifics (Cervus herd)
     if (!inPanic) {
-      this.applyFlocking(ecosystem.creatures, force);
+      this.applyFlocking(ecosystem, force);
 
       // 3. Foraging on lush flora if hungry
       if (this.energy < this.maxEnergy * 0.85) {
@@ -1461,7 +1519,7 @@ export class Cervus extends Creature {
     this.integratePhysics(dt, targetSpeed);
   }
 
-  applyFlocking(creatures, force) {
+  applyFlocking(ecosystem, force) {
     let sepCount = 0,
       alignCount = 0,
       cohCount = 0;
@@ -1471,8 +1529,11 @@ export class Cervus extends Creature {
 
     const sepDist = this.dna.size * 3.8;
     const neighborDist = this.dna.perceptionRadius * 0.85;
+    const nearby = ecosystem.spatialHash
+      ? ecosystem.spatialHash.query(this.pos.x, this.pos.y, neighborDist)
+      : ecosystem.creatures;
 
-    for (const other of creatures) {
+    for (const other of nearby) {
       if (other === this || other.speciesKey !== 'cervus') continue;
       const d = this.pos.dist(other.pos);
 
@@ -2460,7 +2521,10 @@ export class Elephantus extends Creature {
       ecosystem.spawnParticles(this.pos.x, this.pos.y, 20, '#eab308');
 
       // Knock back and stun threats
-      for (const other of ecosystem.creatures) {
+      const shockTargets = ecosystem.spatialHash
+        ? ecosystem.spatialHash.query(this.pos.x, this.pos.y, this.config.trumpetShockwaveRadius)
+        : ecosystem.creatures;
+      for (const other of shockTargets) {
         if (other !== this && other.pos.dist(this.pos) < this.config.trumpetShockwaveRadius) {
           const knockDir = Vec2.sub(other.pos, this.pos).normalize();
           other.applyForce(knockDir.mult(600));
@@ -3115,6 +3179,7 @@ export class BestiariumEngine {
     this.grassTufts = [];
     this.rocks = [];
     this.nest = null;
+    this.spatialHash = new SpatialHash(120);
 
     // Interactive & Selection State
     this.spawnMode = 'cervus'; // cervus, leo, griffin, basilisk, monoceros, elephantus, flora
@@ -3360,6 +3425,9 @@ export class BestiariumEngine {
     const survivingCreatures = [];
     const births = [];
 
+    this.spatialHash.clear();
+    for (const c of this.creatures) this.spatialHash.insert(c);
+
     const ecosystemContext = {
       width: this.width,
       height: this.height,
@@ -3369,6 +3437,7 @@ export class BestiariumEngine {
       scentGrid: this.scentGrid,
       ponds: this.ponds,
       nest: this.nest,
+      spatialHash: this.spatialHash,
       spawnParticles: (x, y, n, col) => this.spawnParticles(x, y, n, col),
       spawnCarcass: (sp, x, y, bio) => this.spawnCarcass(sp, x, y, bio),
       spawnShockwave: (x, y, r) => this.spawnShockwave(x, y, r)

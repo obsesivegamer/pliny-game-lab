@@ -1225,8 +1225,8 @@ export class ColosseumEngine {
             hit = true;
             target.state = 'TRAPPED';
             target.stateTimer = 2.8; // Immobilized in net
-            target.vx *= 0.1;
-            target.vy *= 0.1;
+            target.vx *= Math.pow(0.1, dt * 60);
+            target.vy *= Math.pow(0.1, dt * 60);
 
             this.audio.play('hit');
             this.spawnDust(target.x, target.y, 20);
@@ -1250,8 +1250,8 @@ export class ColosseumEngine {
       p.life -= dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.94;
-      p.vy *= 0.94;
+      p.vx *= Math.pow(0.94, dt * 60);
+      p.vy *= Math.pow(0.94, dt * 60);
 
       // When settled, deposit persistent blood stain onto sand
       if (p.life <= 0 || Math.hypot(p.vx, p.vy) < 5) {
@@ -1280,8 +1280,8 @@ export class ColosseumEngine {
       s.life -= dt;
       s.x += s.vx * dt;
       s.y += s.vy * dt;
-      s.vx *= 0.92;
-      s.vy *= 0.92;
+      s.vx *= Math.pow(0.92, dt * 60);
+      s.vy *= Math.pow(0.92, dt * 60);
 
       if (s.life <= 0) {
         this.sparkParticles.splice(i, 1);

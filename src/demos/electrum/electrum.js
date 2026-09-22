@@ -1020,7 +1020,7 @@ export class ElectrumEngine {
       if (p.y >= this.table.floorY) {
         p.y = this.table.floorY;
         p.vy = -p.vy * p.restitution;
-        p.vx *= 0.72;
+        p.vx *= Math.pow(0.72, dt * 60);
 
         if (Math.abs(p.vy) < 18) {
           p.vy = 0;
