@@ -54,7 +54,8 @@ export class ForumBuilderEngine {
     // Sandbox Mode: material palette, grid snap, and undo history
     this.activeMaterial = 'marble'; // 'marble', 'limestone', 'brick'
     this.snapToGrid = true;
-    this.placementHistory = []; // { x, y, prevType, prevDensity, prevMaterial } most-recent-last
+    this.placementHistory = []; // { x, y, prevType, prevDensity, prevMaterial, strokeId } most-recent-last
+    this._strokeId = 0;
 
     // State Tracking
     this.grid = [];
@@ -1760,6 +1761,7 @@ export class ForumBuilderEngine {
     this.initAudioOnInteraction();
     this.mousePos = pos;
     this.isMouseDown = true;
+    this._strokeId++;
 
     const grid = this.screenToGrid(pos.x, pos.y);
     if (grid.valid) {
@@ -1864,7 +1866,8 @@ export class ForumBuilderEngine {
       y: gy,
       prevType: cell.type,
       prevDensity: cell.density,
-      prevMaterial: cell.material
+      prevMaterial: cell.material,
+      strokeId: this._strokeId
     });
     if (this.placementHistory.length > MAX_UNDO_HISTORY) {
       this.placementHistory.shift();
@@ -1905,19 +1908,19 @@ export class ForumBuilderEngine {
     this.updateDomTelemetry();
   }
 
-  /** Undo the most recent placement or demolition, restoring the cell's prior state. */
+  /** Undo the most recent stroke (all cells placed in one drag), restoring their prior state. */
   undoLastPlacement() {
-    const record = this.placementHistory.pop();
-    if (!record) return;
-
-    const cell = this.grid[record.y] && this.grid[record.y][record.x];
-    if (!cell) return;
-
-    cell.type = record.prevType;
-    cell.density = record.prevDensity;
-    cell.material = record.prevMaterial;
-    cell.animScale = 1.0;
-
+    if (this.placementHistory.length === 0) return;
+    const lastStroke = this.placementHistory[this.placementHistory.length - 1].strokeId;
+    while (this.placementHistory.length > 0 && this.placementHistory[this.placementHistory.length - 1].strokeId === lastStroke) {
+      const record = this.placementHistory.pop();
+      const cell = this.grid[record.y] && this.grid[record.y][record.x];
+      if (!cell) continue;
+      cell.type = record.prevType;
+      cell.density = record.prevDensity;
+      cell.material = record.prevMaterial;
+      cell.animScale = 1.0;
+    }
     this.recomputeCityMetrics();
     this.updateDomTelemetry();
   }
@@ -1962,10 +1965,6 @@ export class ForumBuilderEngine {
       if (!payload || !Array.isArray(payload.cells)) return false;
 
       this.initGrid();
-      // Restore the fundamental Cardo & Decumanus axes so citizen pathfinding stays valid
-      for (let r = 0; r < this.rows; r++) this.grid[r][this.cardoX].type = 'road';
-      for (let c = 0; c < this.cols; c++) this.grid[this.decumanusY][c].type = 'road';
-      this.grid[this.decumanusY][this.cardoX].type = 'forum';
 
       for (const entry of payload.cells) {
         if (entry.y < 0 || entry.y >= this.rows || entry.x < 0 || entry.x >= this.cols) continue;

@@ -765,6 +765,8 @@ export class BallistaEngine {
       // Check Collision with Target Blocks (Continuous Segment Sweep)
       this.checkBoltBlockCollisions(b, dt);
 
+      if (!b.active) continue;
+
       // Check Ground Impact
       if (b.y >= groundY) {
         b.y = groundY;

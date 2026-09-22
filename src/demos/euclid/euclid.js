@@ -814,23 +814,25 @@ export class EuclidEngine {
   // updates them automatically.
   rescaleConstruction(sx, sy) {
     if (!isFinite(sx) || !isFinite(sy) || sx <= 0 || sy <= 0) return;
+    const uniformScale = Math.min(sx, sy);
+    const offsetX = (sx - uniformScale) * this.width / (2 * sx);
+    const offsetY = (sy - uniformScale) * this.height / (2 * sy);
     for (let i = 0; i < this.points.length; i++) {
       const p = this.points[i];
-      p.x *= sx;
-      p.y *= sy;
+      p.x = p.x * uniformScale + offsetX;
+      p.y = p.y * uniformScale + offsetY;
     }
-    const avgScale = (sx + sy) * 0.5;
     for (let i = 0; i < this.circles.length; i++) {
-      this.circles[i].radius *= avgScale;
+      this.circles[i].radius *= uniformScale;
     }
     for (let i = 0; i < this.history.length; i++) {
       const snap = this.history[i];
       for (let j = 0; j < snap.points.length; j++) {
-        snap.points[j].x *= sx;
-        snap.points[j].y *= sy;
+        snap.points[j].x = snap.points[j].x * uniformScale + offsetX;
+        snap.points[j].y = snap.points[j].y * uniformScale + offsetY;
       }
       for (let j = 0; j < snap.circles.length; j++) {
-        snap.circles[j].radius *= avgScale;
+        snap.circles[j].radius *= uniformScale;
       }
     }
   }
@@ -1348,7 +1350,6 @@ export class EuclidEngine {
     ) {
       let startPoint = snap?.ref;
       if (!startPoint || snap.type === 'line-edge' || snap.type === 'circle-edge') {
-        this.pushHistory();
         startPoint = this.addPoint(targetPos.x, targetPos.y);
       }
       this.dragStart = startPoint;

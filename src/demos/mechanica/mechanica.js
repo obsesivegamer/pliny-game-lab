@@ -2700,7 +2700,7 @@ export class MechanicaEngine {
     // Physical Simulation Engine Constants & Config
     this.gravity = 9.81;
     this.cableRigidity = 0.94;
-    this.friction = 0.985;
+    this.friction = Math.pow(0.985, 8);
     this.boilerHeat = 1.0;
     this.winchTorque = 120.0;
     this.timeScale = 1.0;
@@ -2924,7 +2924,7 @@ export class MechanicaEngine {
 
     makeSlider('Gravity (m/s²)', 0, 25, 0.5, this.gravity, v => this.gravity = v);
     makeSlider('Cable Rigidity', 0.5, 1.0, 0.02, this.cableRigidity, v => this.cableRigidity = v);
-    makeSlider('Mechanical Friction', 0.90, 0.999, 0.005, this.friction, v => this.friction = v);
+    makeSlider('Mechanical Friction', 0.80, 0.999, 0.005, this.friction, v => this.friction = v);
     makeSlider('Boiler Heat / Speed', 0.0, 3.0, 0.1, this.boilerHeat, v => {
       this.boilerHeat = v;
       if (this.aeolipile) this.aeolipile.boilerPressureBar = 1.0 + v * 1.5;

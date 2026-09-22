@@ -829,7 +829,6 @@ class ChariotVehicle {
     this.isCrashed = false;
     this.crashTimer = 0;
     this.finishPosition = null;
-    this.finishTime = 0;
 
     // Collision flash feedback
     this.collisionFlashTimer = 0;

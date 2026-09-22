@@ -68,6 +68,7 @@ export function attachTouchBridge(engine, canvas) {
       longPressFired = true;
       if (engine.onContextMenu) engine.onContextMenu(position(touch));
     }, LONG_PRESS_MS);
+    engine._clearLongPress = clearLongPress;
 
     if (engine.onMouseDown) engine.onMouseDown(position(touch));
   };
@@ -109,7 +110,7 @@ export function attachTouchBridge(engine, canvas) {
     if (event.cancelable) event.preventDefault();
     engine.activeTouchId = null;
 
-    if (longPressFired) { longPressFired = false; return; }
+    if (longPressFired) { longPressFired = false; }
 
     if (engine.onMouseUp) engine.onMouseUp(position(touch));
   };
@@ -121,6 +122,7 @@ export function attachTouchBridge(engine, canvas) {
 }
 
 export function detachTouchBridge(engine, canvas) {
+  if (engine._clearLongPress) { engine._clearLongPress(); engine._clearLongPress = null; }
   engine.activeTouchId = null;
   if (engine.onMouseUp) engine.onMouseUp();
   if (canvas) {

@@ -828,6 +828,12 @@ class PlinyHub {
   switchView(viewName) {
     this.currentView = viewName;
     if (viewName === "showcase") {
+      // Release any held engine keys to prevent stuck actions
+      if (this.currentEngine && this.currentEngine.onKeyUp) {
+        for (const k of ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D',' ']) {
+          this.currentEngine.onKeyUp(k, new KeyboardEvent('keyup', { key: k }));
+        }
+      }
       if (this.showcaseView) this.showcaseView.classList.remove("view-hidden");
       if (this.viewportContainer) this.viewportContainer.classList.add("view-hidden");
       if (this.showcaseNavBtn) this.showcaseNavBtn.classList.add("active");
@@ -1050,9 +1056,9 @@ class PlinyHub {
           // event in setupInputHandling).  We defer the back-to-showcase check
           // to a microtask so the engine can call e.preventDefault() to keep
           // the simulator open.
-          Promise.resolve().then(() => {
+          setTimeout(() => {
             if (!e.defaultPrevented) this.switchView("showcase");
-          });
+          }, 0);
         } else if (this.showcaseSearch && document.activeElement === this.showcaseSearch) {
           this.showcaseSearch.value = "";
           this.searchQuery = "";
