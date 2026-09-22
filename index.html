@@ -3,133 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pliny Game Lab — 50 Engines & Simulations</title>
-  <meta name="description" content="Fifty interactive procedural simulations, ancient mechanisms, generative ecosystems, and classical phenomena inspired by Pliny the Elder's Naturalis Historia.">
-  <meta property="og:title" content="Pliny Game Lab — 50 Engines & Simulations">
-  <meta property="og:description" content="Fifty interactive procedural simulations, ancient mechanisms, generative ecosystems, and classical phenomena inspired by Pliny the Elder's Naturalis Historia. Pure Canvas 2D and Web Audio API.">
+  <title>Pliny Game Lab — Natural history you can play</title>
+  <meta name="description" content="Pliny the Elder's Naturalis Historia rebuilt as small browser games and simulations: volcanoes, bees, siege engines, star charts. Plain Canvas 2D and Web Audio, no dependencies.">
+  <meta name="theme-color" content="#1a3470">
+  <meta property="og:title" content="Pliny Game Lab — Natural history you can play">
+  <meta property="og:description" content="Pliny the Elder's Naturalis Historia rebuilt as small browser games and simulations. Plain Canvas 2D and Web Audio, no dependencies.">
   <meta property="og:image" content="https://obsesivegamer.github.io/pliny-game-lab/assets/screenshots/01_vesuvius.png">
   <meta property="og:url" content="https://obsesivegamer.github.io/pliny-game-lab/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Pliny Game Lab — 50 Engines & Simulations">
-  <meta name="twitter:description" content="Fifty interactive procedural simulations, ancient mechanisms, generative ecosystems, and classical phenomena inspired by Pliny the Elder's Naturalis Historia. Pure Canvas 2D and Web Audio API.">
+  <meta name="twitter:title" content="Pliny Game Lab — Natural history you can play">
+  <meta name="twitter:description" content="Pliny the Elder's Naturalis Historia rebuilt as small browser games and simulations. Plain Canvas 2D and Web Audio, no dependencies.">
   <meta name="twitter:image" content="https://obsesivegamer.github.io/pliny-game-lab/assets/screenshots/01_vesuvius.png">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Cinzel and JetBrains Mono stay: engines style their injected controls with --font-display and --font-mono. -->
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Barlow:ital,wght@0,400;0,500;1,400&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&family=Cinzel:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-<body>
-  <div id="app">
-    <!-- Header -->
-    <header id="top-bar">
-      <div class="brand">
-        <span class="laurel">🏛️</span>
-        <h1>PLINY GAME LAB</h1>
-        <span class="subtitle">50 Naturalis Historia Engines</span>
-      </div>
+<body data-view="showcase">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-prev" viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></symbol>
+    <symbol id="i-next" viewBox="0 0 16 16"><path d="m6 3 5 5-5 5"/></symbol>
+    <symbol id="i-random" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11"/><circle cx="5.5" cy="5.5" r=".6"/><circle cx="10.5" cy="10.5" r=".6"/><circle cx="8" cy="8" r=".6"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 16 16"><path d="M2.5 6h2.5l3.5-3v10L5 10H2.5z"/><path d="M11 5.5c.8.7 1.2 1.6 1.2 2.5s-.4 1.8-1.2 2.5"/></symbol>
+    <symbol id="i-muted" viewBox="0 0 16 16"><path d="M2.5 6h2.5l3.5-3v10L5 10H2.5z"/><path d="m11 6 3 4m0-4-3 4"/></symbol>
+    <symbol id="i-book" viewBox="0 0 16 16"><path d="M8 4c-1.5-1-3.5-1.3-5.5-1v9.5c2-.3 4 0 5.5 1 1.5-1 3.5-1.3 5.5-1V3c-2-.3-4 0-5.5 1zm0 0v9.5"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 16 16"><path d="M2.5 6V2.5H6m4 0h3.5V6m0 4v3.5H10m-4 0H2.5V10"/></symbol>
+  </svg>
 
-      <!-- Pavilion & Game Switcher -->
-      <div id="nav-controls">
-        <button id="showcase-nav-btn" class="nav-toggle-btn active" title="View 50-Engine Showcase">🏛️ Showcase</button>
-        <button id="simulator-nav-btn" class="nav-toggle-btn" title="View Active Simulation">🎮 Simulator</button>
-        <div class="nav-divider"></div>
-        <select id="pavilion-select" title="Select Thematic Pavilion"></select>
-        <select id="game-select" title="Select Engine / Simulation"></select>
-        <div class="btn-group">
-          <button id="prev-game-btn" class="icon-nav-btn" title="Previous Engine">◀</button>
-          <button id="random-game-btn" class="icon-nav-btn" title="Random Engine">🎲</button>
-          <button id="next-game-btn" class="icon-nav-btn" title="Next Engine">▶</button>
+  <div id="app">
+    <header id="top-bar">
+      <a class="brand" href="#showcase" aria-label="Pliny Game Lab, all games">Pliny Game Lab</a>
+
+      <nav id="nav-controls" aria-label="Views">
+        <button id="showcase-nav-btn" class="nav-toggle-btn active" title="Browse every game">All games</button>
+        <button id="simulator-nav-btn" class="nav-toggle-btn" title="Return to the game you are playing">Simulator</button>
+        <div class="nav-divider sim-only"></div>
+        <select id="pavilion-select" class="sim-only" title="Pavilion" aria-label="Pavilion"></select>
+        <select id="game-select" class="sim-only" title="Game" aria-label="Game"></select>
+        <div class="btn-group sim-only">
+          <button id="prev-game-btn" class="icon-nav-btn" title="Previous game" aria-label="Previous game"><svg class="icon"><use href="#i-prev"/></svg></button>
+          <button id="random-game-btn" class="icon-nav-btn" title="Random game" aria-label="Random game"><svg class="icon"><use href="#i-random"/></svg></button>
+          <button id="next-game-btn" class="icon-nav-btn" title="Next game" aria-label="Next game"><svg class="icon"><use href="#i-next"/></svg></button>
         </div>
-      </div>
+      </nav>
 
       <div id="telemetry">
-        <span class="telemetry-pill">Game: <strong id="game-num-val">1/50</strong></span>
-        <span class="telemetry-pill">FPS: <strong id="fps-val">60</strong></span>
-        <span class="telemetry-pill">Entities: <strong id="entity-val">0</strong></span>
-        <div class="telemetry-pill audio-group" title="Audio Controls">
-          <button id="audio-toggle-btn" class="icon-nav-btn" title="Toggle Sound (Mute/Unmute)">🔊</button>
-          <input type="range" id="audio-volume-slider" min="0" max="1" step="0.05" value="0.65" title="Master Volume">
+        <span class="telemetry-pill sim-only">Game <strong id="game-num-val">1/50</strong></span>
+        <span class="telemetry-pill sim-only">FPS <strong id="fps-val">60</strong></span>
+        <span class="telemetry-pill sim-only">Entities <strong id="entity-val">0</strong></span>
+        <div class="audio-group" title="Sound">
+          <button id="audio-toggle-btn" class="icon-nav-btn" title="Mute sound" aria-label="Mute sound" aria-pressed="false">
+            <svg class="icon icon-on"><use href="#i-sound"/></svg>
+            <svg class="icon icon-off"><use href="#i-muted"/></svg>
+          </button>
+          <input type="range" id="audio-volume-slider" min="0" max="1" step="0.05" value="0.65" title="Volume" aria-label="Volume">
         </div>
-        <span id="audio-soundscape-pill" class="telemetry-pill soundscape-pill" title="Active Pavilion Ambient Soundscape">♫ <strong id="soundscape-title">Caldera Rumble</strong></span>
-        <button id="codex-toggle-btn" class="icon-nav-btn" title="Open Plinius Codex (Latin Lore & Citations)">📖</button>
-        <button id="fullscreen-btn" class="icon-nav-btn" title="Toggle Fullscreen">⛶</button>
+        <span id="audio-soundscape-pill" class="telemetry-pill soundscape-pill sim-only" title="Ambient soundscape for this pavilion"><strong id="soundscape-title">Caldera Rumble</strong></span>
+        <button id="codex-toggle-btn" class="text-nav-btn" title="Open the Plinius Codex (C)" aria-label="Open the Plinius Codex"><svg class="icon"><use href="#i-book"/></svg><span>Codex</span></button>
+        <button id="fullscreen-btn" class="icon-nav-btn sim-only" title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg class="icon"><use href="#i-expand"/></svg></button>
       </div>
     </header>
 
-    <!-- Showcase Homepage View -->
+    <!-- Showcase: every count, room and card below is generated from DEMOS/PAVILIONS in src/core/showcase.js -->
     <section id="showcase-view">
-      <div class="showcase-hero">
-        <canvas id="showcase-canvas"></canvas>
-        <div class="showcase-kicker">A 50-ENGINE SIMULATION LABORATORY • PLINII NATURALIS HISTORIA</div>
-        <h1 class="showcase-title">THE PLINY GAME LAB</h1>
-        <p class="showcase-lede">
-          Fifty interactive procedural simulations, ancient mechanisms, generative ecosystems, and classical phenomena — each <b>designed, architected, and verified end-to-end by autonomous AI agents in a single day</b>, inspired by Pliny the Elder's 37 books of <em>Naturalis Historia</em>. Every engine is a pure, self-contained ES module running on Canvas 2D and WebAudio with zero external dependencies.
-        </p>
-        <div class="showcase-stats">
-          <div class="stat-card">
-            <div class="stat-num" id="stat-total-engines">50</div>
-            <div class="stat-label">Engines</div>
+      <div class="sheet">
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <p class="sheet-mark">Sheet A-1 · General plan</p>
+            <h1 id="hero-title" class="hero-title">The first encyclopedia,<br><em>rebuilt as games.</em></h1>
+            <p class="hero-lede">
+              Pliny the Elder tried to write down everything: volcanoes, bees, siege engines, the stars.
+              Here his <em>Naturalis Historia</em> becomes <span data-stat="games">50</span> small games and
+              simulations, shelved in <span data-stat="pavilions">10</span> pavilions around one atrium.
+              Each runs in your browser, and every one was designed and built by AI agents.
+            </p>
+            <div class="hero-actions">
+              <button id="hero-launch-btn" class="btn btn-solid">Play Vesuvius</button>
+              <button id="hero-random-btn" class="btn btn-line">Random game</button>
+              <a href="#showcase-bar" class="btn-link" data-scroll-index>Browse the index ↓</a>
+            </div>
+            <dl class="title-block">
+              <div><dt>Games</dt><dd data-stat="games">50</dd></div>
+              <div><dt>Pavilions</dt><dd data-stat="pavilions">10</dd></div>
+              <div><dt>Source</dt><dd><em>Naturalis Historia</em></dd></div>
+              <div><dt>Books</dt><dd>37</dd></div>
+              <div><dt>Runs on</dt><dd>Canvas 2D + Web Audio</dd></div>
+              <div><dt>Dependencies</dt><dd class="is-red">0</dd></div>
+            </dl>
           </div>
-          <div class="stat-card">
-            <div class="stat-num">10</div>
-            <div class="stat-label">Pavilions</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num">37</div>
-            <div class="stat-label">Books of Pliny</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num">0</div>
-            <div class="stat-label">Dependencies</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num">60</div>
-            <div class="stat-label">FPS Native</div>
-          </div>
+
+          <figure class="hero-plan">
+            <svg id="showcase-plan" class="plan" viewBox="0 0 600 452" role="group" aria-label="Floor plan: one room per pavilion"></svg>
+            <figcaption id="plan-legend" class="plan-legend" aria-live="polite">
+              <p class="legend-mark">Ground floor</p>
+              <p class="legend-title">Pick a room</p>
+              <p class="legend-body"></p>
+            </figcaption>
+          </figure>
+        </section>
+
+        <div id="showcase-bar" class="index">
+          <aside class="index-nav" aria-label="Search and pavilions">
+            <p class="sheet-mark">Sheet A-2 · Index</p>
+            <label class="search-box">
+              <span class="visually-hidden">Search games</span>
+              <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+              <input id="showcase-search" type="search" placeholder="Search games" autocomplete="off" spellcheck="false">
+              <kbd class="search-kbd" aria-hidden="true">/</kbd>
+            </label>
+            <p id="showcase-count" class="match-count" aria-live="polite">50 of 50 games</p>
+            <div id="showcase-chips" class="pavilion-chips" role="group" aria-label="Filter by pavilion"></div>
+          </aside>
+
+          <main class="showcase-main">
+            <div id="showcase-grid" class="showcase-grid"></div>
+            <div id="showcase-empty" class="showcase-empty" style="display: none;">
+              <p class="empty-title">Nothing on these shelves matches <span id="empty-query"></span>.</p>
+              <p class="empty-body">Try a single word, like “fire”, “water” or “siege”.</p>
+              <button id="clear-search-btn" class="btn btn-line">Clear search</button>
+            </div>
+          </main>
         </div>
-        <div class="showcase-hero-actions">
-          <button id="hero-launch-btn" class="hero-btn hero-btn-primary">▶ Launch Vesuvius (#1)</button>
-          <button id="hero-random-btn" class="hero-btn hero-btn-secondary">🎲 Random Engine</button>
-          <a href="#showcase-bar" class="hero-btn hero-btn-tertiary">📜 Explore All 50 ↓</a>
-        </div>
-        <div class="hero-hairline"></div>
+
+        <section class="revisions" aria-labelledby="rev-title">
+          <p class="sheet-mark">Sheet A-3 · Revisions</p>
+          <h2 id="rev-title" class="section-title">Marked up <em>as it was built.</em></h2>
+          <div class="rev-table-wrap">
+            <table class="rev-table">
+              <thead><tr><th scope="col">Rev</th><th scope="col">Date</th><th scope="col">Change</th></tr></thead>
+              <tbody>
+                <tr><td>A</td><td>2026.09.15</td><td>First five games, then nineteen, across ten pavilions.</td></tr>
+                <tr><td>B</td><td>2026.09.16</td><td>All fifty playable, with a first showcase, the Plinius Codex and pavilion soundscapes.</td></tr>
+                <tr><td>C</td><td>2026.09.17</td><td>Touch controls for the first pavilion and a simulator layout for phones.</td></tr>
+                <tr><td>D</td><td>2026.09.19</td><td>Vesuvius becomes a mission: evacuate Stabiae before the surge.</td></tr>
+                <tr><td>E</td><td>2026.09.20</td><td>Every game’s on-screen readouts sized for phones and high-density screens.</td></tr>
+                <tr><td>F</td><td>2026.09.21</td><td>Physics that holds at any frame rate; deeper play in seven games.</td></tr>
+                <tr><td>G</td><td>2026.09.22</td><td>This showcase, redrawn as a blueprint.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <footer class="showcase-footer">
+          <div class="closing">
+            <p class="closing-line">Start where Pliny ended: <em>at Vesuvius.</em></p>
+            <button class="btn btn-solid" data-launch="vesuvius">Play Vesuvius</button>
+          </div>
+          <p class="colophon">
+            Gaius Plinius Secundus, AD 23/24–79. Built with plain ES modules, Canvas 2D and Web Audio.
+            <a href="https://github.com/obsesivegamer/pliny-game-lab">Source on GitHub</a>
+          </p>
+        </footer>
       </div>
-
-      <!-- Sticky Filter / Search Toolbar -->
-      <div id="showcase-bar" class="showcase-toolbar">
-        <div class="toolbar-inner">
-          <div class="search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
-              <circle cx="11" cy="11" r="7"/>
-              <path d="M21 21l-4.3-4.3"/>
-            </svg>
-            <input id="showcase-search" type="search" placeholder="Search 50 engines by name, physics, keyword… (press / to focus)" autocomplete="off" aria-label="Search engines">
-          </div>
-          <div id="showcase-chips" class="pavilion-chips"></div>
-          <div id="showcase-count" class="match-count">Showing 50 of 50 engines</div>
-        </div>
-      </div>
-
-      <!-- 50 Engine Cards Grid -->
-      <main class="showcase-main">
-        <div id="showcase-grid" class="showcase-grid"></div>
-        <div id="showcase-empty" class="showcase-empty" style="display: none;">
-          <div class="empty-icon">🏛️</div>
-          <p>No engines match your search query.</p>
-          <button id="clear-search-btn" class="action-btn">Clear Search Filter</button>
-        </div>
-      </main>
-
-      <!-- Showcase Footer -->
-      <footer class="showcase-footer">
-        <div class="footer-line"></div>
-        <div class="footer-content">
-          <p><b>The Pliny Game Lab.</b> 50 simulations across 10 Pavilions: <em>Ignis & Terra, Bestiarium, Mechanica, Cosmographia, Fabula, Mathematica, Mare Nostrum, Architectura, Alchemia, and Strategia</em>. Built with pure vanilla ES modules, Canvas 2D, and WebAudio API.</p>
-          <p class="footer-sub">Inspired by Gaius Plinius Secundus (AD 23/24 – 79) • Verified green across 50/50 headless and real browser QA suites.</p>
-        </div>
-      </footer>
     </section>
 
     <!-- Main Viewport (Simulator View) -->
@@ -159,31 +187,30 @@
         </div>
       </aside>
     </main>
-    
+
     <!-- Plinius Codex Slide-out Drawer -->
     <aside id="codex-drawer" class="codex-drawer" aria-hidden="true">
       <div id="codex-backdrop" class="codex-backdrop"></div>
-      <div class="codex-panel">
+      <div class="codex-panel" role="dialog" aria-labelledby="codex-title">
         <div class="codex-header">
           <div class="codex-header-text">
-            <span class="codex-badge">PLINII NATURALIS HISTORIA</span>
+            <span class="codex-badge">Plinius Codex</span>
             <h2 id="codex-title">Vesuvius (Mons Vesuvius)</h2>
           </div>
-          <button id="codex-close-btn" class="icon-nav-btn codex-close-btn" aria-label="Close Codex">✕</button>
+          <button id="codex-close-btn" class="icon-nav-btn codex-close-btn" aria-label="Close the codex">✕</button>
         </div>
         <div class="codex-content">
           <div class="codex-card codex-latin-card">
-            <div class="codex-card-label">📜 Classical Excerpt</div>
             <blockquote id="codex-latin-quote">"..."</blockquote>
             <p id="codex-translation">"..."</p>
             <div id="codex-book-ref" class="codex-ref">Pliny the Elder</div>
           </div>
           <div class="codex-card">
-            <div class="codex-card-label">🔬 Scientific Principles Simulated</div>
+            <div class="codex-card-label">What it simulates</div>
             <p id="codex-science">...</p>
           </div>
           <div class="codex-card">
-            <div class="codex-card-label">🎮 Mechanics & Interaction Guide</div>
+            <div class="codex-card-label">How to play</div>
             <p id="codex-controls">...</p>
           </div>
         </div>
