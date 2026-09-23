@@ -36,15 +36,16 @@ Every single engine is a **pure, self-contained ES module** running in Canvas 2D
 
 ## 🌟 Key Architecture & Highlights
 
-1. **Showcase Homepage**:
-   - Modeled on the [Fable 5 Showcase](https://elder-plinius.github.io/FABLE-SHOWCASE/).
-   - 50-card responsive grid with high-definition screenshot previews, pavilion tags, and physics summaries.
-   - Interactive gold constellation particle canvas with cursor magnetic webbing.
-   - Live search (hotkey `/`) and 11 filter chips.
-   - Full keyboard navigation (`Arrow keys` to focus, `Enter` to launch, `1-0` for pavilion quick-jumps, `A` for all).
+1. **Showcase Homepage** (`src/core/showcase.js`):
+   - Drawn as an architect's blueprint: a Roman house floor plan where each room is a pavilion (hover to see its games, click to open its shelf).
+   - Games are shelved by pavilion with architectural room numbers (pavilion III, second game → room 302).
+   - Everything, including the floor plan, counts and filters, is generated from `DEMOS` and `PAVILIONS`, so new games and pavilions need no markup changes.
+   - Live search (hotkey `/`) and a pavilion index that turns into a scrolling strip on phones.
+   - Keyboard navigation (`Arrow keys` to move between games, `Enter` to launch, `1-0` for pavilion quick-jumps, `A` for all).
+   - Thumbnails are captured from each game's own canvas into `assets/thumbs/<key>.webp` by `node scripts/capture-thumbs.js`.
 
 2. **📖 Plinius Codex**:
-   - Slide-out authentic Roman parchment drawer (hotkey `C` / `Escape` or `📖 Codex` in telemetry).
+   - Slide-out drawer (hotkey `C` / `Escape`, or the Codex button in the header).
    - Curated Latin text citations and English translations from Pliny's *Naturalis Historia*, Vitruvius, and Ovid for all 50 simulations.
    - Explanations of underlying physical and mathematical principles simulated.
 
@@ -95,6 +96,9 @@ node tests/audio-qa.js
 
 # Run full project verification suite
 ./scripts/verify-all.sh
+
+# Capture showcase thumbnails for games that don't have one yet (add --all to redo every game)
+node scripts/capture-thumbs.js
 ```
 
 ---

@@ -72,7 +72,7 @@ What it exercises:
 node tests/showcase-qa.js
 ```
 
-Exercises: default Showcase view activation, 50 card rendering, 11 pavilion filter chips, live search, chip filtering, card click → Simulator launch, and Esc → Showcase return.
+Exercises: default Showcase view activation, card count, pavilion filter chips, live search, chip filtering, card click → Simulator launch, and the nav button back to the Showcase. See `features/showcase-homepage.md` for the page's structure and the thumbnail script.
 
 ### Deep Visual QA (Headless Render Instrumentation)
 
@@ -89,15 +89,15 @@ Exercises: NaN coordinate detection, infinite value detection, invalid CSS color
 
 ### Browser Driving (Interactive Verification)
 Open `http://localhost:8000` in the browser.
-1. The **Showcase homepage** loads by default with a hero section, stats counters, search bar, pavilion filter chips, and a 50-card grid.
-2. Click any engine card (or use "▶ Launch Vesuvius (#1)" / "🎲 Random Engine") to switch to **Simulator view**.
-3. In Simulator view, verify the top-right telemetry HUD displays `FPS: 60` and `Entities > 0`.
+1. The **Showcase homepage** loads by default: a floor plan with one room per pavilion, then every game shelved by pavilion with a sticky search box and pavilion list.
+2. Click any game card (or "Play Vesuvius" / "Random game") to switch to **Simulator view**.
+3. In Simulator view, verify the header readouts show `FPS 60` and `Entities` above 0. They are hidden on the showcase, drop away below 1440px (entities) and 1280px (FPS), and are all hidden on phones; read `#fps-val` / `#entity-val` directly at narrower widths.
 4. Use the **Pavilion dropdown** and **Game dropdown** in the nav bar to switch engines.
-5. Use ◁/▷ arrows and 🎲 to navigate sequentially or randomly.
+5. Use the previous/next arrows and the die button to navigate sequentially or randomly.
 6. Interact with engine-specific controls in the right-side panel.
 7. Press `Esc` to return to Showcase view.
 8. Press `/` (in Showcase view) to focus the search bar.
-9. Click the 📜 Codex icon to open the Plinius Codex lore drawer.
+9. Click the Codex button in the header (or press `C` on the showcase) to open the Plinius Codex drawer.
 
 ## 4. Evidence
 

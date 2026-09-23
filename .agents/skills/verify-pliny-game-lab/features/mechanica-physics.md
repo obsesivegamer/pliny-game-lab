@@ -4,7 +4,7 @@ Verlet integration rigid constraint physics with 5 Vitruvian machine presets, st
 
 ## Sub-features
 - Verlet particle and distance constraint solver with relaxation sub-stepping.
-- 5 Vitruvian machine presets: Archimedean Screw, Hero's Aeolipile (steam turbine), Ballista catapult, Roman Crane (treadwheel), and Cloth & Chains.
+- 5 Vitruvian machine presets: Polyspaston Roman Crane (the default), Hero Steam Turbine (Aeolipile), Archimedean Water Screw, Temple Automatic Siphon Doors, and Compound Gear Train & Truss.
 - Stress analysis: constraints color-coded by tension/compression ratio with visual strain indicators.
 - Cable cutting: drag the slice tool across constraints to sever ropes and springs.
 - Gravity, damping, and constraint stiffness sliders.

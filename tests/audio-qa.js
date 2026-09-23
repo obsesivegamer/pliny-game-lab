@@ -149,9 +149,9 @@ async function runAudioQA() {
   const activeChipAll = await page.$eval('.chip-btn.active', el => el.dataset.pav);
   console.log(`   Press 'A' resets filter to: "${activeChipAll}" -> ${activeChipAll === 'all' ? '✓ YES' : '✗ NO'}`);
 
-  // Test hero constellation canvas
-  const canvasExists = await page.$('#showcase-canvas') !== null;
-  console.log(`   Interactive constellation hero canvas present: ${canvasExists ? '✓ YES' : '✗ NO'}`);
+  // Hero floor plan: one room per pavilion
+  const planRooms = await page.$$eval('#showcase-plan .plan-room', rooms => rooms.length);
+  console.log(`   Hero floor plan rooms: ${planRooms} -> ${planRooms === 10 ? '✓ YES' : '✗ NO'}`);
 
   await browser.close();
 

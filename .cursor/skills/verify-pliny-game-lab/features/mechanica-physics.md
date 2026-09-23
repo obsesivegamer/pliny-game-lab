@@ -1,31 +1,33 @@
 # Feature: Mechanica Physics & Automata Sandbox
 
-Verlet integration rigid constraint physics, ancient Roman automata, and hydraulic mechanisms.
+Verlet integration rigid constraint physics with 5 Vitruvian machine presets, stress analysis visualization, and cable cutting.
 
 ## Sub-features
 - Verlet particle and distance constraint solver with relaxation sub-stepping.
-- Archimedean screw simulation lifting water particles into an elevated flume.
-- Hero of Alexandria's Aeolipile (rotational steam reaction turbine).
-- Catapult siege machine with release latch trigger.
-- Interactive constraint slicing (sever ropes and springs by dragging with slice tool).
+- 5 Vitruvian machine presets: Polyspaston Roman Crane (the default), Hero Steam Turbine (Aeolipile), Archimedean Water Screw, Temple Automatic Siphon Doors, and Compound Gear Train & Truss.
+- Stress analysis: constraints color-coded by tension/compression ratio with visual strain indicators.
+- Cable cutting: drag the slice tool across constraints to sever ropes and springs.
+- Gravity, damping, and constraint stiffness sliders.
 
 ## How to get to it (user POV)
-1. Open `http://localhost:8000` in browser.
-2. Click the `⚙️ Mechanica` button on the top navigation bar.
-3. Select presets: 'Cloth & Chains', 'Archimedes Screw', 'Catapult Siege', 'Hero Steam Turbine'.
-4. Drag points with left-click, or select 'Slice / Sever Constraints' to cut connections.
+1. Open `http://localhost:8000` in browser (Showcase homepage loads).
+2. Find the "Mechanica" card in the grid (Pavilion III: Mechanica & Machina) or use the search bar.
+3. Click the card to launch it in Simulator view.
+4. Alternatively: select "III. Mechanica & Machina" from the Pavilion dropdown, then "11. Mechanica" from the Game dropdown.
+5. Select machine presets from the controls panel.
+6. Drag points with left-click, or select the slice tool to cut connections.
 
 ## Driving it with headless harness
 Execute via test suite:
 ```bash
-node -e "import('./src/demos/mechanica/mechanica.js').then(m => {
-  const e = new m.MechanicaEngine({ width: 800, height: 600, getContext: () => ({ fillRect() {}, beginPath() {}, arc() {}, fill() {}, stroke() {}, moveTo() {}, lineTo() {} }) }, {}, { appendChild: () => {} });
-  for (let i=0; i<60; i++) e.update(0.016);
-  console.log('Points & Constraints:', e.getEntityCount());
-  if (e.getEntityCount() === 0) process.exit(1);
-})"
+node tests/verify-engines.js
+# Mechanica is engine #11; look for "[11/50] ✓ mechanica (MechanicaEngine) OK"
 ```
+
+The engine exports `MechanicaEngine` from `src/demos/mechanica/mechanica.js`.
+Entity count after 60 ticks: ~23 points & constraints (varies by preset).
 
 ## Gotchas
 - Rapid extreme mouse dragging can over-stretch constraints beyond breaking threshold if tearable is enabled.
 - Setting gravity to 0 creates zero-G orbital and tumbling dynamics.
+- Stress analysis colors update per-frame; red = high tension, blue = compression.

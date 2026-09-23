@@ -3,7 +3,7 @@
 Autonomous agent-based artificial life ecosystem with 6 Plinian species, Lotka-Volterra predator-prey dynamics, 2D scent grid diffusion, and real-time population telemetry.
 
 ## Sub-features
-- 6 Plinian species: Cervus (deer herbivore), Lupus (wolf pack predator), Aquila (eagle aerial hunter), Leo (lion apex predator), Ursus (bear territorial predator), and Griffin (Plinian apex aerial predator).
+- 6 Plinian species: Cervus, Leo, Griffin, Basilisk, Monoceros and Elephantus (roles and parameters live in `SPECIES_CATALOG` in `src/demos/bestiarium/bestiarium.js`).
 - Craig Reynolds steering behaviors: separation, alignment, and cohesion per species.
 - Lotka-Volterra population dynamics governing predator-prey equilibrium.
 - 2D scent grid diffusion: prey leave scent trails that predators follow with gradient ascent.
