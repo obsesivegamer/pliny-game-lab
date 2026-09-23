@@ -40,6 +40,7 @@ export class OracleWordsEngine {
   resize(width, height, dpr) { this.width = width; this.height = height; this.dpr = dpr || 1; }
   update() {}
   onKeyDown(key, event) {
+    if (event?.ctrlKey || event?.metaKey || event?.altKey) return;
     if (!/^[a-z]$/i.test(key) && key !== 'Enter' && key !== 'Backspace') return;
     event?.preventDefault?.();
     this.enterKey(key);

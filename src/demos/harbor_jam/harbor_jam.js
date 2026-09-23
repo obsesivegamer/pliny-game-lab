@@ -4,7 +4,7 @@ import { LEVELS, makeHarborState, boatAt, boatCells, moveHarbor, harborWon, solv
 const spec = {
   key: 'harbor_jam', title: 'Harbor Jam',
   goal: 'Slide the blue courier boat to the right edge.',
-  rule: 'Tap or press Enter on a boat to select it. Drag or use arrows to slide it.',
+  rule: 'Tap or press Enter on a boat to select it. Drag or use arrows to slide it. Esc lets go.',
   levels: LEVELS, makeState: makeHarborState,
   size: () => [6, 6],
   select(state, level, x, y) {
@@ -52,12 +52,20 @@ const spec = {
       action === 'Left' && boat.axis === 'h' || action === 'Up' && boat.axis === 'v' ? -1 : 0;
     if (offset) engine.commit(moveHarbor(engine.state, engine.getLevel(), engine.state.selected, offset));
   },
-  keyboard(state, level, key) {
+  keyboard(state, level, key, engine) {
     if (state.selected === null) return null;
+    const onSelected = engine.cursor && boatAt(level, state, ...engine.cursor) === state.selected;
+    if (key === 'Escape' || (key === 'Enter' || key === ' ') && onSelected) return { ...state, selected: null };
     const boat = level.vehicles[state.selected];
     const offset = key === 'ArrowRight' && boat.axis === 'h' || key === 'ArrowDown' && boat.axis === 'v' ? 1 :
       key === 'ArrowLeft' && boat.axis === 'h' || key === 'ArrowUp' && boat.axis === 'v' ? -1 : 0;
-    return offset ? moveHarbor(state, level, state.selected, offset) : null;
+    if (!offset) return null;
+    const next = moveHarbor(state, level, state.selected, offset);
+    if (next !== state && onSelected) {
+      const [x, y] = engine.cursor;
+      engine.cursor = boat.axis === 'h' ? [x + offset, y] : [x, y + offset];
+    }
+    return next;
   },
   draw(ctx, state, level, rect) {
     for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) drawCell(ctx, rect, x, y, '#DDEDEB', '#B3CBC6');

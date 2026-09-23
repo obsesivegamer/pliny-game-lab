@@ -19,13 +19,16 @@ export class StonefallEngine {
     this.state = createStoneState();
     this.best = bestScore();
     this.elapsed = 0;
+    this.paused = false;
     this.mountControls();
     attachTouchBridge(this, canvas);
   }
   resize(width, height, dpr) { this.width = width; this.height = height; this.dpr = dpr || 1; }
   uiScale() { return this.dpr || 1; }
   reset() { this.state = createStoneState(); this.elapsed = 0; this.refreshControls(); }
+  setPaused(paused) { this.paused = paused; this.refreshControls(); }
   apply(action) {
+    if (this.paused) return;
     const previous = this.state;
     this.state = action === 'left' ? moveStone(previous, -1, 0) :
       action === 'right' ? moveStone(previous, 1, 0) :
@@ -45,9 +48,10 @@ export class StonefallEngine {
     if (this.elapsed >= interval) { this.elapsed = 0; this.apply('down'); }
   }
   onKeyDown(key, event) {
+    if (event?.ctrlKey || event?.metaKey || event?.altKey) return;
     const action = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'rotate',
       ArrowDown: 'down', ' ': 'drop', x: 'rotate', X: 'rotate' }[key];
-    if (!action) return;
+    if (!action || this.paused) return;
     event?.preventDefault?.();
     this.apply(action);
   }
@@ -85,7 +89,7 @@ export class StonefallEngine {
     const status = this.controlsContainer?.querySelector?.('.puzzle-status');
     if (status) status.textContent = this.state.gameOver ?
       `Game over. ${this.state.lines} rows cleared. Press Retry to play again.` :
-      `Score ${this.state.score} · Rows ${this.state.lines} · Best ${this.best} · Next ${this.state.next}`;
+      `${this.paused ? 'Paused · ' : ''}Score ${this.state.score} · Rows ${this.state.lines} · Best ${this.best} · Next ${this.state.next}`;
   }
   render(ctx) {
     const dpr = this.dpr || 1;

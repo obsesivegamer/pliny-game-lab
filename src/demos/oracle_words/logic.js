@@ -64,11 +64,24 @@ export function applyWordInput(state, key) {
   return state;
 }
 
+// ANSWERS reads alphabetically, so days walk a fixed shuffle of it; otherwise
+// tomorrow's word would be the next one in the list.
+const DAILY_ORDER = (() => {
+  const order = ANSWERS.map((_, index) => index);
+  let seed = 20260923;
+  for (let i = order.length - 1; i > 0; i--) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    const j = Math.floor(seed / 2 ** 32 * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+})();
+
 export function wordForDate(dateKey) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) throw new Error('Date must be YYYY-MM-DD.');
   const day = Math.floor(Date.parse(`${dateKey}T00:00:00Z`) / 86400000);
   if (!Number.isFinite(day)) throw new Error('Invalid date.');
-  return ANSWERS[((day % ANSWERS.length) + ANSWERS.length) % ANSWERS.length];
+  return ANSWERS[DAILY_ORDER[((day % ANSWERS.length) + ANSWERS.length) % ANSWERS.length]];
 }
 
 export function restoreDaily(answer, saved) {

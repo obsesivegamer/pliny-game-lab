@@ -148,6 +148,7 @@ export class LevelPuzzleEngine {
   }
   reset() { this.loadLevel(this.levelIndex); }
   hint() {
+    if (this.spec.won(this.state, this.getLevel())) return;
     this.message = this.spec.hint(this.state, this.getLevel(), this) || 'Try a different move.';
     this.refreshControls();
   }
@@ -164,12 +165,16 @@ export class LevelPuzzleEngine {
   }
   onMouseUp() { this.pointerHeld = false; }
   onKeyDown(key, event) {
-    if (key.toLowerCase() === 'z' && (event?.ctrlKey || event?.metaKey)) {
-      event?.preventDefault?.();
-      this.undo();
+    if (event?.ctrlKey || event?.metaKey || event?.altKey) {
+      if (key.toLowerCase() === 'z' && !event.altKey) {
+        event.preventDefault?.();
+        this.undo();
+      }
       return;
     }
-    const next = this.spec.keyboard?.(this.state, this.getLevel(), key, this);
+    if ((key === 'Enter' || key === ' ') && event?.target?.tagName === 'BUTTON') return;
+    const next = this.spec.won(this.state, this.getLevel()) ? null :
+      this.spec.keyboard?.(this.state, this.getLevel(), key, this);
     if (next) { event?.preventDefault?.(); this.commit(next); return; }
     const direction = { ArrowUp: [0, -1], ArrowRight: [1, 0],
       ArrowDown: [0, 1], ArrowLeft: [-1, 0] }[key];
@@ -181,8 +186,7 @@ export class LevelPuzzleEngine {
       event?.preventDefault?.();
       return;
     }
-    if ((key === 'Enter' || key === ' ') && this.cursor &&
-      event?.target?.tagName !== 'BUTTON') {
+    if ((key === 'Enter' || key === ' ') && this.cursor) {
       event?.preventDefault?.();
       this.commit(this.spec.select(this.state, this.getLevel(), ...this.cursor, this));
     }

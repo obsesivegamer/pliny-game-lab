@@ -39,6 +39,11 @@ assert.equal(word.rows.length, 6);
 const daily = wordForDate('2026-09-22');
 assert.equal(daily, wordForDate('2026-09-22'), 'the same local date has a stable word');
 assert.equal(daily.length, 5);
+const cycle = Array.from({ length: ANSWERS.length }, (_, day) =>
+  ANSWERS.indexOf(wordForDate(new Date(Date.UTC(2026, 0, 1 + day)).toISOString().slice(0, 10))));
+assert.equal(new Set(cycle).size, ANSWERS.length, 'every answer appears once per cycle of days');
+const neighbours = cycle.slice(1).filter((index, day) => Math.abs(index - cycle[day]) <= 2).length;
+assert.ok(neighbours < 10, 'tomorrow\'s word is not a list neighbour of today\'s');
 
 const saved = JSON.stringify({ rows: [{ guess: 'WATER' }], draft: 'A' });
 const restored = restoreDaily('STONE', saved);

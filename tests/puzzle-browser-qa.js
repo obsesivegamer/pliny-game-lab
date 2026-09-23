@@ -72,6 +72,23 @@ try {
   await page.click('.engine-card[data-key="canal_lines"]');
   await page.waitForFunction(() => window.__hub?.currentEngine?.constructor.name === 'CanalLinesEngine');
   assert.equal(new URL(page.url()).hash, '#game=canal_lines', 'a new puzzle card launches from the blueprint');
+
+  const session = await page.createCDPSession();
+  async function listenerCount(expression, type) {
+    const { result } = await session.send('Runtime.evaluate', { expression });
+    const { listeners } = await session.send('DOMDebugger.getEventListeners', { objectId: result.objectId });
+    await session.send('Runtime.releaseObject', { objectId: result.objectId });
+    return listeners.filter(listener => listener.type === type).length;
+  }
+  const panel = 'document.getElementById("dynamic-controls")';
+  const canvas = 'document.getElementById("main-canvas")';
+  const settled = [await listenerCount(panel, 'click'), await listenerCount(canvas, 'touchstart')];
+  await page.evaluate(() => Promise.all([
+    window.__hub.switchDemo('lantern_push'), window.__hub.switchDemo('mirror_harbor')
+  ]));
+  assert.equal(await page.evaluate(() => window.__hub.currentEngine.spec.key), 'mirror_harbor');
+  assert.deepEqual([await listenerCount(panel, 'click'), await listenerCount(canvas, 'touchstart')], settled,
+    'overlapping game switches leave exactly one live engine');
   assert.deepEqual(errors, [], 'playing the puzzle emits no browser errors');
   console.log('Puzzle browser: Oracle Words round and 60 ordered showcase cards pass');
 } finally {

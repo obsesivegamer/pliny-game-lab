@@ -41,6 +41,7 @@ node tests/verify-engines.js
 node tests/puzzle-catalog.js
 node tests/puzzle-foundation.js
 node tests/puzzle-keyboard.js
+node tests/puzzle-input-guards.js
 for suite in tests/{puzzle-logic,star-switch,canal-lines,lantern-push,mirror-harbor,mosaic-clues,harbor-jam,number-forge,signal-route,stonefall}.js; do
   node "$suite"
 done

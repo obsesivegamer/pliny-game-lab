@@ -704,6 +704,7 @@ class PlinyHub {
 
     this.activeKey = "oracle_words";
     this.currentEngine = null;
+    this.demoLoadId = 0;
     this.isPaused = false;
     this.lastTime = (typeof performance !== "undefined") ? performance.now() : Date.now();
     this.frameCount = 0;
@@ -784,6 +785,7 @@ class PlinyHub {
         this.isPaused = !this.isPaused;
         this.pauseBtn.textContent = this.isPaused ? "Resume" : "Pause";
         this.pauseBtn.style.color = this.isPaused ? "var(--accent-crimson)" : "var(--text-main)";
+        this.currentEngine?.setPaused?.(this.isPaused);
       });
     }
 
@@ -974,9 +976,10 @@ class PlinyHub {
     window.addEventListener("keydown", (e) => {
       const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
       const isTyping = (activeTag === "input" || activeTag === "textarea");
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
 
       // Focus search on '/' when in showcase
-      if (e.key === "/" && this.currentView === "showcase") {
+      if (e.key === "/" && this.currentView === "showcase" && !hasModifier) {
         if (!isTyping) {
           e.preventDefault();
           if (this.showcaseSearch) {
@@ -1017,12 +1020,12 @@ class PlinyHub {
       // doesn't collide with engines that bind 'C' for their own controls.
       // In the simulator the codex button (and the existing open-codex
       // Escape→close path) remains available.
-      if ((e.key === "c" || e.key === "C") && !isTyping && this.currentView === "showcase") {
+      if ((e.key === "c" || e.key === "C") && !isTyping && !hasModifier && this.currentView === "showcase") {
         this.toggleCodex();
       }
 
       // Showcase shortcuts when not typing in search
-      if (this.currentView === "showcase" && !isTyping) {
+      if (this.currentView === "showcase" && !isTyping && !hasModifier) {
         // Pavilion quick jump keys (1-9 for Pavilions 1-9, 0 for Pavilion 10)
         if (e.key >= "1" && e.key <= "9") {
           const pavIdx = parseInt(e.key, 10);
@@ -1201,6 +1204,7 @@ class PlinyHub {
   async switchDemo(key) {
     const info = DEMOS[key];
     if (!info) return;
+    const loadId = ++this.demoLoadId;
 
     // Teardown existing
     if (this.currentEngine) {
@@ -1238,6 +1242,8 @@ class PlinyHub {
         EngineClass = mod[info.exportName];
         this.engineCache[key] = EngineClass;
       }
+      // A newer switchDemo started while this module loaded; only that one may build an engine.
+      if (loadId !== this.demoLoadId) return;
 
       this.currentEngine = new EngineClass(this.canvas, this.ctx, this.controlsContainer);
       const dpr = window.devicePixelRatio || 1;
@@ -1257,6 +1263,7 @@ class PlinyHub {
         this.openCodex(key);
       }
     } catch (err) {
+      if (loadId !== this.demoLoadId) return;
       console.warn("Failed to load engine for " + key, err);
       // Fallback placeholder rendering if module not yet compiled
       this.currentEngine = {
