@@ -1,4 +1,5 @@
 import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
+import { panelReserve } from '../../core/puzzle.js';
 import { ANSWERS, applyWordInput, createWordState, restoreDaily, wordForDate } from './logic.js';
 
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
@@ -132,11 +133,23 @@ export class OracleWordsEngine {
     const retry = this.controlsContainer.querySelector?.('[data-action="retry"]');
     if (retry) retry.disabled = this.mode === 'daily';
   }
+  getRect() {
+    const dpr = this.uiScale();
+    const width = this.width / dpr;
+    const height = this.height / dpr;
+    const playWidth = width - Math.min(width, panelReserve(this.canvas, this.controlsContainer));
+    const gap = Math.max(3, Math.min(7, width / 75));
+    const cell = Math.max(18, Math.min(61, (playWidth - 34 - 4 * gap) / 5, (height - 95 - 5 * gap) / 6));
+    const boardWidth = cell * 5 + gap * 4;
+    const boardHeight = cell * 6 + gap * 5;
+    return { x: (playWidth - boardWidth) / 2, y: Math.max(47, (height - boardHeight) / 2 + 13),
+      width: boardWidth, height: boardHeight, cell, gap, playWidth };
+  }
   render(ctx) {
     const dpr = this.uiScale();
     const width = this.width / dpr;
     const height = this.height / dpr;
-    const playWidth = width >= 769 || (width >= 650 && height <= 500) ? width - 350 : width;
+    const { x: left, y: top, width: boardWidth, height: boardHeight, cell, gap, playWidth } = this.getRect();
     ctx.save();
     ctx.scale(dpr, dpr);
     ctx.fillStyle = '#F2EBD9';
@@ -148,12 +161,6 @@ export class OracleWordsEngine {
     ctx.font = `700 ${Math.min(30, Math.max(20, width / 18))}px system-ui`;
     ctx.fillText('Oracle Words', playWidth / 2, 29);
 
-    const gap = Math.max(3, Math.min(7, width / 75));
-    const cell = Math.max(18, Math.min(61, (playWidth - 34 - 4 * gap) / 5, (height - 95 - 5 * gap) / 6));
-    const boardWidth = cell * 5 + gap * 4;
-    const boardHeight = cell * 6 + gap * 5;
-    const left = (playWidth - boardWidth) / 2;
-    const top = Math.max(47, (height - boardHeight) / 2 + 13);
     ctx.font = `700 ${Math.max(14, cell * 0.48)}px system-ui`;
     for (let row = 0; row < 6; row++) {
       const played = this.round.rows[row];

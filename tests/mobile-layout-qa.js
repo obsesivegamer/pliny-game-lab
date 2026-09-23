@@ -137,7 +137,7 @@ async function run() {
         if (process.env.PLINY_DEBUG_LAYOUT) console.log(`${vp.name} collapsed`, JSON.stringify(c));
         const recovered = c.canvas.height - m.canvas.height;
         const released = m.panelHeight - c.panelHeight;
-        assert.ok(recovered > 1 && Math.abs(recovered - released) < 2,
+        assert.ok(recovered > 20 && Math.abs(recovered - released) < 2,
           `${vp.name}: collapsing the sheet did not give its height back to the canvas (${Math.round(m.canvas.height)} -> ${Math.round(c.canvas.height)})`);
         assert.ok(c.backingMatchesBox, `${vp.name}: backing store went stale after collapse`);
         assert.ok(Math.abs(c.worldStretch - 1) < 0.05, `${vp.name}: world stretched ${c.worldStretch.toFixed(2)}:1 after collapse`);
