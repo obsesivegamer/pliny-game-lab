@@ -5,6 +5,7 @@
 - 2026-09-16T00:30:00-04:00 [CODE] Complete all 50 game engines in Pliny Game Lab suite. COMPLETE.
 
 ## [DECISIONS]
+- 2026-09-23 [USER] Oracle Words marks use orange / light blue / charcoal (tiles `#B8521A` / `#9DD0FA` / `#2F3439`) so protanopic and deuteranopic players can tell them apart; the old teal and gray were ΔE2000 0.8 apart under protanopia. The three also differ in lightness, so the game works in greyscale. `tests/oracle-colors.js` guards the tile and keyboard colours. Harbor Jam's selected boat vs green boat is ΔE 7.3 under protanopia; UNCONFIRMED whether to change it.
 - 2026-09-23T04:25:18Z [CODE] Add an unnumbered Puzzle Arcade group, keep legacy keys and screenshot files, and give every card an explicit thumbnail path. Build eight twelve-level games plus Oracle Words and Stonefall. Work in isolated branch `codex/puzzle-arcade` because the original checkout has unrelated changes.
 
 ## [PROGRESS]
