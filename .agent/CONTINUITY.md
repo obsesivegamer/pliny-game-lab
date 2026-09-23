@@ -8,6 +8,7 @@
 - 2026-09-23T04:25:18Z [CODE] Add an unnumbered Puzzle Arcade group, keep legacy keys and screenshot files, and give every card an explicit thumbnail path. Build eight twelve-level games plus Oracle Words and Stonefall. Work in isolated branch `codex/puzzle-arcade` because the original checkout has unrelated changes.
 
 ## [PROGRESS]
+- 2026-09-23T04:48:40Z [TOOL] Rebased puzzle branch onto blueprint showcase main (`095a972`) and integrated the new Puzzle Arcade into its floor plan, card ranks, preserved legacy thumbnails, and responsive panel. Rechecked 60/60 engines, 60/60 visual instrumentation, 60/60 real-browser renders, showcase, puzzle playthrough/mobile/keyboard, codex, audio, panel, and legacy mobile layout with no reported issues. Updated and mirrored verification guides.
 - 2026-09-23T04:25:18Z [TOOL] Ten puzzle engines implemented with flat Canvas art, touch and keyboard controls, local progress, hints, retry, and undo where applicable. Verified 60/60 engine simulations, 60/60 visual checks with no warnings, 60/60 browser checks with no issues, first-level browser playthroughs, all ten phone layouts, and puzzle keyboard/touch checks. Stonefall piece randomization now avoids a forced alternation.
 - 2026-09-15T20:20:00-04:00 [TOOL] 5 initial engines verified green: vesuvius, bestiarium, cosmographia, mechanica, labyrinthus.
 - 2026-09-15T20:36:00-04:00 [TOOL] 14 new engines landed and verified before weekly quota limit. (19/50 passed).
@@ -57,6 +58,7 @@
 - 2026-09-22T20:10:00-04:00 [CODE] Showcase is catalog-driven so the concurrent effort adding games needs no showcase edits: counts, plan rooms, chips and room numbers all derive from `DEMOS`/`PAVILIONS`. Verified by injecting 9 extra games and 2 extra pavilions (12 rooms, 59 cards, placeholder plates for missing thumbs).
 
 ## [OUTCOMES]
+- 2026-09-23T04:48:40Z [CODE] Puzzle Arcade supplies ten new showcase games in positions 1–10; the original fifty remain in order at 11–60. Eight puzzles contain twelve authored levels each, while Oracle Words offers daily/endless rounds and Stonefall is a score chase. Keep manual playtesting for fun and difficulty as a review step; automated checks establish playability and integration, not subjective quality.
 - 50/50 engines completed and verified green across headless Node simulation, deep visual QA, mobile layout QA, and Puppeteer headless Chrome suites.
 - All 50 engines implement `uiScale()`, touch bridge attachment/detachment, and responsive mobile HUDs (with camera `worldView()` in Vesuvius).
 - 50/50 screenshots captured in .audit/screenshots/ at 1280x800.

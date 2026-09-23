@@ -1,11 +1,11 @@
 ---
 name: verify-pliny-game-lab
-description: "Drive and verify Pliny Game Lab: start the local arcade server, run headless engine simulation suites, browser visual QA, and validate simulation integrity across all 50 engines in 10 Pavilions."
+description: "Drive and verify Pliny Game Lab: start the local server, test the 60-game catalog, play puzzle controls, and inspect browser and visual QA."
 ---
 
 # Verify Pliny Game Lab
 
-Pliny Game Lab is an interactive procedural simulation suite containing **50 engines** organized into **10 thematic Pavilions**, running inside a browser Canvas 2D / WebAudio arcade hub. It includes a Showcase homepage with search, filters, and card grid; a Simulator view with per-engine controls; a Plinius Codex lore drawer; and a procedural audio soundscape system.
+Pliny Game Lab contains **ten puzzle games** in the Puzzle Arcade, followed by **fifty simulations** in ten original pavilions. It runs as browser ES modules with Canvas 2D and Web Audio. The blueprint showcase has eleven collections, search, filters, and 60 ranked cards.
 
 ## 1. Launch
 
@@ -21,7 +21,7 @@ Ready signal:
 
 ## 2. Doctor
 
-Run this single read-only command to check system health before driving:
+Run the project check before driving. It appends `.audit/verification.log`:
 
 ```bash
 ./scripts/verify-all.sh
@@ -29,8 +29,8 @@ Run this single read-only command to check system health before driving:
 
 A passing doctor check shows:
 1. HTTP server responding with 200 OK.
-2. Core ES modules passing syntax checks (`node --check` on `src/core/hub.js`, `src/core/sound.js`, and key engine modules).
-3. All 50 engines successfully completing 60 headless simulation ticks with valid entity counts and no unhandled exceptions.
+2. Core and puzzle ES modules passing syntax checks.
+3. `60 PASSED | 0 PENDING | 0 FAILED` from the engine runner, plus puzzle rule checks.
 
 ## 3. Drive
 
@@ -52,7 +52,7 @@ What it exercises:
 
 ### Browser Visual QA (Puppeteer)
 
-Requires `puppeteer` dev dependency (`npm install`):
+Requires the locked `puppeteer` dev dependency (`npm ci`, Node 22.12 or newer):
 
 ```bash
 node tests/browser-qa.js
@@ -60,7 +60,7 @@ node tests/browser-qa.js
 
 What it exercises:
 - Launches headless Chrome at `http://localhost:8000`.
-- For each of the 50 engines, calls `window.__hub.launchDemo(key)` to switch to the Simulator view.
+- For each of the 60 games, calls `window.__hub.launchDemo(key)` to switch to the play view.
 - Waits 2.5s for the engine to render frames.
 - Reads canvas pixel data to verify ≥1% non-black pixels (not blank).
 - Captures a full-page screenshot to `.audit/screenshots/`.
@@ -72,7 +72,7 @@ What it exercises:
 node tests/showcase-qa.js
 ```
 
-Exercises: default Showcase view activation, card count, pavilion filter chips, live search, chip filtering, card click → Simulator launch, and the nav button back to the Showcase. See `features/showcase-homepage.md` for the page's structure and the thumbnail script.
+Exercises: default Showcase view activation, card count, collection filter chips, live search, chip filtering, card click → play view, and the nav button back to the Showcase. See `features/showcase-homepage.md` for the page's structure and the thumbnail script.
 
 ### Deep Visual QA (Headless Render Instrumentation)
 
@@ -86,23 +86,27 @@ Exercises: NaN coordinate detection, infinite value detection, invalid CSS color
 
 - `node tests/codex-qa.js` — Plinius Codex drawer content and navigation.
 - `node tests/audio-qa.js` — Procedural WebAudio soundscape validation.
+- `node tests/puzzle-playthrough-qa.js` — Play the first level of each authored puzzle in Chromium.
+- `node tests/puzzle-mobile-qa.js` — Check all ten phone layouts and touch play.
+- `node tests/puzzle-keyboard-qa.js` — Solve representative puzzles with a keyboard.
+- `node tests/mobile-layout-qa.js` and `node tests/panel-toggle-qa.js` — Legacy simulator layout checks.
 
 ### Browser Driving (Interactive Verification)
 Open `http://localhost:8000` in the browser.
-1. The **Showcase homepage** loads by default: a floor plan with one room per pavilion, then every game shelved by pavilion with a sticky search box and pavilion list.
-2. Click any game card (or "Play Vesuvius" / "Random game") to switch to **Simulator view**.
-3. In Simulator view, verify the header readouts show `FPS 60` and `Entities` above 0. They are hidden on the showcase, drop away below 1440px (entities) and 1280px (FPS), and are all hidden on phones; read `#fps-val` / `#entity-val` directly at narrower widths.
+1. The **Showcase homepage** loads by default: a floor plan with Puzzle Arcade first, then the ten original pavilions. The first ten cards are puzzles; Vesuvius is #11.
+2. Click any game card (or "Play Oracle Words" / "Random game") to open the play view.
+3. In the play view, verify the header readouts show `FPS 60` and `Entities` above 0. They are hidden on the showcase, drop away below 1440px (entities) and 1280px (FPS), and are all hidden on phones; read `#fps-val` / `#entity-val` directly at narrower widths.
 4. Use the **Pavilion dropdown** and **Game dropdown** in the nav bar to switch engines.
 5. Use the previous/next arrows and the die button to navigate sequentially or randomly.
-6. Interact with engine-specific controls in the right-side panel.
+6. Interact with the puzzle controls or original engine controls in the panel.
 7. Press `Esc` to return to Showcase view.
 8. Press `/` (in Showcase view) to focus the search bar.
-9. Click the Codex button in the header (or press `C` on the showcase) to open the Plinius Codex drawer.
+9. Press `P` to filter to the puzzles, or `1`–`0` for the original pavilions.
+10. Click the Codex button in the header (or press `C` on the showcase) to open puzzle rules or the Plinius Codex.
 
 ## 4. Evidence
 
-All verification runs append results to:
-`.audit/verification.log`
+`./scripts/verify-all.sh` appends results to `.audit/verification.log`. Other suites print their results; browser suites may also write screenshots or JSON reports.
 
 Screenshots from browser-qa.js are saved to:
 `.audit/screenshots/`
@@ -114,28 +118,26 @@ Browser QA JSON report saved to:
 `.audit/browser-qa-report.json`
 
 Proof standards:
-- All 50 engines must pass `verify-engines.js` with exit code `0`.
+- All 60 engines must pass `verify-engines.js` with zero pending or failed entries.
+- `visual-qa.js` must report zero warnings and errors; inspect `.audit/browser-qa-report.json` for per-game issues.
 - Active simulated entity counters must be non-zero.
 - No NaN values in positions, velocities, or temperatures.
 - Browser QA: ≥1% canvas fill ratio per engine, 0 console errors.
-- Each screenshot in `assets/screenshots/` should depict the engine's active simulation, not the Showcase homepage.
+- Original simulation screenshots must match their game keys. Puzzle cards use hand-drawn SVG thumbnails.
 
 ## 5. Cleanup
 
-To stop the background server when finished:
-
-```bash
-kill $(lsof -t -i :8000) 2>/dev/null || true
-```
+Stop only the local server process you started. Do not kill an unrelated process on the same port.
 
 Evidence logs in `.audit/` survive cleanup.
 
 ## 6. Helpers
 
-- `./scripts/verify-all.sh`: Complete end-to-end doctor and test runner script.
-- `node tests/verify-engines.js`: Headless 50-engine simulation harness.
+- `./scripts/verify-all.sh`: HTTP, syntax, engine, and puzzle rule checks.
+- `node tests/verify-engines.js`: Headless 60-engine simulation harness.
 - `node tests/browser-qa.js`: Puppeteer browser visual QA with screenshots.
 - `node tests/showcase-qa.js`: Showcase homepage E2E verification.
 - `node tests/visual-qa.js`: Deep render instrumentation QA.
 - `node tests/codex-qa.js`: Codex drawer content verification.
 - `node tests/audio-qa.js`: Audio system verification.
+- `node tests/puzzle-mobile-qa.js`: Puzzle phone layout and touch verification.

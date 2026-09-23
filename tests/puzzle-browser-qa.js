@@ -64,6 +64,14 @@ try {
   assert.match(catalog.count, /60 games/);
   assert.equal(catalog.puzzleThumb, 'assets/screenshots/oracle_words.svg');
   assert.equal(catalog.oldThumb, 'assets/thumbs/vesuvius.webp');
+
+  await page.click('#hero-launch-btn');
+  await page.waitForFunction(() => window.__hub?.currentEngine?.constructor.name === 'OracleWordsEngine');
+  assert.equal(new URL(page.url()).hash, '#game=oracle_words', 'the main play button opens the first puzzle');
+  await page.click('#showcase-nav-btn');
+  await page.click('.engine-card[data-key="canal_lines"]');
+  await page.waitForFunction(() => window.__hub?.currentEngine?.constructor.name === 'CanalLinesEngine');
+  assert.equal(new URL(page.url()).hash, '#game=canal_lines', 'a new puzzle card launches from the blueprint');
   assert.deepEqual(errors, [], 'playing the puzzle emits no browser errors');
   console.log('Puzzle browser: Oracle Words round and 60 ordered showcase cards pass');
 } finally {

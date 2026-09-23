@@ -18,6 +18,10 @@ assert.ok(phone.width <= 390 && phone.height <= 300);
 assert.equal(getProgress('missing', 12), 0);
 setProgress('example', 3);
 assert.equal(getProgress('example', 12), 3);
+globalThis.localStorage = { getItem: () => null, setItem: () => { throw new Error('Storage full'); } };
+setProgress('write-failed', 4);
+assert.equal(getProgress('write-failed', 12), 4, 'progress survives a denied storage write for this session');
+delete globalThis.localStorage;
 
 const calls = [];
 const ctx = new Proxy({}, { get(target, key) { return target[key] ?? ((...args) => calls.push([key, ...args])); } });

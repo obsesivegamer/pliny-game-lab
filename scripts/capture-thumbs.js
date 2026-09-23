@@ -1,6 +1,7 @@
 // Captures showcase thumbnails from each engine's own canvas (no header, no
 // controls panel) into assets/thumbs/<key>.webp. The showcase falls back to
-// assets/screenshots/NN_<key>.png, so a new engine without a thumb still shows.
+// an engine's explicit thumb or assets/screenshots/NN_<key>.png. Games with
+// hand-drawn SVG thumbnails do not need an extra canvas capture by default.
 //
 // Usage (with `python3 -m http.server 8000` running from the repo root):
 //   node scripts/capture-thumbs.js                 # only engines missing a thumb
@@ -14,7 +15,7 @@ import { fileURLToPath } from 'url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = path.join(ROOT, 'assets', 'thumbs');
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8000';
+const BASE_URL = process.env.PLINY_BASE_URL || process.env.BASE_URL || 'http://localhost:8000';
 const WIDTH = 800;
 const HEIGHT = 500;
 const SETTLE_MS = 3500;
@@ -32,12 +33,13 @@ await page.setViewport({ width: 1280, height: 880, deviceScaleFactor: 1 });
 await page.goto(`${BASE_URL}/#showcase`, { waitUntil: 'networkidle0' });
 const catalog = await page.evaluate(async () => {
   const { DEMOS } = await import('./src/core/hub.js');
-  return Object.values(DEMOS).map(d => ({ key: d.id, exportName: d.exportName }));
+  return Object.values(DEMOS).map(d => ({ key: d.id, exportName: d.exportName, thumb: d.thumb }));
 });
 
-const targets = catalog.filter(({ key }) => {
+const targets = catalog.filter(({ key, thumb }) => {
   if (only.length) return only.includes(key);
-  return all || !fs.existsSync(path.join(OUT_DIR, `${key}.webp`));
+  const drawnThumb = thumb?.endsWith('.svg') && fs.existsSync(path.join(ROOT, thumb));
+  return all || (!drawnThumb && !fs.existsSync(path.join(OUT_DIR, `${key}.webp`)));
 });
 
 let failed = 0;

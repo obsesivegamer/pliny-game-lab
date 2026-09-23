@@ -10,6 +10,7 @@ export function getProgress(key, count) {
   let saved;
   try { saved = localStorage.getItem(`pliny:puzzle:${key}`); }
   catch { saved = fallbackProgress.get(key); }
+  if (saved === null) saved = fallbackProgress.get(key);
   const number = Number(saved);
   return Number.isInteger(number) ? Math.max(0, Math.min(count - 1, number)) : 0;
 }

@@ -149,9 +149,13 @@ async function runAudioQA() {
   const activeChipAll = await page.$eval('.chip-btn.active', el => el.dataset.pav);
   console.log(`   Press 'A' resets filter to: "${activeChipAll}" -> ${activeChipAll === 'all' ? '✓ YES' : '✗ NO'}`);
 
-  // Hero floor plan: one room per pavilion
+  await page.keyboard.press('p');
+  const activeChipPuzzle = await page.$eval('.chip-btn.active', el => el.dataset.pav);
+  console.log(`   Press 'P' selects Puzzle Arcade: ${activeChipPuzzle === 'puzzle' ? '✓ YES' : '✗ NO'}`);
+
+  // Hero floor plan: one room for the arcade and each original pavilion.
   const planRooms = await page.$$eval('#showcase-plan .plan-room', rooms => rooms.length);
-  console.log(`   Hero floor plan rooms: ${planRooms} -> ${planRooms === 10 ? '✓ YES' : '✗ NO'}`);
+  console.log(`   Hero floor plan rooms: ${planRooms} -> ${planRooms === 11 ? '✓ YES' : '✗ NO'}`);
 
   await browser.close();
 
@@ -160,7 +164,10 @@ async function runAudioQA() {
   const allAmbienceOk = ambientResults.every(r => r.ok);
   const noErrors = consoleErrors.length === 0;
 
-  if (allInstrumentsOk && allAmbienceOk && noErrors && audioBtnExists) {
+  if (allInstrumentsOk && allAmbienceOk && noErrors && audioBtnExists &&
+      simActive && activeSoundscapeTitle === 'Quiet focus' && sliderExists &&
+      focusedCard1 && activeChip3 === 'mechanica' && activeChipAll === 'all' &&
+      activeChipPuzzle === 'puzzle' && planRooms === 11) {
     console.log('WEBAUDIO QA: ALL PROCEDURAL AUDIO SUITES PASSED CLEANLY');
     console.log(`Console Errors: ${consoleErrors.length}`);
     console.log('════════════════════════════════════════════════════════\n');

@@ -1,15 +1,16 @@
 # Pliny Game Lab Feature Map
 
-Index of core user-facing features across the 50-engine, 10-Pavilion Pliny Game Lab suite.
+Index of core user-facing features across the 60-game Pliny Game Lab suite: ten puzzle games and fifty original simulations.
 
 ## Hub-Level Features
 
 | Feature | Surface | Harness | Verified State |
 | :--- | :--- | :--- | :--- |
 | [Showcase Homepage](showcase-homepage.md) | HTML + SVG floor plan | `node tests/showcase-qa.js` | Catalog-driven cards, search, pavilion filter, floor plan |
+| [Puzzle Arcade](puzzle-arcade.md) | Canvas 2D + shared controls | `node tests/puzzle-playthrough-qa.js` | Ten playable puzzles in showcase slots 1–10 |
 | [Hub Navigation](hub-navigation.md) | HTML dropdowns + buttons | `node tests/browser-qa.js` | Dual-view (Showcase ↔ Simulator), pavilion/game dropdowns, prev/next/random |
 | [Procedural Audio](procedural-audio.md) | WebAudio API | `node tests/audio-qa.js` | Pavilion ambience, chimes, launch fanfare, synthesized FX |
-| [Plinius Codex](plinius-codex.md) | HTML drawer + Canvas | `node tests/codex-qa.js` | Slide-out lore encyclopedia for all 50 engines |
+| [Plinius Codex](plinius-codex.md) | HTML drawer + Canvas | `node tests/codex-qa.js` | Puzzle rules and lore for the fifty simulations |
 
 ## Flagship Engine Features (5 documented in depth)
 
@@ -21,7 +22,7 @@ Index of core user-facing features across the 50-engine, 10-Pavilion Pliny Game 
 | [Cosmographia Orbits](cosmographia-orbits.md) | Canvas 2D | `node tests/verify-engines.js` | 900+ stars, Ptolemaic & Keplerian orbits |
 | [Labyrinthus Catacombs](labyrinthus-catacombs.md) | Raycaster + WebAudio | `node tests/verify-engines.js` | 3D DDA raycaster, A* Minotaur AI, Ariadne's thread |
 
-## Remaining 45 Engines
+## Remaining 45 Original Simulations
 
 All 45 remaining engines are covered by `node tests/verify-engines.js` (headless) and `node tests/browser-qa.js` (browser). They are organized across 10 Pavilions:
 

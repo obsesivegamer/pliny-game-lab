@@ -1,5 +1,6 @@
 // Automated E2E verification for Plinius Codex Drawer
 import puppeteer from 'puppeteer';
+import assert from 'node:assert/strict';
 
 const BASE_URL = process.env.PLINY_BASE_URL || 'http://localhost:8000';
 
@@ -49,6 +50,9 @@ async function runCodexQA() {
     const latinQuote = await page.$eval('#codex-latin-quote', el => el.textContent);
     const translation = await page.$eval('#codex-translation', el => el.textContent);
     const science = await page.$eval('#codex-science', el => el.textContent);
+    assert.equal(await page.$eval('.codex-badge', el => el.textContent), 'Puzzle guide');
+    assert.equal(await page.$eval('#codex-science', el => getComputedStyle(el.closest('.codex-card')).display), 'none',
+      'a puzzle guide does not show a simulated-science card');
     console.log(`   Latin Quote preview: ${latinQuote.substring(0, 50)}...`);
     console.log(`   Translation preview: ${translation.substring(0, 50)}...`);
     console.log(`   Science preview: ${science.substring(0, 50)}...`);
@@ -82,6 +86,9 @@ async function runCodexQA() {
     await new Promise(r => setTimeout(r, 400));
 
     const antiTitle = await page.$eval('#codex-title', el => el.textContent);
+    assert.equal(await page.$eval('.codex-badge', el => el.textContent), 'Plinius Codex');
+    assert.notEqual(await page.$eval('#codex-science', el => getComputedStyle(el.closest('.codex-card')).display), 'none',
+      'the classical guide returns for simulations');
     console.log(`   Active Codex Title: "${antiTitle}" -> ${antiTitle.includes('Antikythera') ? '✓ PASS' : '✗ FAIL'}`);
 
     console.log('\n════════════════════════════════════════════════════════');

@@ -1,11 +1,12 @@
 # Feature: Procedural Audio System
 
-Fully procedural WebAudio soundscape with no static audio files: pavilion-specific ambient soundscapes, UI chimes, launch fanfare, and per-engine synthesized sound effects.
+Fully procedural WebAudio soundscape with no static audio files: pavilion-specific ambient soundscapes, quiet puzzle mode, UI chimes, original-game launch fanfare, and per-engine synthesized sound effects.
 
 ## Sub-features
 - 10 pavilion-specific ambient soundscapes (e.g., volcanic rumble for Ignis, forest birdsong for Bestiarium, mechanical clanks for Mechanica).
+- Puzzle Arcade stops the pavilion ambience, displays "Quiet focus" in the HUD, and uses a short launch chime.
 - UI interaction chimes (note-based, e.g., D5 on hover, A4 on chip click).
-- Launch fanfare on engine activation.
+- Launch fanfare on original simulation activation.
 - Soundscape HUD toggle and volume controls.
 - AudioContext resume on user interaction (browser autoplay policy compliance).
 - All audio is procedurally synthesized via oscillators, noise buffers, and filters — zero static audio files.
@@ -23,7 +24,7 @@ node tests/audio-qa.js
 ```
 
 ## Source entry points
-- `src/core/sound.js`: `SoundMaster` class, `startPavilionAmbience()`, `playChime()`, `playLaunchFanfare()`, `resume()`
+- `src/core/sound.js`: `PlinySoundMaster` class, `startPavilionAmbience()`, `playChime()`, `playLaunchFanfare()`, `resume()`
 - `src/demos/labyrinthus/audio.js`: Engine-specific procedural synthesizer for dungeon audio
 
 ## Gotchas
