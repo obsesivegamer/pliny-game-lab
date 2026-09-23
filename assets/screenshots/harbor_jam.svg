@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#dbece9"/>
+  <text x="44" y="63" fill="#173f48" font-family="system-ui" font-size="37" font-weight="800">Harbor Jam</text>
+  <text x="46" y="94" fill="#507078" font-family="system-ui" font-size="16" letter-spacing="3">PUZZLE ARCADE 07</text>
+  <rect x="126" y="124" width="376" height="188" rx="12" fill="#eff8ee" stroke="#9cbbb6" stroke-width="4"/>
+  <path d="M126 188h376M126 249h376M189 124v188M251 124v188M314 124v188M377 124v188M439 124v188" stroke="#bfdbd4" stroke-width="3"/>
+  <rect x="252" y="132" width="57" height="108" rx="15" fill="#d99569"/>
+  <rect x="380" y="132" width="57" height="108" rx="15" fill="#e7b769"/>
+  <rect x="134" y="193" width="112" height="52" rx="15" fill="#238c9d"/>
+  <path d="M474 220h74m-25-22 25 22-25 22" fill="none" stroke="#238c9d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="320" y="339" fill="#315f66" font-family="system-ui" font-size="17" text-anchor="middle">Slide the courier out</text>
+</svg>

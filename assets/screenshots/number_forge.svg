@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#efe9d9"/>
+  <text x="44" y="63" fill="#173f48" font-family="system-ui" font-size="37" font-weight="800">Number Forge</text>
+  <text x="46" y="94" fill="#507078" font-family="system-ui" font-size="16" letter-spacing="3">PUZZLE ARCADE 09</text>
+  <text x="320" y="143" fill="#173f48" font-family="system-ui" font-size="31" font-weight="800" text-anchor="middle">TARGET 14</text>
+  <g font-family="system-ui" font-size="52" font-weight="800" text-anchor="middle" dominant-baseline="central">
+    <rect x="168" y="178" width="92" height="92" rx="18" fill="#f6d38d" stroke="#b78038" stroke-width="4"/><text x="214" y="224" fill="#173f48">2</text>
+    <rect x="274" y="178" width="92" height="92" rx="18" fill="#f6d38d" stroke="#b78038" stroke-width="4"/><text x="320" y="224" fill="#173f48">3</text>
+    <rect x="380" y="178" width="92" height="92" rx="18" fill="#f6d38d" stroke="#b78038" stroke-width="4"/><text x="426" y="224" fill="#173f48">4</text>
+  </g>
+  <text x="320" y="322" fill="#315f66" font-family="system-ui" font-size="19" text-anchor="middle">Combine every stone</text>
+</svg>

@@ -1,9 +1,16 @@
 # Pliny Game Lab Continuity Briefing
 
 ## [PLANS]
+- 2026-09-23T04:25:18Z [USER] Add ten simple puzzle games in showcase slots 1–10 and move the original fifty to slots 11–60 without changing their relative order.
 - 2026-09-16T00:30:00-04:00 [CODE] Complete all 50 game engines in Pliny Game Lab suite. COMPLETE.
 
+## [DECISIONS]
+- 2026-09-23T04:25:18Z [CODE] Add an unnumbered Puzzle Arcade group, keep legacy keys and screenshot files, and give every card an explicit thumbnail path. Build eight twelve-level games plus Oracle Words and Stonefall. Work in isolated branch `codex/puzzle-arcade` because the original checkout has unrelated changes.
+
 ## [PROGRESS]
+- 2026-09-23 [USER] PR #9 review: fixed shortcut hijacking (Ctrl/Cmd/Alt keys), the Harbor Jam keyboard trap (Esc/Enter let go), the switchDemo engine race, Hint after solving, Stonefall input while paused (hub `setPaused`), the alphabetical daily word, and the showcase Cmd+P/Cmd+C shortcuts. Mobile panel overlap on 568–649px landscape phones is deferred to a GitHub issue. Still open from the review: drag continuing after mouseup outside the window, Signal Route hint ignoring stray arrows, Harbor Jam off-lane taps, the canvas tabIndex left behind, the Oracle Words Reset no-op, and the hardcoded `"puzzle"` pavilion checks.
+- 2026-09-23T04:48:40Z [TOOL] Rebased puzzle branch onto blueprint showcase main (`095a972`) and integrated the new Puzzle Arcade into its floor plan, card ranks, preserved legacy thumbnails, and responsive panel. Rechecked 60/60 engines, 60/60 visual instrumentation, 60/60 real-browser renders, showcase, puzzle playthrough/mobile/keyboard, codex, audio, panel, and legacy mobile layout with no reported issues. Updated and mirrored verification guides.
+- 2026-09-23T04:25:18Z [TOOL] Ten puzzle engines implemented with flat Canvas art, touch and keyboard controls, local progress, hints, retry, and undo where applicable. Verified 60/60 engine simulations, 60/60 visual checks with no warnings, 60/60 browser checks with no issues, first-level browser playthroughs, all ten phone layouts, and puzzle keyboard/touch checks. Stonefall piece randomization now avoids a forced alternation.
 - 2026-09-15T20:20:00-04:00 [TOOL] 5 initial engines verified green: vesuvius, bestiarium, cosmographia, mechanica, labyrinthus.
 - 2026-09-15T20:36:00-04:00 [TOOL] 14 new engines landed and verified before weekly quota limit. (19/50 passed).
 - 2026-09-16T00:24:00-04:00 [TOOL] Opus Game Design Architect completed .agent/SPECS_31_ENGINES.md.
@@ -50,8 +57,10 @@
 - 2026-09-20T20:30:00-04:00 [CODE] In canvas simulations with scaled HUD elements (e.g. `signal_fire` Polybius matrix), pointer input coordinates (`pos.x`, `pos.y` in canvas backing pixels) must be divided by `uiScale()` when hit-testing HUD boxes defined in scaled UI space, while world-space hitboxes (e.g. watchtowers) remain unscaled.
 - 2026-09-22T20:10:00-04:00 [CODE] Engine-facing CSS tokens (`--accent-gold`, `--font-mono`, `--font-display`, ...) keep their values because engines style injected controls with them; the site uses separate `--bp-*` tokens. Cinzel and JetBrains Mono still load for the same reason.
 - 2026-09-22T20:10:00-04:00 [CODE] Showcase is catalog-driven so the concurrent effort adding games needs no showcase edits: counts, plan rooms, chips and room numbers all derive from `DEMOS`/`PAVILIONS`. Verified by injecting 9 extra games and 2 extra pavilions (12 rooms, 59 cards, placeholder plates for missing thumbs).
+- 2026-09-23 [TOOL] `switchDemo` awaits `import()`, so two overlapping switches used to build two engines; the older one was never destroyed and could even win (racing lantern_push then mirror_harbor left lantern_push on screen). A `demoLoadId` counter now lets only the newest switch build. `tests/puzzle-browser-qa.js` counts real panel/canvas listeners over CDP to guard it.
 
 ## [OUTCOMES]
+- 2026-09-23T04:48:40Z [CODE] Puzzle Arcade supplies ten new showcase games in positions 1–10; the original fifty remain in order at 11–60. Eight puzzles contain twelve authored levels each, while Oracle Words offers daily/endless rounds and Stonefall is a score chase. Keep manual playtesting for fun and difficulty as a review step; automated checks establish playability and integration, not subjective quality.
 - 50/50 engines completed and verified green across headless Node simulation, deep visual QA, mobile layout QA, and Puppeteer headless Chrome suites.
 - All 50 engines implement `uiScale()`, touch bridge attachment/detachment, and responsive mobile HUDs (with camera `worldView()` in Vesuvius).
 - 50/50 screenshots captured in .audit/screenshots/ at 1280x800.

@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BASE_URL = 'http://localhost:8000';
-const AUDIT_DIR = path.join(__dirname, '..', '.audit', 'showcase');
+const BASE_URL = process.env.PLINY_BASE_URL || 'http://localhost:8000';
+const AUDIT_DIR = process.env.SHOWCASE_AUDIT_DIR || path.join(__dirname, '..', '.audit', 'showcase');
 fs.mkdirSync(AUDIT_DIR, { recursive: true });
 
 async function verifyShowcase() {
@@ -34,7 +34,7 @@ async function verifyShowcase() {
   });
 
   // 1. Initial Load
-  console.log('1. Loading http://localhost:8000 ...');
+  console.log(`1. Loading ${BASE_URL} ...`);
   await page.goto(BASE_URL, { waitUntil: 'networkidle0', timeout: 15000 });
   await new Promise(r => setTimeout(r, 1000));
 
@@ -47,19 +47,19 @@ async function verifyShowcase() {
   console.log(`   Showcase View active by default: ${isShowcaseVisible ? '✓ YES' : '✗ NO'}`);
   if (!isShowcaseVisible) throw new Error('Showcase view was not active by default');
 
-  // Check 50 cards rendered
+  // Check all puzzle and simulation cards rendered
   const cardCount = await page.evaluate(() => {
     return document.querySelectorAll('#showcase-grid .engine-card').length;
   });
-  console.log(`   Total engine cards rendered: ${cardCount} / 50`);
-  if (cardCount !== 50) throw new Error(`Expected 50 cards, found ${cardCount}`);
+  console.log(`   Total cards rendered: ${cardCount} / 60`);
+  if (cardCount !== 60) throw new Error(`Expected 60 cards, found ${cardCount}`);
 
   // Check chips rendered
   const chipCount = await page.evaluate(() => {
     return document.querySelectorAll('#showcase-chips .chip-btn').length;
   });
-  console.log(`   Total filter chips rendered: ${chipCount} (All + 10 Pavilions)`);
-  if (chipCount !== 11) throw new Error(`Expected 11 filter chips, found ${chipCount}`);
+  console.log(`   Total filter chips rendered: ${chipCount} (All + Puzzle Arcade + 10 Pavilions)`);
+  if (chipCount !== 12) throw new Error(`Expected 12 filter chips, found ${chipCount}`);
 
   // Capture Hero & Top Screenshot
   await page.screenshot({ path: path.join(AUDIT_DIR, '01_showcase_hero.png') });
@@ -83,7 +83,7 @@ async function verifyShowcase() {
 
   const searchResults = await page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll('#showcase-grid .engine-card'));
-    const visible = cards.filter(c => c.style.display !== 'none');
+    const visible = cards.filter(c => c.offsetParent !== null);
     const countText = document.getElementById('showcase-count').textContent;
     return {
       count: visible.length,
@@ -116,7 +116,7 @@ async function verifyShowcase() {
 
   const chipResults = await page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll('#showcase-grid .engine-card'));
-    const visible = cards.filter(c => c.style.display !== 'none');
+    const visible = cards.filter(c => c.offsetParent !== null);
     return {
       count: visible.length,
       titles: visible.map(c => c.querySelector('.card-title').textContent.trim())
@@ -216,6 +216,7 @@ async function verifyShowcase() {
   console.log(`Console Errors: ${errors.length}`);
   console.log(`Screenshots saved to: ${AUDIT_DIR}`);
   console.log('════════════════════════════════════════════════════════\n');
+  assert.deepEqual(errors, [], 'showcase navigation emits no browser errors');
 }
 
 verifyShowcase().catch(err => {
