@@ -13,25 +13,49 @@ const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 
+const GAMES = [
+  ['oracle_words', 'OracleWordsEngine'], ['canal_lines', 'CanalLinesEngine'], ['stonefall', 'StonefallEngine'],
+  ['lantern_push', 'LanternPushEngine'], ['mirror_harbor', 'MirrorHarborEngine'], ['mosaic_clues', 'MosaicCluesEngine'],
+  ['harbor_jam', 'HarborJamEngine'], ['star_switch', 'StarSwitchEngine'], ['number_forge', 'NumberForgeEngine'],
+  ['signal_route', 'SignalRouteEngine']
+];
+const apart = (a, b) => a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top;
+const nextFrames = () => page.evaluate(() =>
+  new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+
+async function layout() {
+  return page.evaluate(() => {
+    const board = window.__hub.currentEngine.getRect();
+    const canvas = document.getElementById('main-canvas').getBoundingClientRect();
+    const box = element => {
+      const { left, top, right, bottom } = element.getBoundingClientRect();
+      return { left, top, right, bottom };
+    };
+    return {
+      board: { left: canvas.left + board.x, top: canvas.top + board.y,
+        right: canvas.left + board.x + board.width, bottom: canvas.top + board.y + board.height },
+      canvas: box(document.getElementById('main-canvas')),
+      panel: box(document.getElementById('controls-panel')),
+      tab: box(document.getElementById('toggle-panel')),
+      cell: board.cell
+    };
+  });
+}
+
 async function open(key, className) {
   await page.goto(`${baseUrl}/#game=${key}`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(name => window.__hub?.currentEngine?.constructor.name === name, {}, className);
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const metrics = await page.evaluate(() => {
-    const engine = window.__hub.currentEngine;
-    const rect = engine.getRect?.();
-    const canvas = document.getElementById('main-canvas');
-    const panel = document.getElementById('controls-panel');
-    return { rect, canvasWidth: canvas.clientWidth, canvasHeight: canvas.clientHeight,
-      panelHeight: panel.getBoundingClientRect().height, viewportHeight: innerHeight };
-  });
-  if (metrics.rect) {
-    assert.ok(metrics.rect.x >= 0 && metrics.rect.y >= 0);
-    assert.ok(metrics.rect.x + metrics.rect.width <= metrics.canvasWidth);
-    assert.ok(metrics.rect.y + metrics.rect.height <= metrics.canvasHeight);
-  }
-  assert.ok(metrics.canvasHeight >= 250, 'the phone leaves room to see the puzzle board');
-  if (captureDir) await page.screenshot({ path: `${captureDir}/${key}-phone.png` });
+  await nextFrames();
+  const size = page.viewport();
+  const where = `${key} at ${size.width}x${size.height}`;
+  const m = await layout();
+  assert.ok(m.board.left >= m.canvas.left && m.board.top >= m.canvas.top &&
+    m.board.right <= m.canvas.right && m.board.bottom <= m.canvas.bottom, `${where}: the board stays inside the canvas`);
+  assert.ok(apart(m.board, m.panel), `${where}: the board stays clear of the controls panel ` +
+    `(board ${Math.round(m.board.left)}-${Math.round(m.board.right)}, panel from ${Math.round(m.panel.left)})`);
+  assert.ok(m.canvas.bottom - m.canvas.top >= 250, `${where}: the screen leaves room to see the puzzle board`);
+  if (captureDir) await page.screenshot({ path: `${captureDir}/${key}-${size.width}x${size.height}.png` });
+  return m;
 }
 
 async function tapCell(x, y) {
@@ -72,31 +96,31 @@ try {
   assert.equal(await page.evaluate(() => window.__hub.currentEngine.state.grid.some(Boolean)), true,
     'the phone drop button locks a stone');
 
-  for (const [key, className] of [
-    ['lantern_push', 'LanternPushEngine'],
-    ['mirror_harbor', 'MirrorHarborEngine'],
-    ['mosaic_clues', 'MosaicCluesEngine'],
-    ['harbor_jam', 'HarborJamEngine'],
-    ['star_switch', 'StarSwitchEngine'],
-    ['number_forge', 'NumberForgeEngine'],
-    ['signal_route', 'SignalRouteEngine'],
-  ]) await open(key, className);
+  for (const [key, className] of GAMES.slice(3)) await open(key, className);
 
-  await page.setViewport({ width: 740, height: 360, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
-  await open('canal_lines', 'CanalLinesEngine');
-  const landscape = await page.evaluate(() => {
-    const board = window.__hub.currentEngine.getRect();
-    const canvas = document.getElementById('main-canvas').getBoundingClientRect();
-    const panel = document.getElementById('controls-panel').getBoundingClientRect();
-    return { cell: board.cell, canvasHeight: canvas.height,
-      boardRight: canvas.left + board.x + board.width, panelLeft: panel.left };
-  });
-  assert.ok(landscape.cell >= 24 && landscape.canvasHeight >= 250,
-    'phone landscape leaves a readable puzzle board');
-  assert.ok(landscape.boardRight < landscape.panelLeft - 4,
-    'phone landscape keeps the board clear of the controls');
+  // The controls float over the canvas on short landscape screens (issue #10:
+  // 568-649px wide used to reserve nothing) and on desktop.
+  for (const [width, height] of [[568, 320], [640, 360], [740, 360], [844, 390]]) {
+    await page.setViewport({ width, height, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+    for (const [key, className] of GAMES) {
+      const m = await open(key, className);
+      // Stonefall's tall well is height-bound here (14.4px cells at 568x320), not panel-bound.
+      assert.ok(m.cell >= 14, `${key} at ${width}x${height}: the board stays readable (${m.cell.toFixed(1)}px cells)`);
+    }
+  }
+  await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
+  for (const [key, className] of GAMES) await open(key, className);
+
+  await page.click('#toggle-panel');
+  await new Promise(resolve => setTimeout(resolve, 500));
+  await nextFrames();
+  const collapsed = await layout();
+  const boardCentre = (collapsed.board.left + collapsed.board.right) / 2;
+  const canvasCentre = (collapsed.canvas.left + collapsed.canvas.right) / 2;
+  assert.ok(Math.abs(boardCentre - canvasCentre) < 2, 'a collapsed desktop panel gives the board back its centre');
+  assert.ok(apart(collapsed.board, collapsed.tab), 'the collapsed panel tab stays clear of the board');
   assert.deepEqual(errors, [], 'phone play has no browser errors');
-  console.log('Puzzle mobile: all 10 games fit a phone, touch solves Canal and Oracle, Stonefall drops, and landscape remains legible');
+  console.log('Puzzle mobile: all 10 boards stay clear of the controls on phones, landscape phones and desktop; touch solves Canal and Oracle; Stonefall drops');
 } finally {
   await browser.close();
 }

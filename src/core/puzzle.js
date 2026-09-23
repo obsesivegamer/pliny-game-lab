@@ -21,8 +21,21 @@ export function setProgress(key, index) {
   try { localStorage.setItem(`pliny:puzzle:${key}`, value); } catch {}
 }
 
+// The controls panel floats over the right of the canvas on desktop and on
+// short landscape screens, and sits below it elsewhere. Measure it rather than
+// mirroring the CSS breakpoints, which drift apart.
+export function panelReserve(canvas, controls) {
+  const panel = controls?.closest?.('#controls-panel');
+  if (!panel || !canvas?.getBoundingClientRect) return 0;
+  const box = canvas.getBoundingClientRect();
+  const cover = panel.getBoundingClientRect();
+  const overlaps = cover.width > 0 && cover.left < box.right && cover.right > box.left &&
+    cover.top < box.bottom && cover.bottom > box.top;
+  return overlaps ? box.right - Math.max(cover.left, box.left) + 10 : 0;
+}
+
 export function boardRect(width, height, cols, rows, options = {}) {
-  const reserved = width >= 769 || (width >= 650 && height <= 500) ? 350 : 0;
+  const reserved = Math.min(width, options.reserve ?? 0);
   const usableWidth = width - reserved;
   const topSpace = options.topSpace ?? 70;
   const bottomSpace = options.bottomSpace ?? 20;
@@ -36,7 +49,7 @@ export function boardRect(width, height, cols, rows, options = {}) {
     x: Math.max(8, (usableWidth - boardWidth) / 2) + insetLeft,
     y: Math.max(topSpace, topSpace + (height - topSpace - bottomSpace - boardHeight) / 2) + insetTop,
     cell, cols, rows, width: cols * cell, height: rows * cell,
-    insetLeft, insetTop
+    insetLeft, insetTop, reserved
   };
 }
 
@@ -52,7 +65,7 @@ export function paintBoard(ctx, width, height, dpr, title, subtitle, rect) {
   ctx.fillStyle = COLORS.sand;
   ctx.fillRect(0, 0, width, height);
   ctx.fillStyle = '#E5EAD8';
-  ctx.fillRect(0, 0, width >= 769 || (width >= 650 && height <= 500) ? width - 350 : width, 7);
+  ctx.fillRect(0, 0, width - (rect.reserved ?? 0), 7);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = COLORS.ink;
@@ -122,7 +135,8 @@ export class LevelPuzzleEngine {
   getLevel() { return this.spec.levels[this.levelIndex]; }
   getRect() {
     const size = this.spec.size(this.getLevel(), this.state);
-    return boardRect(this.width / this.dpr, this.height / this.dpr, size[0], size[1], this.spec.boardOptions || {});
+    return boardRect(this.width / this.dpr, this.height / this.dpr, size[0], size[1],
+      { ...this.spec.boardOptions, reserve: panelReserve(this.canvas, this.controlsContainer) });
   }
   getEntityCount() {
     const [cols, rows] = this.spec.size(this.getLevel(), this.state);

@@ -1,5 +1,5 @@
 import { attachTouchBridge, detachTouchBridge } from '../../core/touch.js';
-import { boardRect, cellAt, paintBoard, drawCell, COLORS } from '../../core/puzzle.js';
+import { boardRect, cellAt, paintBoard, drawCell, panelReserve, COLORS } from '../../core/puzzle.js';
 import { createStoneState, moveStone, rotateStone, stepStone, hardDropStone,
   shapeCells, STONE_WIDTH, STONE_HEIGHT } from './logic.js';
 
@@ -25,6 +25,10 @@ export class StonefallEngine {
   }
   resize(width, height, dpr) { this.width = width; this.height = height; this.dpr = dpr || 1; }
   uiScale() { return this.dpr || 1; }
+  getRect() {
+    return boardRect(this.width / this.dpr, this.height / this.dpr, STONE_WIDTH, STONE_HEIGHT,
+      { topSpace: 78, bottomSpace: 9, reserve: panelReserve(this.canvas, this.controlsContainer) });
+  }
   reset() { this.state = createStoneState(); this.elapsed = 0; this.refreshControls(); }
   setPaused(paused) { this.paused = paused; this.refreshControls(); }
   apply(action) {
@@ -56,9 +60,7 @@ export class StonefallEngine {
     this.apply(action);
   }
   onMouseDown(mouse) {
-    const rect = boardRect(this.width / this.dpr, this.height / this.dpr, STONE_WIDTH, STONE_HEIGHT,
-      { topSpace: 78, bottomSpace: 9 });
-    const cell = cellAt(rect, mouse.rawX ?? mouse.x / this.dpr, mouse.rawY ?? mouse.y / this.dpr);
+    const cell = cellAt(this.getRect(), mouse.rawX ?? mouse.x / this.dpr, mouse.rawY ?? mouse.y / this.dpr);
     if (!cell) return;
     this.apply(cell[0] < 3 ? 'left' : cell[0] > 4 ? 'right' : 'rotate');
   }
@@ -93,8 +95,7 @@ export class StonefallEngine {
   }
   render(ctx) {
     const dpr = this.dpr || 1;
-    const rect = boardRect(this.width / dpr, this.height / dpr, STONE_WIDTH, STONE_HEIGHT,
-      { topSpace: 78, bottomSpace: 9 });
+    const rect = this.getRect();
     paintBoard(ctx, this.width / dpr, this.height / dpr, dpr,
       'Stonefall', this.state.gameOver ? 'The stack reached the top' : 'Clear complete rows', rect);
     ctx.save();
