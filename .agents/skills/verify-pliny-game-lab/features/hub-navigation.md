@@ -1,20 +1,20 @@
 # Feature: Hub Navigation
 
-Dual-view navigation system switching between Showcase homepage and Simulator game view, with pavilion/game dropdowns and sequential/random engine navigation.
+Dual-view navigation system switching between Showcase homepage and play view, with collection/game dropdowns and sequential/random game navigation.
 
 ## Sub-features
 - Dual-view toggle: Showcase (floor plan + shelves) ↔ Simulator (active engine + controls panel).
-- Nav bar with "All games" (`#showcase-nav-btn`) and "Simulator" (`#simulator-nav-btn`) buttons (active one underlined).
+- Nav bar with "All games" (`#showcase-nav-btn`) and "Play" (`#simulator-nav-btn`) buttons (active one underlined).
 - `switchView()` sets `body[data-view]`; header elements with class `sim-only` (pickers, arrows, readouts, fullscreen) are hidden on the showcase.
-- Pavilion dropdown (10 pavilions) filtering the game dropdown.
-- Game dropdown (5 engines per pavilion) switching the active engine.
+- Collection dropdown (Puzzle Arcade plus 10 original pavilions) filtering the game dropdown.
+- Game dropdown (10 puzzles in the arcade, 5 games per original pavilion) switching the active game.
 - Previous/next buttons for sequential navigation across the whole catalog.
 - Random game button.
 - URL hash routing: `#showcase`, `#game={key}` for deep linking.
 - Brand logo click returns to Showcase.
 - `Esc` key returns to Showcase from Simulator.
-- Keyboard shortcuts: number keys 1–9, 0 for pavilion filter chips (in Showcase view).
-- Game counter readout: "Game X/N", where N is the catalog size.
+- Keyboard shortcuts: `P` for the Puzzle Arcade, number keys 1–9 and 0 for the original pavilion filters (in Showcase view).
+- Game counter readout: "Game X/60".
 
 ## How to get to it (user POV)
 1. The nav bar is always visible at the top of the page.
@@ -26,7 +26,7 @@ Dual-view navigation system switching between Showcase homepage and Simulator ga
 ## Driving it with headless harness
 ```bash
 node tests/browser-qa.js
-# Exercises launchDemo() for all 50 engines, verifying view transitions
+# Exercises launchDemo() for all 60 games, verifying view transitions
 ```
 
 ## Source entry points

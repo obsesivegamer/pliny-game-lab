@@ -406,13 +406,13 @@ async function runSuite() {
         assert.equal(engine.uiScale(), 1, `${key}: uiScale() must return 1 after restoring dpr=1`);
       }
 
-      console.log(`[${i + 1}/50] ✓ ${key} (${demo.exportName}) OK — Entities: ${count}`);
+      console.log(`[${i + 1}/${demoKeys.length}] ✓ ${key} (${demo.exportName}) OK — Entities: ${count}`);
       passed++;
 
       // Cleanup
       if (engine.destroy) engine.destroy();
     } catch (err) {
-      console.error(`[${i + 1}/50] ✗ ${key} FAILED:`, err.message);
+      console.error(`[${i + 1}/${demoKeys.length}] ✗ ${key} FAILED:`, err.message);
       failed++;
       failures.push({ key, error: err.message, stack: err.stack });
     }

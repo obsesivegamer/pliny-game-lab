@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pliny Game Lab — Natural history you can play</title>
-  <meta name="description" content="Pliny the Elder's Naturalis Historia rebuilt as small browser games and simulations: volcanoes, bees, siege engines, star charts. Plain Canvas 2D and Web Audio, no dependencies.">
+  <title>Pliny Game Lab — 10 Puzzle Games &amp; 50 Simulations</title>
+  <meta name="description" content="Start with ten short puzzle games, then explore fifty natural history simulations. All sixty play in your browser.">
   <meta name="theme-color" content="#1a3470">
-  <meta property="og:title" content="Pliny Game Lab — Natural history you can play">
-  <meta property="og:description" content="Pliny the Elder's Naturalis Historia rebuilt as small browser games and simulations. Plain Canvas 2D and Web Audio, no dependencies.">
-  <meta property="og:image" content="https://obsesivegamer.github.io/pliny-game-lab/assets/screenshots/01_vesuvius.png">
+  <meta property="og:title" content="Pliny Game Lab — 10 Puzzle Games &amp; 50 Simulations">
+  <meta property="og:description" content="Ten short puzzle games lead a collection of fifty playable natural history simulations.">
+  <meta property="og:image" content="https://obsesivegamer.github.io/pliny-game-lab/assets/screenshots/oracle_words-social.png">
   <meta property="og:url" content="https://obsesivegamer.github.io/pliny-game-lab/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Pliny Game Lab — Natural history you can play">
-  <meta name="twitter:description" content="Pliny the Elder's Naturalis Historia rebuilt as small browser games and simulations. Plain Canvas 2D and Web Audio, no dependencies.">
-  <meta name="twitter:image" content="https://obsesivegamer.github.io/pliny-game-lab/assets/screenshots/01_vesuvius.png">
+  <meta name="twitter:title" content="Pliny Game Lab — 10 Puzzle Games &amp; 50 Simulations">
+  <meta name="twitter:description" content="Ten short puzzle games lead a collection of fifty playable natural history simulations.">
+  <meta name="twitter:image" content="https://obsesivegamer.github.io/pliny-game-lab/assets/screenshots/oracle_words-social.png">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,7 +39,7 @@
 
       <nav id="nav-controls" aria-label="Views">
         <button id="showcase-nav-btn" class="nav-toggle-btn active" title="Browse every game">All games</button>
-        <button id="simulator-nav-btn" class="nav-toggle-btn" title="Return to the game you are playing">Simulator</button>
+        <button id="simulator-nav-btn" class="nav-toggle-btn" title="Return to the game you are playing">Play</button>
         <div class="nav-divider sim-only"></div>
         <select id="pavilion-select" class="sim-only" title="Pavilion" aria-label="Pavilion"></select>
         <select id="game-select" class="sim-only" title="Game" aria-label="Game"></select>
@@ -51,7 +51,7 @@
       </nav>
 
       <div id="telemetry">
-        <span class="telemetry-pill sim-only">Game <strong id="game-num-val">1/50</strong></span>
+        <span class="telemetry-pill sim-only">Game <strong id="game-num-val">1/60</strong></span>
         <span class="telemetry-pill sim-only">FPS <strong id="fps-val">60</strong></span>
         <span class="telemetry-pill sim-only">Entities <strong id="entity-val">0</strong></span>
         <div class="audio-group" title="Sound">
@@ -75,18 +75,18 @@
             <p class="sheet-mark">Sheet A-1 · General plan</p>
             <h1 id="hero-title" class="hero-title">The first encyclopedia,<br><em>rebuilt as games.</em></h1>
             <p class="hero-lede">
-              Pliny the Elder tried to write down everything: volcanoes, bees, siege engines, the stars.
-              Here his <em>Naturalis Historia</em> becomes <span data-stat="games">50</span> small games and
-              simulations, shelved in <span data-stat="pavilions">10</span> pavilions around one atrium.
-              Each runs in your browser, and every one was designed and built by AI agents.
+              Start with ten short puzzles about words, paths, shapes, light and numbers.
+              Then explore fifty simulations of volcanoes, bees, siege engines and stars, inspired by Pliny the Elder's
+              <em>Naturalis Historia</em>. All <span data-stat="games">60</span> run in your browser, shelved in a
+              Puzzle Arcade and <span data-stat="pavilions">10</span> original pavilions.
             </p>
             <div class="hero-actions">
-              <button id="hero-launch-btn" class="btn btn-solid">Play Vesuvius</button>
+              <button id="hero-launch-btn" class="btn btn-solid">Play Oracle Words</button>
               <button id="hero-random-btn" class="btn btn-line">Random game</button>
               <a href="#showcase-bar" class="btn-link" data-scroll-index>Browse the index ↓</a>
             </div>
             <dl class="title-block">
-              <div><dt>Games</dt><dd data-stat="games">50</dd></div>
+              <div><dt>Games</dt><dd data-stat="games">60</dd></div>
               <div><dt>Pavilions</dt><dd data-stat="pavilions">10</dd></div>
               <div><dt>Source</dt><dd><em>Naturalis Historia</em></dd></div>
               <div><dt>Books</dt><dd>37</dd></div>
@@ -114,7 +114,7 @@
               <input id="showcase-search" type="search" placeholder="Search games" autocomplete="off" spellcheck="false">
               <kbd class="search-kbd" aria-hidden="true">/</kbd>
             </label>
-            <p id="showcase-count" class="match-count" aria-live="polite">50 of 50 games</p>
+            <p id="showcase-count" class="match-count" aria-live="polite">60 games</p>
             <div id="showcase-chips" class="pavilion-chips" role="group" aria-label="Filter by pavilion"></div>
           </aside>
 
@@ -142,6 +142,7 @@
                 <tr><td>E</td><td>2026.09.20</td><td>Every game’s on-screen readouts sized for phones and high-density screens.</td></tr>
                 <tr><td>F</td><td>2026.09.21</td><td>Physics that holds at any frame rate; deeper play in seven games.</td></tr>
                 <tr><td>G</td><td>2026.09.22</td><td>This showcase, redrawn as a blueprint.</td></tr>
+                <tr><td>H</td><td>2026.09.23</td><td>Ten short puzzle games take the first ten shelves of the arcade.</td></tr>
               </tbody>
             </table>
           </div>
@@ -149,8 +150,8 @@
 
         <footer class="showcase-footer">
           <div class="closing">
-            <p class="closing-line">Start where Pliny ended: <em>at Vesuvius.</em></p>
-            <button class="btn btn-solid" data-launch="vesuvius">Play Vesuvius</button>
+            <p class="closing-line">Start with a word. <em>Stay for the worlds.</em></p>
+            <button class="btn btn-solid" data-launch="oracle_words">Play Oracle Words</button>
           </div>
           <p class="colophon">
             Gaius Plinius Secundus, AD 23/24–79. Built with plain ES modules, Canvas 2D and Web Audio.
@@ -173,12 +174,12 @@
       <aside id="controls-panel">
         <div class="panel-header">
           <div>
-            <div id="pavilion-badge" class="badge">Pavilion I</div>
-            <h2 id="demo-title">Vesuvius Sim</h2>
+            <div id="pavilion-badge" class="badge">Puzzle Arcade</div>
+            <h2 id="demo-title">Oracle Words</h2>
           </div>
           <button id="toggle-panel" aria-label="Collapse controls" aria-expanded="true" aria-controls="dynamic-controls">−</button>
         </div>
-        <p id="demo-desc" class="demo-description">Thermodynamic falling-sand & volcanic eruption simulation.</p>
+        <p id="demo-desc" class="demo-description">Find the hidden five-letter word.</p>
         <p id="hint-inline" class="demo-hint"></p>
         <div id="dynamic-controls"></div>
         <div class="panel-footer">

@@ -1,10 +1,11 @@
 # Feature: Plinius Codex Lore Drawer
 
-Slide-out encyclopedia drawer displaying historical lore, Pliny the Elder references, and simulation design notes for each of the 50 engines.
+Slide-out drawer displaying brief rules for each puzzle game and historical lore for each of the fifty original simulations.
 
 ## Sub-features
 - Codex button (`#codex-toggle-btn`) in the header opens a slide-out drawer overlay.
-- Per-engine lore entries with Latin titles, Naturalis Historia book references, and simulation design rationale.
+- The ten puzzle entries show their objective and controls. The fifty original entries show Latin titles, Naturalis Historia references, and simulation design notes.
+- Puzzle entries hide the science and historical reference sections; those sections return for original simulations.
 - Entries update automatically when switching engines.
 - Scrollable content with styled Roman typography.
 
@@ -22,8 +23,8 @@ node tests/codex-qa.js
 ## Source entry points
 - `src/core/codex.js`: `CODEX_DATA` object mapping engine keys to lore entries
 - `src/core/hub.js`: `openCodex()`, `closeCodex()`, codex drawer DOM management
-- `index.html`: `#codex-drawer`, `#codex-toggle`
+- `index.html`: `#codex-drawer`, `#codex-toggle-btn`
 
 ## Gotchas
-- The codex data is a static object in `codex.js`; new engines need entries added manually.
+- Original lore is a static object in `codex.js`; puzzle rules are provided by the puzzle catalog in `hub.js`.
 - The drawer uses CSS transitions for the slide animation.

@@ -1,7 +1,7 @@
 # 🏛️ Pliny Game Lab
 
 [![GitHub Pages Deployment](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-gold?style=for-the-badge&logo=github)](https://obsesivegamer.github.io/pliny-game-lab/)
-[![Engines Verified](https://img.shields.io/badge/Engines-50%2F50%20Green-emerald?style=for-the-badge)](https://github.com/obsesivegamer/pliny-game-lab)
+[![Catalog Verified](https://img.shields.io/badge/Catalog-60%2F60%20Green-emerald?style=for-the-badge)](https://github.com/obsesivegamer/pliny-game-lab)
 [![Dependencies](https://img.shields.io/badge/Dependencies-0%20(Pure%20Vanilla)-blue?style=for-the-badge)](https://github.com/obsesivegamer/pliny-game-lab)
 [![Audio](https://img.shields.io/badge/Audio-Procedural%20WebAudio%20API-purple?style=for-the-badge)](https://github.com/obsesivegamer/pliny-game-lab)
 
@@ -9,44 +9,61 @@
 > *"Nature does nothing in vain, and arranges all things according to order."*  
 > — Gaius Plinius Secundus (AD 23/24 – 79)
 
-**Pliny Game Lab** is a monumental 50-engine classical procedural simulation laboratory inspired by Pliny the Elder's 37 books of *Naturalis Historia*.
+**Pliny Game Lab** starts with ten short puzzle games and keeps the original fifty classical simulations inspired by Pliny the Elder's *Naturalis Historia*.
 
-Every single engine is a **pure, self-contained ES module** running in Canvas 2D and the Web Audio API with **zero external dependencies** (no frameworks, no bundlers, no external audio files or sprites).
+The games run as browser ES modules with Canvas 2D and Web Audio. No framework or build step is needed to play.
 
 🎮 **Live Interactive Showcase**: [https://obsesivegamer.github.io/pliny-game-lab/](https://obsesivegamer.github.io/pliny-game-lab/)
 
 ---
 
-## 🏛️ The Ten Thematic Pavilions (50 Engines)
+## 🧩 Puzzle Arcade (showcase slots 1–10)
+
+| Game | Goal |
+|---|---|
+| Oracle Words | Find a five-letter word in six guesses; try the daily word or unlimited play. |
+| Canal Lines | Draw one canal through every field to the sea. |
+| Stonefall | Move and rotate falling stones to clear rows. |
+| Lantern Push | Push lanterns onto marked floor tiles. |
+| Mirror Harbor | Turn mirrors to light a lighthouse. |
+| Mosaic Clues | Fill a small picture from row and column clues. |
+| Harbor Jam | Slide boats to let the courier leave. |
+| Star Switch | Turn every star off by toggling its neighbors. |
+| Number Forge | Combine three stones into a target number. |
+| Signal Route | Place arrows to guide a courier through scrolls to a beacon. |
+
+The eight level games have twelve puzzles each. Progress stays in this browser. Oracle Words saves the current daily round; Stonefall saves the best score. Puzzle controls support touch, mouse, and keyboard.
+
+## 🏛️ The Ten Original Pavilions (showcase slots 11–60)
 
 | Pavilion | Theme & Focus | Simulations (5 per Pavilion) |
 |---|---|---|
-| **I. Ignis & Terra** | Volcanology, Speleothems & Seismology | `01. Vesuvius`, `02. Geyser`, `03. Caverna`, `04. Terrae Motus`, `05. Aurum` |
-| **II. Bestiarium & Silva** | Artificial Life, Boids & Botany | `06. Bestiarium`, `07. Myrmex`, `08. Apis`, `09. Hydra`, `10. Silva` |
-| **III. Mechanica & Machina** | Vitruvian Engineering & Heron's Automata | `11. Mechanica`, `12. Aqueduct`, `13. Ballista`, `14. Horologium`, `15. Antikythera` |
-| **IV. Cosmographia & Astra** | Ptolemaic & Keplerian Celestial Mechanics | `16. Cosmographia`, `17. Solstitium`, `18. Aurora`, `19. Cometa`, `20. Armilla` |
-| **V. Fabula & Arena** | Mythology, Roman Games & Naval Warfare | `21. Labyrinthus`, `22. Colosseum`, `23. Trireme`, `24. Chariot`, `25. Oraculum` |
-| **VI. Mathematica & Geometria** | Euclidean Geometry & Harmonics | `26. Euclid`, `27. Archimedes Spiral`, `28. Eratosthenes`, `29. Pythagoras`, `30. Fractal Roman` |
-| **VII. Mare Nostrum** | Oceanography, Hydrodynamics & Marine ALife | `31. Scylla & Charybdis`, `32. Mare Nostrum`, `33. Pharos`, `34. Coral Reef`, `35. Nautilus` |
-| **VIII. Architectura & Structura** | Roman Architecture, Concrete & Domes | `36. Forum Builder`, `37. Arch Vault`, `38. Opus Caementicium`, `39. Thermae`, `40. Pantheon` |
-| **IX. Alchemia & Mineralia** | Materials Science, Glass & Pigments | `41. Vitrum`, `42. Metallum`, `43. Pigmentum`, `44. Hermetica`, `45. Electrum` |
-| **X. Strategia & Legio** | Roman Military Engineering & Tactics | `46. Testudo`, `47. Siege Tower`, `48. Hoplite Phalanx`, `49. Scorpio`, `50. Signal Fire` |
+| **I. Ignis & Terra** | Volcanology, Speleothems & Seismology | Vesuvius, Geyser, Caverna, Terrae Motus, Aurum |
+| **II. Bestiarium & Silva** | Artificial Life, Boids & Botany | Bestiarium, Myrmex, Apis, Hydra, Silva |
+| **III. Mechanica & Machina** | Vitruvian Engineering & Heron's Automata | Mechanica, Aqueduct, Ballista, Horologium, Antikythera |
+| **IV. Cosmographia & Astra** | Ptolemaic & Keplerian Celestial Mechanics | Cosmographia, Solstitium, Aurora, Cometa, Armilla |
+| **V. Fabula & Arena** | Mythology, Roman Games & Naval Warfare | Labyrinthus, Colosseum, Trireme, Chariot, Oraculum |
+| **VI. Mathematica & Geometria** | Euclidean Geometry & Harmonics | Euclid, Archimedes Spiral, Eratosthenes, Pythagoras, Fractal Roman |
+| **VII. Mare Nostrum** | Oceanography, Hydrodynamics & Marine ALife | Scylla & Charybdis, Mare Nostrum, Pharos, Coral Reef, Nautilus |
+| **VIII. Architectura & Structura** | Roman Architecture, Concrete & Domes | Forum Builder, Arch Vault, Opus Caementicium, Thermae, Pantheon |
+| **IX. Alchemia & Mineralia** | Materials Science, Glass & Pigments | Vitrum, Metallum, Pigmentum, Hermetica, Electrum |
+| **X. Strategia & Legio** | Roman Military Engineering & Tactics | Testudo, Siege Tower, Hoplite Phalanx, Scorpio, Signal Fire |
 
 ---
 
 ## 🌟 Key Architecture & Highlights
 
 1. **Showcase Homepage** (`src/core/showcase.js`):
-   - Drawn as an architect's blueprint: a Roman house floor plan where each room is a pavilion (hover to see its games, click to open its shelf).
+   - Drawn as an architect's blueprint: a Roman house floor plan with the Puzzle Arcade and ten original pavilions (hover to see their games, click to open a shelf).
    - Games are shelved by pavilion with architectural room numbers (pavilion III, second game → room 302).
    - Everything, including the floor plan, counts and filters, is generated from `DEMOS` and `PAVILIONS`, so new games and pavilions need no markup changes.
    - Live search (hotkey `/`) and a pavilion index that turns into a scrolling strip on phones.
-   - Keyboard navigation (`Arrow keys` to move between games, `Enter` to launch, `1-0` for pavilion quick-jumps, `A` for all).
-   - Thumbnails are captured from each game's own canvas into `assets/thumbs/<key>.webp` by `node scripts/capture-thumbs.js`.
+   - Keyboard navigation (`Arrow keys` to move between games, `Enter` to launch, `P` for puzzles, `1-0` for original pavilion quick-jumps, `A` for all).
+   - Original simulation thumbnails are captured from each canvas into `assets/thumbs/<key>.webp` by `node scripts/capture-thumbs.js`; the puzzle cards use simple SVG artwork.
 
 2. **📖 Plinius Codex**:
    - Slide-out drawer (hotkey `C` / `Escape`, or the Codex button in the header).
-   - Curated Latin text citations and English translations from Pliny's *Naturalis Historia*, Vitruvius, and Ovid for all 50 simulations.
+   - Classical citations and translations for the fifty simulations; concise rules for the ten puzzles.
    - Explanations of underlying physical and mathematical principles simulated.
 
 3. **Procedural Web Audio Synthesizer**:
@@ -83,10 +100,10 @@ Open [http://localhost:8000](http://localhost:8000) in your modern browser.
 The codebase includes full headless and browser-automated QA verification suites:
 
 ```bash
-# Run 50-engine headless physics simulation harness (Node.js)
+# Run the 60-engine headless harness (Node.js)
 node tests/verify-engines.js
 
-# Run 50-engine deep visual QA (Canvas 2D call inspector, NaN guards, save/restore balance)
+# Run the 60-engine visual QA (Canvas 2D call inspector, NaN guards, save/restore balance)
 node tests/visual-qa.js
 
 # Run Puppeteer E2E test suites (Showcase, Codex drawer, Procedural Audio)
@@ -94,12 +111,21 @@ node tests/showcase-qa.js
 node tests/codex-qa.js
 node tests/audio-qa.js
 
+# Run puzzle rules, catalog, desktop playthrough, and phone touch QA
+node tests/puzzle-catalog.js
+node tests/puzzle-logic.js
+node tests/puzzle-playthrough-qa.js
+node tests/puzzle-mobile-qa.js
+node tests/puzzle-keyboard-qa.js
+
 # Run full project verification suite
 ./scripts/verify-all.sh
 
 # Capture showcase thumbnails for games that don't have one yet (add --all to redo every game)
 node scripts/capture-thumbs.js
 ```
+
+Browser QA requires Node.js 22.12 or newer, `npm ci`, and Puppeteer's browser installation. The app itself needs no package installation. Set `PLINY_BASE_URL` to test a server on a port other than 8000.
 
 ---
 

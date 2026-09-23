@@ -5,7 +5,7 @@
 import puppeteer from 'puppeteer';
 import assert from 'node:assert/strict';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = process.env.PLINY_BASE_URL || 'http://localhost:8000';
 
 const VIEWPORTS = [
   { name: 'phone portrait', width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
@@ -62,6 +62,7 @@ async function measure(page) {
     const waterY = engine.simHeight - 28;
     return {
       canvas: { width: cr.width, height: cr.height, backingW: canvas.width, backingH: canvas.height },
+      panelHeight: pr.height,
       // Backing store must match its box, or the browser rescales the bitmap.
       backingMatchesBox: Math.abs(canvas.width / canvas.height - cr.width / cr.height) < 0.02,
       // World must not be stretched: canvas px per sim cell equal on both axes.
@@ -81,7 +82,9 @@ async function measure(page) {
         const scale = canvas.width / cr.width;
         // Stop above the coach banner at y=74, whose gold border shares this column.
         const depth = Math.min(canvas.height, Math.round(70 * scale));
-        const px = ictx.getImageData(Math.round(20 * scale), 0, 1, depth).data;
+        // In a short landscape canvas the seismograph starts at x=12 and
+        // overlaps the HUD's bottom border near x=20. Sample the bar's center.
+        const px = ictx.getImageData(Math.round(cr.width * scale / 2), 0, 1, depth).data;
         const gold = [];
         for (let y = 0; y < depth; y++) {
           const r = px[y * 4], g = px[y * 4 + 1], b = px[y * 4 + 2];
@@ -105,6 +108,7 @@ async function run() {
       await page.setViewport(vp);
       await openSimulator(page);
       const m = await measure(page);
+      if (process.env.PLINY_DEBUG_LAYOUT) console.log(vp.name, JSON.stringify(m));
 
       assert.ok(m.backingMatchesBox, `${vp.name}: canvas backing store ${m.canvas.backingW}x${m.canvas.backingH} does not match its ${Math.round(m.canvas.width)}x${Math.round(m.canvas.height)} box`);
       assert.ok(Math.abs(m.worldStretch - 1) < 0.05, `${vp.name}: world is stretched ${m.worldStretch.toFixed(2)}:1`);
@@ -130,7 +134,11 @@ async function run() {
         await page.click('#toggle-panel');
         await new Promise((r) => setTimeout(r, 700));
         const c = await measure(page);
-        assert.ok(c.canvas.height > m.canvas.height + 20, `${vp.name}: collapsing the sheet did not grow the canvas (${Math.round(m.canvas.height)} -> ${Math.round(c.canvas.height)})`);
+        if (process.env.PLINY_DEBUG_LAYOUT) console.log(`${vp.name} collapsed`, JSON.stringify(c));
+        const recovered = c.canvas.height - m.canvas.height;
+        const released = m.panelHeight - c.panelHeight;
+        assert.ok(recovered > 20 && Math.abs(recovered - released) < 2,
+          `${vp.name}: collapsing the sheet did not give its height back to the canvas (${Math.round(m.canvas.height)} -> ${Math.round(c.canvas.height)})`);
         assert.ok(c.backingMatchesBox, `${vp.name}: backing store went stale after collapse`);
         assert.ok(Math.abs(c.worldStretch - 1) < 0.05, `${vp.name}: world stretched ${c.worldStretch.toFixed(2)}:1 after collapse`);
         assert.equal(c.sheetOverlap, 0, `${vp.name}: collapsed sheet still covers the canvas`);

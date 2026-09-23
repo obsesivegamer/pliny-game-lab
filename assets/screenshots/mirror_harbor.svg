@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#dcece7"/>
+  <text x="44" y="63" fill="#173f48" font-family="system-ui" font-size="37" font-weight="800">Mirror Harbor</text>
+  <text x="46" y="94" fill="#507078" font-family="system-ui" font-size="16" letter-spacing="3">PUZZLE ARCADE 05</text>
+  <path d="M128 268h151V172h172" fill="none" stroke="#efb65b" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="128" cy="268" r="31" fill="#e5a447" stroke="#9c6c28" stroke-width="5"/>
+  <rect x="250" y="239" width="58" height="58" rx="8" fill="#1f4e5b"/><path d="M263 284l32-32" stroke="#fff5d9" stroke-width="10" stroke-linecap="round"/>
+  <rect x="423" y="144" width="58" height="58" rx="8" fill="#f7dc9c" stroke="#b78945" stroke-width="4"/>
+  <path d="M452 154l6 13 14 4-14 5-6 13-6-13-14-5 14-4Z" fill="#a96a29"/>
+  <text x="320" y="322" fill="#315f66" font-family="system-ui" font-size="19" text-anchor="middle">Turn mirrors to bend light</text>
+</svg>

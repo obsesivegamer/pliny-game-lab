@@ -1,6 +1,7 @@
 // Pliny Game Lab — Browser Visual QA via Puppeteer
-// Takes screenshots of all 50 engines and reports console errors
+// Takes screenshots of every catalog entry and reports console errors
 import puppeteer from 'puppeteer';
+import { DEMOS } from '../src/core/hub.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,7 +9,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8000';
+const BASE_URL = process.env.PLINY_BASE_URL || process.env.BASE_URL || 'http://localhost:8000';
 const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || path.join(__dirname, '..', '.audit', 'screenshots');
 const SETTLE_MS = parseInt(process.env.SETTLE_MS || '2500', 10);
 const VIEWPORT = {
@@ -17,19 +18,7 @@ const VIEWPORT = {
   deviceScaleFactor: parseFloat(process.env.DEVICE_SCALE_FACTOR || '1')
 };
 
-// All 50 engine keys in order
-const ENGINE_KEYS = [
-  'vesuvius', 'geyser', 'caverna', 'terrae_motus', 'aurum',
-  'bestiarium', 'myrmex', 'apis', 'hydra', 'silva',
-  'mechanica', 'aqueduct', 'ballista', 'horologium', 'antikythera',
-  'cosmographia', 'solstitium', 'aurora', 'cometa', 'armilla',
-  'labyrinthus', 'colosseum', 'trireme', 'chariot', 'oraculum',
-  'euclid', 'archimedes_spiral', 'eratosthenes', 'pythagoras', 'fractal_roman',
-  'scylla_charybdis', 'mare_nostrum', 'pharos', 'coral_reef', 'nautilus',
-  'forum_builder', 'arch_vault', 'opus_caementicium', 'thermae', 'pantheon',
-  'vitrum', 'metallum', 'pigmentum', 'hermetica', 'electrum',
-  'testudo', 'siege_tower', 'hoplite_phalanx', 'scorpio', 'signal_fire'
-];
+const ENGINE_KEYS = Object.keys(DEMOS);
 
 async function runBrowserQA() {
   // Create screenshot directory
@@ -223,7 +212,7 @@ async function runBrowserQA() {
       }
 
       const status = issues.length > 0 ? (consoleErrors.length > 0 ? '✗' : '⚠') : '✓';
-      const statusLine = `[${i + 1}/50] ${status} ${key} — ${telemetry.title} | FPS: ${telemetry.fps} | Entities: ${telemetry.entities} | Canvas: ${canvasInfo.nonBlackRatio}% filled`;
+      const statusLine = `[${i + 1}/${ENGINE_KEYS.length}] ${status} ${key} — ${telemetry.title} | FPS: ${telemetry.fps} | Entities: ${telemetry.entities} | Canvas: ${canvasInfo.nonBlackRatio}% filled`;
 
       if (issues.length > 0) {
         console.log(statusLine);
@@ -245,7 +234,7 @@ async function runBrowserQA() {
       });
 
     } catch (err) {
-      console.log(`[${i + 1}/50] ✗ ${key} — FATAL: ${err.message}`);
+      console.log(`[${i + 1}/${ENGINE_KEYS.length}] ✗ ${key} — FATAL: ${err.message}`);
       results.push({
         key,
         title: '',
