@@ -1,0 +1,64 @@
+{
+  "baseline": {
+    "gridHash": -58289115,
+    "scene": "800x600 default dormant gameplay",
+    "update60Ms": {
+      "samples": [
+        0.3,
+        0.2441666672627131,
+        0.24333333373069763
+      ],
+      "median": 0.2441666672627131,
+      "callsPerSample": 120
+    },
+    "renderMs": {
+      "samples": [
+        0.43666666746139526,
+        0.42333333094914755,
+        0.4299999992052714
+      ],
+      "median": 0.4299999992052714,
+      "callsPerSample": 30
+    },
+    "update100ms": {
+      "samples": [
+        0.2400000015894572,
+        0.24666666587193806,
+        0.2533333341280619
+      ],
+      "median": 0.24666666587193806,
+      "callsPerSample": 30
+    }
+  },
+  "treatment": {
+    "gridHash": -58289115,
+    "scene": "800x600 default dormant gameplay",
+    "update60Ms": {
+      "samples": [
+        0.3024999996026357,
+        0.3158333331346512,
+        0.3133333335320155
+      ],
+      "median": 0.3133333335320155,
+      "callsPerSample": 120
+    },
+    "renderMs": {
+      "samples": [
+        0.3633333325386047,
+        0.35,
+        0.3533333301544189
+      ],
+      "median": 0.3533333301544189,
+      "callsPerSample": 30
+    },
+    "update100ms": {
+      "samples": [
+        1.8833333333333333,
+        1.8833333333333333,
+        1.8733333349227905
+      ],
+      "median": 1.8833333333333333,
+      "callsPerSample": 30
+    }
+  }
+}

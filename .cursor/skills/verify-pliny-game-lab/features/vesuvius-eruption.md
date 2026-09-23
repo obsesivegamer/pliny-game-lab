@@ -27,7 +27,7 @@ Thermodynamic cellular automata falling-sand, lava flows, pyroclastic density cu
 Execute via test suite:
 ```bash
 node tests/verify-engines.js
-# Vesuvius is engine #1; look for "[1/50] ✓ vesuvius (VesuviusEngine) OK"
+# Vesuvius is engine #11 in the current 60-game catalog; look for "[11/60] ✓ vesuvius (VesuviusEngine) OK"
 node tests/vesuvius-timing.js
 node tests/vesuvius-gameplay.js
 # With the static server running on port 8000:
