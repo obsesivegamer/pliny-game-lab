@@ -6,7 +6,7 @@ Index of core user-facing features across the 50-engine, 10-Pavilion Pliny Game 
 
 | Feature | Surface | Harness | Verified State |
 | :--- | :--- | :--- | :--- |
-| [Showcase Homepage](showcase-homepage.md) | HTML + Canvas cards | `node tests/showcase-qa.js` | 50 cards, search, 11 chips, hero stats |
+| [Showcase Homepage](showcase-homepage.md) | HTML + SVG floor plan | `node tests/showcase-qa.js` | Catalog-driven cards, search, pavilion filter, floor plan |
 | [Hub Navigation](hub-navigation.md) | HTML dropdowns + buttons | `node tests/browser-qa.js` | Dual-view (Showcase ↔ Simulator), pavilion/game dropdowns, prev/next/random |
 | [Procedural Audio](procedural-audio.md) | WebAudio API | `node tests/audio-qa.js` | Pavilion ambience, chimes, launch fanfare, synthesized FX |
 | [Plinius Codex](plinius-codex.md) | HTML drawer + Canvas | `node tests/codex-qa.js` | Slide-out lore encyclopedia for all 50 engines |
