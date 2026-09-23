@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BASE = 'http://localhost:8000';
+const BASE = process.env.PLINY_BASE_URL || 'http://localhost:8000';
 const OUT = path.resolve(__dirname, '..', '.audit', 'vesuvius-gameplay');
 fs.mkdirSync(OUT, { recursive: true });
 

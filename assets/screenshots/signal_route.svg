@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#e7ede0"/>
+  <text x="44" y="63" fill="#173f48" font-family="system-ui" font-size="37" font-weight="800">Signal Route</text>
+  <text x="46" y="94" fill="#507078" font-family="system-ui" font-size="16" letter-spacing="3">PUZZLE ARCADE 10</text>
+  <g fill="#fffdf4" stroke="#b7cec4" stroke-width="4"><rect x="185" y="128" width="67" height="66" rx="9"/><rect x="256" y="128" width="67" height="66" rx="9"/><rect x="327" y="128" width="67" height="66" rx="9"/><rect x="398" y="128" width="67" height="66" rx="9"/><rect x="185" y="198" width="67" height="66" rx="9"/><rect x="256" y="198" width="67" height="66" rx="9"/><rect x="327" y="198" width="67" height="66" rx="9"/><rect x="398" y="198" width="67" height="66" rx="9"/></g>
+  <path d="M218 161h142v70h71" fill="none" stroke="#50aaa5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="218" cy="161" r="23" fill="#238c9d"/><path d="M212 150l17 11-17 11Z" fill="white"/>
+  <path d="M360 145v31m-12-12 12 12 12-12" fill="none" stroke="#173f48" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M431 207l6 14 14 6-14 6-6 14-6-14-14-6 14-6Z" fill="#e9af5b"/>
+  <text x="320" y="313" fill="#315f66" font-family="system-ui" font-size="19" text-anchor="middle">Guide every scroll to the beacon</text>
+</svg>

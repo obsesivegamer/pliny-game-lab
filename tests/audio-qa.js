@@ -4,7 +4,7 @@
 
 import puppeteer from 'puppeteer';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = process.env.PLINY_BASE_URL || 'http://localhost:8000';
 
 async function runAudioQA() {
   console.log('════════════════════════════════════════════════════════');

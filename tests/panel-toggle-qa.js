@@ -3,7 +3,7 @@
 import puppeteer from 'puppeteer';
 import assert from 'node:assert/strict';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = process.env.PLINY_BASE_URL || 'http://localhost:8000';
 
 function launchBrowser() {
   return puppeteer.launch({

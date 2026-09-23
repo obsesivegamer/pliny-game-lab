@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#f3ecda"/>
+  <path d="M0 324Q160 280 320 324T640 324V360H0Z" fill="#dce9dc"/>
+  <text x="44" y="63" fill="#173f48" font-family="system-ui" font-size="37" font-weight="800">Oracle Words</text>
+  <text x="46" y="94" fill="#507078" font-family="system-ui" font-size="16" letter-spacing="3">PUZZLE ARCADE 01</text>
+  <g font-family="system-ui" font-size="49" font-weight="800" text-anchor="middle" dominant-baseline="central">
+    <rect x="119" y="142" width="72" height="72" rx="10" fill="#168b88"/><text x="155" y="178" fill="white">W</text>
+    <rect x="202" y="142" width="72" height="72" rx="10" fill="#168b88"/><text x="238" y="178" fill="white">A</text>
+    <rect x="285" y="142" width="72" height="72" rx="10" fill="#168b88"/><text x="321" y="178" fill="white">T</text>
+    <rect x="368" y="142" width="72" height="72" rx="10" fill="#168b88"/><text x="404" y="178" fill="white">E</text>
+    <rect x="451" y="142" width="72" height="72" rx="10" fill="#168b88"/><text x="487" y="178" fill="white">R</text>
+  </g>
+  <text x="320" y="275" fill="#315f66" font-family="system-ui" font-size="19" text-anchor="middle">Find the hidden word</text>
+</svg>

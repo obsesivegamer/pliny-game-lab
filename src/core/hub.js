@@ -1,11 +1,11 @@
-// Pliny Game Lab — 50 Engines Master Coordinator
-// Manages 10 Thematic Pavilions and 50 Roman / Natural History Simulations
+// Pliny Game Lab — ten puzzle games and fifty natural history simulations.
 
 import { soundMaster } from "./sound.js";
 import { CODEX_DATA } from "./codex.js";
 import { renderShowcase, applyShowcaseFilter, neighborCard } from "./showcase.js";
 
 export const PAVILIONS = [
+  { id: "puzzle", name: "Puzzle Arcade", games: ["oracle_words", "canal_lines", "stonefall", "lantern_push", "mirror_harbor", "mosaic_clues", "harbor_jam", "star_switch", "number_forge", "signal_route"] },
   { id: "ignis", name: "I. Ignis & Terra (Earth & Fire)", games: ["vesuvius", "geyser", "caverna", "terrae_motus", "aurum"] },
   { id: "bestiarium", name: "II. Bestiarium & Silva (ALife & Botany)", games: ["bestiarium", "myrmex", "apis", "hydra", "silva"] },
   { id: "mechanica", name: "III. Mechanica & Machina (Roman Engineering)", games: ["mechanica", "aqueduct", "ballista", "horologium", "antikythera"] },
@@ -19,6 +19,77 @@ export const PAVILIONS = [
 ];
 
 export const DEMOS = {
+  oracle_words: {
+    id: "oracle_words", name: "Oracle Words", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/oracle_words/oracle_words.js", exportName: "OracleWordsEngine",
+    desc: "Find a hidden five-letter word from the clues in each guess. Start with an easy word, then try the daily puzzle or keep playing.",
+    hint: "Type or tap five letters. Enter checks the word; Delete removes a letter.",
+    thumb: "assets/screenshots/oracle_words.svg"
+  },
+  canal_lines: {
+    id: "canal_lines", name: "Canal Lines", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/canal_lines/canal_lines.js", exportName: "CanalLinesEngine",
+    desc: "Draw one canal from spring to sea and bring water to every marked field.",
+    hint: "Drag from the spring along the grid. Undo a step or start over at any time.",
+    thumb: "assets/screenshots/canal_lines.svg"
+  },
+  stonefall: {
+    id: "stonefall", name: "Stonefall", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/stonefall/stonefall.js", exportName: "StonefallEngine",
+    desc: "Move and rotate falling three-square stones to complete rows before the stack reaches the top.",
+    hint: "Left and right move; up rotates; down drops faster. Touch buttons are below the board.",
+    thumb: "assets/screenshots/stonefall.svg"
+  },
+  lantern_push: {
+    id: "lantern_push", name: "Lantern Push", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/lantern_push/lantern_push.js", exportName: "LanternPushEngine",
+    desc: "Push stone lanterns onto the glowing floor marks. Plan your route so none get trapped.",
+    hint: "Tap an adjacent square or use arrow keys. Undo is always available.",
+    thumb: "assets/screenshots/lantern_push.svg"
+  },
+  mirror_harbor: {
+    id: "mirror_harbor", name: "Mirror Harbor", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/mirror_harbor/mirror_harbor.js", exportName: "MirrorHarborEngine",
+    desc: "Turn small mirrors to guide a beam of light to the lighthouse.",
+    hint: "Tap a mirror to rotate it. Light every lighthouse to finish.",
+    thumb: "assets/screenshots/mirror_harbor.svg"
+  },
+  mosaic_clues: {
+    id: "mosaic_clues", name: "Mosaic Clues", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/mosaic_clues/mosaic_clues.js", exportName: "MosaicCluesEngine",
+    desc: "Reveal a tiny picture by filling tiles to match the row and column clues.",
+    hint: "Tap to fill a tile; tap again to mark it empty. The numbers show groups in each line.",
+    thumb: "assets/screenshots/mosaic_clues.svg"
+  },
+  harbor_jam: {
+    id: "harbor_jam", name: "Harbor Jam", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/harbor_jam/harbor_jam.js", exportName: "HarborJamEngine",
+    desc: "Slide the boats in their lanes to free the courier boat's exit.",
+    hint: "Drag a boat along its lane. Clear the right edge for the blue courier.",
+    thumb: "assets/screenshots/harbor_jam.svg"
+  },
+  star_switch: {
+    id: "star_switch", name: "Star Switch", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/star_switch/star_switch.js", exportName: "StarSwitchEngine",
+    desc: "Tap stars to change them and their neighbors until the whole sky is dark.",
+    hint: "Each tap changes one star and its four neighbors. Turn them all off.",
+    thumb: "assets/screenshots/star_switch.svg"
+  },
+  number_forge: {
+    id: "number_forge", name: "Number Forge", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/number_forge/number_forge.js", exportName: "NumberForgeEngine",
+    desc: "Use three number stones and simple operations to make the target number.",
+    hint: "Choose two stones, choose an operation, then use the result with the last stone.",
+    thumb: "assets/screenshots/number_forge.svg"
+  },
+  signal_route: {
+    id: "signal_route", name: "Signal Route", pavilionId: "puzzle", pavilionName: "Puzzle Arcade",
+    path: "../demos/signal_route/signal_route.js", exportName: "SignalRouteEngine",
+    desc: "Place a few arrows to guide a courier past every scroll and into the beacon.",
+    hint: "Tap a square to place or turn an arrow. Press Run to test the route.",
+    thumb: "assets/screenshots/signal_route.svg"
+  },
+
   // Pavilion I: Ignis & Terra
   vesuvius: {
     id: "vesuvius",
@@ -540,7 +611,26 @@ export const DEMOS = {
   }
 };
 
+// Keep the original screenshot numbers as fallbacks when new games take the
+// first ten showcase ranks. Current cards prefer their captured WebP thumbs.
+const LEGACY_THUMB_KEYS = `
+  vesuvius geyser caverna terrae_motus aurum
+  bestiarium myrmex apis hydra silva
+  mechanica aqueduct ballista horologium antikythera
+  cosmographia solstitium aurora cometa armilla
+  labyrinthus colosseum trireme chariot oraculum
+  euclid archimedes_spiral eratosthenes pythagoras fractal_roman
+  scylla_charybdis mare_nostrum pharos coral_reef nautilus
+  forum_builder arch_vault opus_caementicium thermae pantheon
+  vitrum metallum pigmentum hermetica electrum
+  testudo siege_tower hoplite_phalanx scorpio signal_fire
+`.trim().split(/\s+/);
+LEGACY_THUMB_KEYS.forEach((key, index) => {
+  DEMOS[key].thumb = `assets/screenshots/${String(index + 1).padStart(2, "0")}_${key}.png`;
+});
+
 export const PAVILION_COLORS = {
+  puzzle: "#28a8a2",
   ignis: "#ff6b4a",
   bestiarium: "#34d399",
   mechanica: "#38bdf8",
@@ -612,7 +702,7 @@ class PlinyHub {
     this.activePavilionFilter = "all";
     this.searchQuery = "";
 
-    this.activeKey = "vesuvius";
+    this.activeKey = "oracle_words";
     this.currentEngine = null;
     this.isPaused = false;
     this.lastTime = (typeof performance !== "undefined") ? performance.now() : Date.now();
@@ -788,7 +878,7 @@ class PlinyHub {
       }
     }
     // Default: showcase homepage
-    this.switchDemo("vesuvius");
+    this.switchDemo("oracle_words");
     this.switchView("showcase");
   }
 
@@ -844,7 +934,8 @@ class PlinyHub {
       this.handleResize();
       const info = DEMOS[this.activeKey];
       if (info && info.pavilionId) {
-        soundMaster.startPavilionAmbience(info.pavilionId);
+        if (info.pavilionId === "puzzle") soundMaster.stopPavilionAmbience(0.3);
+        else soundMaster.startPavilionAmbience(info.pavilionId);
         this.updateSoundscapeHUD();
       }
       if (typeof history !== "undefined" && history.replaceState) {
@@ -855,7 +946,8 @@ class PlinyHub {
 
   launchDemo(key) {
     soundMaster.resume();
-    soundMaster.playLaunchFanfare();
+    if (DEMOS[key]?.pavilionId === "puzzle") soundMaster.playChime("A4", 0.12);
+    else soundMaster.playLaunchFanfare();
     this.switchDemo(key);
     this.switchView("simulator");
     if (typeof window !== "undefined") {
@@ -933,16 +1025,18 @@ class PlinyHub {
       if (this.currentView === "showcase" && !isTyping) {
         // Pavilion quick jump keys (1-9 for Pavilions 1-9, 0 for Pavilion 10)
         if (e.key >= "1" && e.key <= "9") {
-          const pavIdx = parseInt(e.key, 10) - 1;
+          const pavIdx = parseInt(e.key, 10);
           if (PAVILIONS[pavIdx]) {
             soundMaster.playChime("C5", 0.15);
             this.selectPavilionFilter(PAVILIONS[pavIdx].id);
           }
         } else if (e.key === "0") {
-          if (PAVILIONS[9]) {
+          if (PAVILIONS[10]) {
             soundMaster.playChime("C5", 0.15);
-            this.selectPavilionFilter(PAVILIONS[9].id);
+            this.selectPavilionFilter(PAVILIONS[10].id);
           }
+        } else if (e.key === "p" || e.key === "P") {
+          this.selectPavilionFilter("puzzle");
         } else if (e.key === "a" || e.key === "A") {
           soundMaster.playChime("A4", 0.15);
           this.selectPavilionFilter("all");
@@ -984,7 +1078,8 @@ class PlinyHub {
 
   updateSoundscapeHUD() {
     if (this.soundscapeTitle) {
-      this.soundscapeTitle.textContent = soundMaster.getCurrentAmbienceTitle();
+      this.soundscapeTitle.textContent = DEMOS[this.activeKey]?.pavilionId === "puzzle" && !soundMaster.isMuted ?
+        "Quiet focus" : soundMaster.getCurrentAmbienceTitle();
     }
   }
 
@@ -999,7 +1094,15 @@ class PlinyHub {
 
   openCodex(key = this.activeKey) {
     if (!this.codexDrawer) return;
-    const entry = CODEX_DATA[key] || {
+    const isPuzzle = DEMOS[key]?.pavilionId === "puzzle";
+    const entry = isPuzzle ? {
+      title: DEMOS[key].name,
+      book: "Puzzle Arcade · How to play",
+      latinQuote: DEMOS[key].desc,
+      translation: DEMOS[key].hint,
+      science: "",
+      controlsGuide: DEMOS[key].hint
+    } : CODEX_DATA[key] || {
       title: (DEMOS[key] ? DEMOS[key].name : key),
       book: "Naturalis Historia",
       latinQuote: "Natura nihil frustra facit, omniaque ad ordinem componit.",
@@ -1009,9 +1112,13 @@ class PlinyHub {
     };
 
     if (this.codexTitle) this.codexTitle.textContent = entry.title;
-    if (this.codexLatinQuote) this.codexLatinQuote.textContent = `"${entry.latinQuote}"`;
-    if (this.codexTranslation) this.codexTranslation.textContent = `"${entry.translation}"`;
+    const guideBadge = this.codexDrawer.querySelector?.(".codex-badge");
+    if (guideBadge) guideBadge.textContent = isPuzzle ? "Puzzle guide" : "Plinius Codex";
+    if (this.codexLatinQuote) this.codexLatinQuote.textContent = isPuzzle ? entry.latinQuote : `"${entry.latinQuote}"`;
+    if (this.codexTranslation) this.codexTranslation.textContent = isPuzzle ? entry.translation : `"${entry.translation}"`;
     if (this.codexBookRef) this.codexBookRef.textContent = entry.book;
+    const scienceCard = this.codexScience?.closest?.(".codex-card");
+    if (scienceCard) scienceCard.style.display = isPuzzle ? "none" : "";
     if (this.codexScience) this.codexScience.textContent = entry.science;
     if (this.codexControls) this.codexControls.textContent = entry.controlsGuide;
 
@@ -1034,7 +1141,7 @@ class PlinyHub {
       opt.textContent = pav.name;
       this.pavilionSelect.appendChild(opt);
     });
-    this.updateGameDropdown("ignis");
+    this.updateGameDropdown("puzzle");
   }
 
   updateGameDropdown(pavilionId) {
@@ -1140,7 +1247,8 @@ class PlinyHub {
 
       // Update ambient soundscape if currently viewing simulator
       if (this.currentView === "simulator" && info.pavilionId) {
-        soundMaster.startPavilionAmbience(info.pavilionId);
+        if (info.pavilionId === "puzzle") soundMaster.stopPavilionAmbience(0.3);
+        else soundMaster.startPavilionAmbience(info.pavilionId);
         this.updateSoundscapeHUD();
       }
 

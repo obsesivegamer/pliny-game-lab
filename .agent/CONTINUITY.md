@@ -1,9 +1,14 @@
 # Pliny Game Lab Continuity Briefing
 
 ## [PLANS]
+- 2026-09-23T04:25:18Z [USER] Add ten simple puzzle games in showcase slots 1–10 and move the original fifty to slots 11–60 without changing their relative order.
 - 2026-09-16T00:30:00-04:00 [CODE] Complete all 50 game engines in Pliny Game Lab suite. COMPLETE.
 
+## [DECISIONS]
+- 2026-09-23T04:25:18Z [CODE] Add an unnumbered Puzzle Arcade group, keep legacy keys and screenshot files, and give every card an explicit thumbnail path. Build eight twelve-level games plus Oracle Words and Stonefall. Work in isolated branch `codex/puzzle-arcade` because the original checkout has unrelated changes.
+
 ## [PROGRESS]
+- 2026-09-23T04:25:18Z [TOOL] Ten puzzle engines implemented with flat Canvas art, touch and keyboard controls, local progress, hints, retry, and undo where applicable. Verified 60/60 engine simulations, 60/60 visual checks with no warnings, 60/60 browser checks with no issues, first-level browser playthroughs, all ten phone layouts, and puzzle keyboard/touch checks. Stonefall piece randomization now avoids a forced alternation.
 - 2026-09-15T20:20:00-04:00 [TOOL] 5 initial engines verified green: vesuvius, bestiarium, cosmographia, mechanica, labyrinthus.
 - 2026-09-15T20:36:00-04:00 [TOOL] 14 new engines landed and verified before weekly quota limit. (19/50 passed).
 - 2026-09-16T00:24:00-04:00 [TOOL] Opus Game Design Architect completed .agent/SPECS_31_ENGINES.md.

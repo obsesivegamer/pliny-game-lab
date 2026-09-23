@@ -15,6 +15,9 @@ function toRoman(n) {
 
 // "III. Mechanica & Machina (Roman Engineering)" -> numeral, title, gloss
 function parsePavilion(pav, index) {
+  if (pav.id === "puzzle") {
+    return { id: pav.id, numeral: "P", title: "Puzzle Arcade", gloss: "Ten short games", index };
+  }
   const m = pav.name.match(/^([IVXLC]+)\.\s*([^(]+?)\s*(?:\((.*)\))?$/);
   return {
     id: pav.id,
@@ -43,7 +46,7 @@ export function buildCatalog(demos, pavilions) {
         key,
         demo: demos[key],
         ...splitName(demos[key].name),
-        room: (i + 1) * 100 + j + 1,
+        room: pav.id === "puzzle" ? String(j + 1).padStart(2, "0") : i * 100 + j + 1,
         overall: keys.indexOf(key) + 1
       }));
     return { ...meta, games };
@@ -75,7 +78,7 @@ function thumbFor(game, wrap) {
   img.alt = "";
   img.loading = "lazy";
   img.decoding = "async";
-  const fallback = `assets/screenshots/${String(game.overall).padStart(2, "0")}_${game.key}.png`;
+  const fallback = game.demo.thumb || `assets/screenshots/${String(game.overall).padStart(2, "0")}_${game.key}.png`;
   img.addEventListener("error", () => {
     if (img.dataset.fallback) {
       wrap.classList.add("no-thumb");
@@ -85,7 +88,7 @@ function thumbFor(game, wrap) {
     img.dataset.fallback = "1";
     img.src = fallback;
   });
-  img.src = `assets/thumbs/${game.key}.webp`;
+  img.src = game.demo.pavilionId === "puzzle" ? fallback : `assets/thumbs/${game.key}.webp`;
   return img;
 }
 
@@ -101,6 +104,7 @@ function buildCard(hub, group, game) {
 
   const wrap = el("span", "card-thumb-wrap");
   wrap.appendChild(thumbFor(game, wrap));
+  wrap.appendChild(el("span", "card-rank", `#${String(game.overall).padStart(2, "0")}`));
   const pending = el("span", "thumb-pending", "Drawing pending");
   wrap.appendChild(pending);
 
@@ -287,7 +291,7 @@ function buildPlan(hub, svgEl, groups, legend) {
   svg("line", { x1: box.x0, y1: 9, x2: box.x0, y2: 19 }, dim);
   svg("line", { x1: box.x1, y1: 9, x2: box.x1, y2: 19 }, dim);
   const dimLabel = svg("text", { x: W / 2, y: 10, "text-anchor": "middle", class: "plan-label plan-label-quiet" }, dim);
-  dimLabel.textContent = `${plural(groups.length, "pavilion")} · ${plural(groups.reduce((n, g) => n + g.games.length, 0), "game")} · scale 1:100`;
+  dimLabel.textContent = `${plural(groups.length, "collection")} · ${plural(groups.reduce((n, g) => n + g.games.length, 0), "game")} · scale 1:100`;
 
   const outline = { x: box.x0, y: box.y0, width: box.x1 - box.x0, height: box.y1 - box.y0 };
   svg("rect", { ...outline, class: "plan-floor" }, svgEl);
@@ -302,10 +306,12 @@ function buildPlan(hub, svgEl, groups, legend) {
     if (!group) {
       mark.textContent = "Ground floor";
       title.textContent = "Pick a room";
-      body.textContent = `${plural(groups.length, "pavilion")} around one atrium, each shelving games on one theme. Choose a room to open its shelf in the index.`;
+      body.textContent = `${plural(groups.length, "collection")} around one atrium. Choose a room to open its shelf in the index.`;
       return;
     }
-    mark.textContent = `Pavilion ${group.numeral} · rooms ${group.games[0].room}–${group.games[group.games.length - 1].room}`;
+    mark.textContent = group.id === "puzzle" ?
+      `Puzzle Arcade · games 01–10` :
+      `Pavilion ${group.numeral} · rooms ${group.games[0].room}–${group.games[group.games.length - 1].room}`;
     title.textContent = group.title;
     body.textContent = `${group.gloss ? group.gloss + ". " : ""}${group.games.map(g => g.title).join(", ")}.`;
   };
@@ -314,7 +320,9 @@ function buildPlan(hub, svgEl, groups, legend) {
   groups.forEach((group, i) => {
     const room = rooms[i];
     const link = svg("a", { href: `#pavilion-${group.id}`, class: "plan-room", "data-pav": group.id, style: `--i:${i}` }, plan);
-    link.setAttribute("aria-label", `Pavilion ${group.numeral}, ${group.title}: ${plural(group.games.length, "game")}`);
+    link.setAttribute("aria-label", group.id === "puzzle" ?
+      `Puzzle Arcade: ${plural(group.games.length, "game")}` :
+      `Pavilion ${group.numeral}, ${group.title}: ${plural(group.games.length, "game")}`);
     svg("rect", { x: room.x, y: room.y, width: room.w, height: room.h, class: "plan-room-fill" }, link);
     svg("rect", { x: room.x, y: room.y, width: room.w, height: room.h, class: "plan-wall plan-draw", pathLength: 1 }, link);
     drawDoor(link, room, cut);
@@ -322,7 +330,7 @@ function buildPlan(hub, svgEl, groups, legend) {
 
     const cx = room.x + room.w / 2;
     const cy = room.y + room.h / 2 + (room.door === "bottom" ? 6 : room.door === "top" ? -4 : 0);
-    const name = group.title.split(/\s*&\s*/)[0].toUpperCase();
+    const name = group.id === "puzzle" ? "PUZZLES" : group.title.split(/\s*&\s*/)[0].toUpperCase();
     // Barlow Semi Condensed caps at 11px with 0.16em tracking run ~8.4px a glyph.
     const fits = name.length * 8.4 < room.w - 16;
     const label = svg("text", { x: cx, y: cy, "text-anchor": "middle", class: "plan-label plan-room-name" }, link);
@@ -373,7 +381,7 @@ export function renderShowcase(hub, demos, pavilions) {
   hub.showcaseTotal = groups.reduce((n, g) => n + g.games.length, 0);
 
   document.querySelectorAll('[data-stat="games"]').forEach(n => { n.textContent = hub.showcaseTotal; });
-  document.querySelectorAll('[data-stat="pavilions"]').forEach(n => { n.textContent = groups.length; });
+  document.querySelectorAll('[data-stat="pavilions"]').forEach(n => { n.textContent = groups.filter(g => g.id !== "puzzle").length; });
 
   if (hub.showcaseChips) {
     hub.showcaseChips.replaceChildren(buildChip(hub, "all", "", "All games", hub.showcaseTotal));
@@ -404,7 +412,7 @@ export function renderShowcase(hub, demos, pavilions) {
   }
 
   const keys = Object.keys(demos);
-  if (hub.heroLaunchBtn) hub.heroLaunchBtn.dataset.launch = "vesuvius";
+  if (hub.heroLaunchBtn) hub.heroLaunchBtn.dataset.launch = "oracle_words";
   document.querySelectorAll("[data-launch]").forEach(btn => {
     btn.addEventListener("click", () => hub.launchDemo(demos[btn.dataset.launch] ? btn.dataset.launch : keys[0]));
   });

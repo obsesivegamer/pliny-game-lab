@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#eee9d9"/>
+  <text x="44" y="63" fill="#173f48" font-family="system-ui" font-size="37" font-weight="800">Mosaic Clues</text>
+  <text x="46" y="94" fill="#507078" font-family="system-ui" font-size="16" letter-spacing="3">PUZZLE ARCADE 06</text>
+  <g stroke="#e7e3d5" stroke-width="4">
+    <path d="M198 130h52v52h-52zM254 130h52v52h-52zM310 130h52v52h-52zM366 130h52v52h-52zM422 130h52v52h-52zM198 186h52v52h-52zM254 186h52v52h-52zM310 186h52v52h-52zM366 186h52v52h-52zM422 186h52v52h-52zM198 242h52v52h-52zM254 242h52v52h-52zM310 242h52v52h-52zM366 242h52v52h-52zM422 242h52v52h-52z" fill="#fffdf4"/>
+    <path d="M310 130h52v52h-52zM254 186h52v52h-52zM310 186h52v52h-52zM366 186h52v52h-52zM310 242h52v52h-52z" fill="#21868b"/>
+  </g>
+  <text x="155" y="219" fill="#365760" font-family="system-ui" font-size="21" font-weight="700">3</text>
+  <text x="335" y="317" fill="#365760" font-family="system-ui" font-size="21" font-weight="700" text-anchor="middle">3</text>
+</svg>

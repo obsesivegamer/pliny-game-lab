@@ -1,7 +1,7 @@
 // Automated E2E verification for Plinius Codex Drawer
 import puppeteer from 'puppeteer';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = process.env.PLINY_BASE_URL || 'http://localhost:8000';
 
 async function runCodexQA() {
   console.log('════════════════════════════════════════════════════════');

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#dce9e7"/>
+  <text x="44" y="63" fill="#173f48" font-family="system-ui" font-size="37" font-weight="800">Star Switch</text>
+  <text x="46" y="94" fill="#507078" font-family="system-ui" font-size="16" letter-spacing="3">PUZZLE ARCADE 08</text>
+  <g fill="#284f5c"><rect x="197" y="120" width="76" height="64" rx="9"/><rect x="281" y="120" width="76" height="64" rx="9"/><rect x="365" y="120" width="76" height="64" rx="9"/><rect x="197" y="192" width="76" height="64" rx="9"/><rect x="281" y="192" width="76" height="64" rx="9"/><rect x="365" y="192" width="76" height="64" rx="9"/><rect x="197" y="264" width="76" height="64" rx="9"/><rect x="281" y="264" width="76" height="64" rx="9"/><rect x="365" y="264" width="76" height="64" rx="9"/></g>
+  <g fill="#ffd572"><path d="M319 130l8 16 18 7-18 8-8 16-8-16-18-8 18-7Z"/><path d="M235 201l8 16 18 7-18 8-8 16-8-16-18-8 18-7Z"/><path d="M319 201l8 16 18 7-18 8-8 16-8-16-18-8 18-7Z"/><path d="M403 201l8 16 18 7-18 8-8 16-8-16-18-8 18-7Z"/><path d="M319 273l8 16 18 7-18 8-8 16-8-16-18-8 18-7Z"/></g>
+</svg>
