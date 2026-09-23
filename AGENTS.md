@@ -31,5 +31,5 @@
 
 ## Existing guidance
 
-- Read `.agent/CONTINUITY.md` for handoff context and `.agents/skills/verify-pliny-game-lab/` for driving guides. Treat past green results and completion claims as history, not current evidence. The `.cursor/skills/` copy still describes the older five-engine app.
-- The feature guides contain stale details: Vesuvius uses a 280x180 grid; Bestiarium's species and Mechanica's presets differ from their guides; Labyrinthus Space drops a breadcrumb, not a spell. Verify selectors and method names in current source before using copied browser steps.
+- Read `.agent/CONTINUITY.md` for handoff context and `.agents/skills/verify-pliny-game-lab/` for driving guides. Treat past green results and completion claims as history, not current evidence. Verify selectors and method names in current source before using copied browser steps.
+- `.cursor/skills/verify-pliny-game-lab/` is an exact mirror of the `.agents` copy for Cursor. Edit the `.agents` copy, then run `rsync -a --delete .agents/skills/ .cursor/skills/`; `diff -r .agents/skills .cursor/skills` should print nothing.

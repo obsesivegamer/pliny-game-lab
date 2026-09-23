@@ -36,6 +36,6 @@ Key method: `setEruptionPhase(phaseIndex)` — triggers eruption phases 0–6.
 Entity count after 60 ticks: ~14,000+ particles.
 
 ## Gotchas
-- High particle counts can tax CPU; the engine uses a 240×180 grid with pixelated scaling for 60 FPS.
+- High particle counts can tax CPU; the engine uses a 280×180 grid with pixelated scaling for 60 FPS.
 - Right-clicking triggers a localized phreatomagmatic blast with shockwave at cursor coordinates.
 - The `triggerEruption()` method does NOT exist; use `setEruptionPhase(PHASE.ULTRA_PLINIAN)` instead.

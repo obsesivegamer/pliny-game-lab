@@ -22,7 +22,7 @@ Classic Wolfenstein-style DDA raycasting, procedural maze generation, A* Asterio
 4. Alternatively: select "V. Fabula & Arena" from the Pavilion dropdown, then "21. Labyrinthus" from the Game dropdown.
 5. Click "Enter the Labyrinth of Daedalus" to begin.
 6. Use `W`/`S` to walk forward/back, `A`/`D` or Arrow keys to turn.
-7. Press `Space` to cast an arcane projectile bolt.
+7. Press `Space` to drop a breadcrumb stone.
 8. Press `M` to toggle the minimap blueprint.
 9. Use difficulty selector (floors 1–4) for increasing maze complexity.
 
