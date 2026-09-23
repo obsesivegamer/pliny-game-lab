@@ -2045,9 +2045,11 @@ body[data-view="showcase"] #telemetry {
   font-size: 0.84rem;
 }
 .puzzle-controls .puzzle-key-wide { flex: 1.7 1 0; }
-.puzzle-key[data-mark="correct"] { background: #167e83; }
-.puzzle-key[data-mark="present"] { background: #a66d24; }
-.puzzle-key[data-mark="absent"] { background: #475d65; }
+/* Out-rank the panel's button:hover background so a marked key keeps its colour
+   (and a dark letter on light blue stays readable) while hovered or focused. */
+.puzzle-controls .puzzle-key[data-mark="correct"] { background: #b8521a; color: #fff; }
+.puzzle-controls .puzzle-key[data-mark="present"] { background: #9dd0fa; color: #10222b; }
+.puzzle-controls .puzzle-key[data-mark="absent"] { background: #16191c; color: #8a9398; }
 .puzzle-controls .puzzle-run { background: #167e83; border-color: #56b9ad; }
 
 @media (max-width: 768px) {

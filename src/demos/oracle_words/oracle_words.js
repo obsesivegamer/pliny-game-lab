@@ -3,7 +3,10 @@ import { panelReserve } from '../../core/puzzle.js';
 import { ANSWERS, applyWordInput, createWordState, restoreDaily, wordForDate } from './logic.js';
 
 const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
-const COLORS = { correct: '#167E83', present: '#D99B44', absent: '#647981' };
+// Orange / light blue / charcoal stay apart under protanopia and deuteranopia
+// (the old teal and gray were indistinguishable) and differ in lightness too.
+export const COLORS = { correct: '#B8521A', present: '#9DD0FA', absent: '#2F3439' };
+export const LETTER ={ correct: '#FFFFFF', present: '#10222B', absent: '#FFFFFF' };
 
 function todayKey() {
   const now = new Date();
@@ -78,7 +81,7 @@ export class OracleWordsEngine {
       <section class="puzzle-controls oracle-controls" aria-label="Oracle Words controls">
         <p class="puzzle-goal">Find the hidden five-letter word in six guesses.</p>
         <p class="puzzle-clue"></p>
-        <p class="puzzle-rule">Teal: right place. Gold: elsewhere. Gray: not in the word.</p>
+        <p class="puzzle-rule">Orange: right place. Light blue: elsewhere. Charcoal: not in the word.</p>
         <div class="puzzle-keyboard" aria-label="Letter keyboard">
           ${rows}
           <div class="puzzle-key-row">
@@ -177,7 +180,7 @@ export class OracleWordsEngine {
         ctx.fill();
         ctx.stroke();
         if (letters[col]) {
-          ctx.fillStyle = mark ? '#FFFFFF' : '#1F4850';
+          ctx.fillStyle = mark ? LETTER[mark] : '#1F4850';
           ctx.fillText(letters[col], x + cell / 2, y + cell / 2 + 1);
         }
       }
