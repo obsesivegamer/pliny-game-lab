@@ -1,0 +1,53 @@
+VESUVIUS GAMEPLAY — mission reducer
+
+  ✓ default mission is gameplay with an explicit Stabiae objective
+  ✓ sandbox missions do not start in order-ship tool
+  ✓ phase schedule advances, and venting delays collapse
+  ✓ controlled vent spends a charge and adds delay; empty magazine fails
+  ✓ venting is ignored after the mission is decided
+  ✓ barrier spend decrements charges and refuses when empty
+  ✓ PDCs near Stabiae kill civilians; PDCs near ships damage hulls
+  ✓ win when rescued quota is met before catastrophe
+  ✓ meeting mission.quota resolves WON
+  ✓ displayed quota and win check share missionQuota()
+  ✓ lose when the fleet is destroyed before the quota
+  ✓ lose when Stabiae is emptied before the quota
+  ✓ citizens already aboard still count — town is not lost until they sink or fail to offload
+  ✓ lose on caldera if the quota is still unmet
+  ✓ sandbox never resolves a win or loss
+  ✓ resolved missions stay resolved (no flip from win to lose)
+  ✓ threat meter is a finite 0..1 value that rises with phase
+
+VESUVIUS GAMEPLAY — engine integration
+
+  ✓ opening Vesuvius launches gameplay mode with objective text
+  ✓ galleys start idle in gameplay until the player orders them
+  ✓ click a galley then click Stabiae issues a sailing order
+  ✓ Stabiae ring still issues an order when a large hull sits nearby
+  ✓ player can win and lose without painting the CA grid
+  ✓ V vents the chamber; B arms the berm tool; R restarts
+  ✓ placing a berm spends a charge and marks barrier cells
+  ✓ gameplay clicks do not paint elements, while sandbox mode allows painting
+  ✓ restart overlay path returns a playable fleet
+  ✓ a commanded fleet can meet the quota before caldera (winnable loop)
+  ✓ doing nothing loses the bay before the quota
+  ✓ sandbox catastrophe buttons cannot skip the mission clock
+  ✓ any canvas click after victory restarts the mission
+  ✓ gameplay galleys draw larger than the 48px sprite at canvas scale
+  ✓ on-canvas coach names the next click: galley, then Stabiae
+  ✓ mission camera matches the canvas aspect instead of stretching the bay
+  ✓ a tall canvas keeps the world square: one sim cell is as wide as it is high
+  ✓ HUD chrome is drawn in CSS pixels, so a 3x screen keeps it legible
+  ✓ mission camera frames Stabiae and OFFLOAD as distinct bay targets
+  ✓ reaching quota resolves WON on engine and renders victory overlay
+  ✓ venting does not rewind eruption phase or re-trigger entry effects
+  ✓ volcanic lightning and shockwaves render with finite coordinates (no NaN)
+  ✓ sandbox phase buttons can be triggered repeatedly in any order
+  ✓ right click context menu is disabled in gameplay mode but active in sandbox
+  ✓ on-canvas HUD displays Evacuate Stabiae title, objective, and progress in gameplay mode
+  ↳ ultra-plinian gameplay: entities=15458 ca=14687 plume=720 bayAsh=0 kinematic=771
+  ✓ mission-mode plume budget stays under the ash-soup baseline
+  ↳ ultra-plinian sandbox: entities=19895 ca=14740 plume=5130
+  ✓ sandbox plume is allowed to run richer than the mission budget
+
+VESUVIUS GAMEPLAY — all checks passed

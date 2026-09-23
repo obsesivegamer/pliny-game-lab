@@ -1,0 +1,58 @@
+====================================================
+PLINY GAME LAB — VERIFYING 50 CATALOG ENGINES
+====================================================
+
+[1/50] ✓ vesuvius (VesuviusEngine) OK — Entities: 14754
+[2/50] ✓ geyser (GeyserEngine) OK — Entities: 65
+[3/50] ✓ caverna (CavernaEngine) OK — Entities: 315
+[4/50] ✓ terrae_motus (TerraeMotusEngine) OK — Entities: 4180
+[5/50] ✓ aurum (AurumEngine) OK — Entities: 361
+[6/50] ✓ bestiarium (BestiariumEngine) OK — Entities: 187
+[7/50] ✓ myrmex (MyrmexEngine) OK — Entities: 288
+[8/50] ✓ apis (ApisEngine) OK — Entities: 263
+[9/50] ✓ hydra (HydraEngine) OK — Entities: 370
+[10/50] ✓ silva (SilvaEngine) OK — Entities: 593
+[11/50] ✓ mechanica (MechanicaEngine) OK — Entities: 23
+[12/50] ✓ aqueduct (AqueductEngine) OK — Entities: 314
+[13/50] ✓ ballista (BallistaEngine) OK — Entities: 85
+[14/50] ✓ horologium (HorologiumEngine) OK — Entities: 337
+[15/50] ✓ antikythera (AntikytheraEngine) OK — Entities: 38
+[16/50] ✓ cosmographia (CosmographiaEngine) OK — Entities: 934
+[17/50] ✓ solstitium (SolstitiumEngine) OK — Entities: 497
+[18/50] ✓ aurora (AuroraEngine) OK — Entities: 1274
+[19/50] ✓ cometa (CometaEngine) OK — Entities: 554
+[20/50] ✓ armilla (ArmillaEngine) OK — Entities: 2914
+[21/50] ✓ labyrinthus (LabyrinthusEngine) OK — Entities: 41
+[22/50] ✓ colosseum (ColosseumEngine) OK — Entities: 51
+[23/50] ✓ trireme (TriremeEngine) OK — Entities: 4
+[24/50] ✓ chariot (ChariotEngine) OK — Entities: 433
+[25/50] ✓ oraculum (OraculumEngine) OK — Entities: 167
+[26/50] ✓ euclid (EuclidEngine) OK — Entities: 3
+[27/50] ✓ archimedes_spiral (ArchimedesSpiralEngine) OK — Entities: 2700
+[28/50] ✓ eratosthenes (EratosthenesEngine) OK — Entities: 120
+[29/50] ✓ pythagoras (PythagorasEngine) OK — Entities: 144
+[30/50] ✓ fractal_roman (FractalRomanEngine) OK — Entities: 6285
+[31/50] ✓ scylla_charybdis (ScyllaCharybdisEngine) OK — Entities: 502
+[32/50] ✓ mare_nostrum (MareNostrumEngine) OK — Entities: 280
+[33/50] ✓ pharos (PharosEngine) OK — Entities: 1107
+[34/50] ✓ coral_reef (CoralReefEngine) OK — Entities: 466
+[35/50] ✓ nautilus (NautilusEngine) OK — Entities: 308
+[36/50] ✓ forum_builder (ForumBuilderEngine) OK — Entities: 114
+[37/50] ✓ arch_vault (ArchVaultEngine) OK — Entities: 41
+[38/50] ✓ opus_caementicium (OpusCaementiciumEngine) OK — Entities: 160
+[39/50] ✓ thermae (ThermaeEngine) OK — Entities: 3525
+[40/50] ✓ pantheon (PantheonEngine) OK — Entities: 2020
+[41/50] ✓ vitrum (VitrumEngine) OK — Entities: 2208
+[42/50] ✓ metallum (MetallumEngine) OK — Entities: 172
+[43/50] ✓ pigmentum (PigmentumEngine) OK — Entities: 1650
+[44/50] ✓ hermetica (HermeticaEngine) OK — Entities: 407
+[45/50] ✓ electrum (ElectrumEngine) OK — Entities: 410
+[46/50] ✓ testudo (TestudoEngine) OK — Entities: 86
+[47/50] ✓ siege_tower (SiegeTowerEngine) OK — Entities: 28
+[48/50] ✓ hoplite_phalanx (HoplitePhalanxEngine) OK — Entities: 1100
+[49/50] ✓ scorpio (ScorpioEngine) OK — Entities: 50
+[50/50] ✓ signal_fire (SignalFireEngine) OK — Entities: 86
+
+====================================================
+RESULTS: 50 PASSED | 0 PENDING | 0 FAILED (TOTAL 50)
+====================================================

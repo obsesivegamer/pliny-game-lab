@@ -1,0 +1,14 @@
+CANVAS_CLICKS {"shipPoint":{"x":531.3207547169811,"y":425.66037735849056},"townPoint":{"x":941.8867924528302,"y":425.66037735849056},"state":{"selected":0,"orderedX":252,"target":"<canvas id=\"main-canvas\" width=\"1280\" height=\"744\" style=\"touch-action: none;\"></canvas>","tool":"order"}}
+PICKUP {"loading":true,"cargo":0.125,"steps":273,"rescued":0}
+RESIZE {"width":390,"height":844,"deviceScaleFactor":1,"state":{"steps":273,"time":4.549999999999989,"remainder":0.008333333333333333,"missionTime":4.549999999999989,"cargo":0.125,"civilians":159.875,"gridHash":-2115173595}}
+RESIZE {"width":844,"height":390,"deviceScaleFactor":3,"state":{"steps":273,"time":4.549999999999989,"remainder":0.008333333333333333,"missionTime":4.549999999999989,"cargo":0.125,"civilians":159.875,"gridHash":-2115173595}}
+RESIZE {"width":1280,"height":800,"deviceScaleFactor":1,"state":{"steps":273,"time":4.549999999999989,"remainder":0.008333333333333333,"missionTime":4.549999999999989,"cargo":0.125,"civilians":159.875,"gridHash":-2115173595}}
+OFFLOAD {"unloading":true,"rescued":0.23333333333333334,"cargo":17.766666666666666,"status":"playing"}
+PAUSE_RESUME {"liveStart":828,"liveEnd":844,"paused":845}
+HELP {"drawerOpen":true,"helpBefore":860,"helpAfter":875}
+SHOWCASE {"stepsWhileAway":875}
+TAB_VISIBILITY {"hiddenBefore":{"hidden":true,"steps":892},"hiddenAfter":{"hidden":true,"steps":892},"firstResume":{"dt":0.1,"steps":6}}
+NEW_INSTANCE {"engine":"VesuviusEngine","steps":0,"rescued":0,"cargo":0}
+RETRY {"steps":0,"remainder":0,"status":"playing"}
+TERMINAL_AND_SANDBOX {"won":{"status":"won","time":0.016666666666666666,"rescued":80,"charges":3},"wonAfter":{"status":"won","time":0.016666666666666666,"rescued":80,"charges":3},"lost":{"status":"lost","time":0.016666666666666666,"rescued":0,"charges":3},"lostAfter":{"status":"lost","time":0.016666666666666666,"rescued":0,"charges":3},"sandbox":{"mode":"sandbox","steps":1}}
+BROWSER_TIMING_PASSED

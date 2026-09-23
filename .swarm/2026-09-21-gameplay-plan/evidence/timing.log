@@ -1,0 +1,73 @@
+
+VESUVIUS TIMING — sand baseline and treatment
+
+  ✓ sand at 30/60/120 Hz travels equally through the five-column fixture
+  ✓ sand at all rates reaches row 70 after 1 second (60 fixed steps)
+
+VESUVIUS TIMING — irregular cadence
+
+  ✓ irregular cadence [1/120, 1/40, 1/30] × 15 matches regular cadence
+  ✓ half-step and just-below/above-step boundaries
+
+VESUVIUS TIMING — catch-up bound
+
+  ✓ update(0.1) executes exactly 6 steps
+  ✓ update(5) executes at most 6 steps (stall recovery)
+  ✓ after a stall, the next update(1/60) executes one step normally
+  ✓ mission and simulation advance by the same admitted duration while playing
+
+VESUVIUS TIMING — invalid inputs
+
+  ✓ zero dt: no state change
+  ✓ negative dt: no state change
+  ✓ NaN dt: no state change and no poisoned accumulator
+  ✓ Infinity dt: no state change and no poisoned accumulator
+
+VESUVIUS TIMING — pause/resume
+
+  ✓ paused calls add no accumulator time
+  ✓ resume continues from pre-pause state with no burst
+  ✓ pause with half-step remainder preserved correctly
+
+VESUVIUS TIMING — reset/mode/new instance
+
+  ✓ reset clears accumulator, step counter and timing
+  ✓ mode switch clears timing state
+  ✓ new instance starts with zero timing state
+
+VESUVIUS TIMING — resize
+
+  ✓ resize preserves timing state, mission and world
+
+VESUVIUS TIMING — terminal state
+
+  ✓ win/loss results stay settled across continued updates
+  ✓ HUD sync runs once per outer update and immediately after input or reset
+
+VESUVIUS TIMING — render independence
+
+  ✓ renders between updates do not affect simulation state
+  ✓ active fire renders do not change pyroclastic hazard lifetimes
+  ✓ active fire renders do not change bomb, fragment, or plume physics
+
+VESUVIUS TIMING — 60 Hz compatibility
+
+  ✓ 60 Hz produces exactly one step per update call
+  ✓ 60 Hz preserves baseline fleet travel and first phase boundary
+  ✓ 30 Hz produces two steps per update call
+  ✓ 120 Hz alternates 0 and 1 steps per call
+
+VESUVIUS TIMING — real-engine replay (seeded deterministic)
+
+  ✓ seeded replay at 30/60/120/irregular produces identical state at equal ticks
+
+VESUVIUS TIMING — longer mission boundaries
+
+  ✓ mission crosses phase four and completes ship loading/offloading across cadences
+
+VESUVIUS TIMING — step counter and time contract
+
+  ✓ time advances only inside fixed steps, not from outer dt
+  ✓ fractional remainder is retained, not discarded
+
+VESUVIUS TIMING — all tests passed ✓

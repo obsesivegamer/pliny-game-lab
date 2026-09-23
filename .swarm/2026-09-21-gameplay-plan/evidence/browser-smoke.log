@@ -1,0 +1,35 @@
+1. Showcase → Vesuvius launch
+{
+  "objective": "Rescue 80 citizens from Stabiae before a pyroclastic surge or caldera collapse kills the bay.",
+  "vents": "Vents 3",
+  "hasRestart": true,
+  "sandboxClosed": true,
+  "mode": "gameplay",
+  "status": "playing",
+  "shipStates": [
+    "idle",
+    "idle",
+    "idle"
+  ],
+  "viewHidden": false
+}
+   entry {"ships":[{"name":"Minerva (Flagship)","x":218,"y":149},{"name":"Victoria (Liburnian)","x":230,"y":151},{"name":"Neptunus (Quadrireme)","x":242,"y":150}],"canvas":{"w":1600,"h":844},"entities":14753,"plume":0,"view":{"x":174,"y":124.08500000000001,"w":106,"h":55.915},"ventX":123,"stabCanvasX":1177.3584905660377,"offCanvasX":422.64150943396226}
+   captured 01_mission_entry.png
+2. Select galley (coach should name Stabiae) then order
+   captured 01b_galley_selected.png
+   order { state: 'sailing', orderedX: 252, selected: 0 }
+3. Restart restores a playable mission
+4. Win overlay with Restart
+   captured 03_win_overlay.png
+5. Ultra-Plinian ash budget on the live engine
+   climax {
+  entities: 15804,
+  ca: 15047,
+  plume: 720,
+  bayAsh: 0,
+  kinematic: 757,
+  hudEntities: '14755'
+}
+   captured 04_ultra_plinian_budget.png
+
+VESUVIUS BROWSER SMOKE — passed

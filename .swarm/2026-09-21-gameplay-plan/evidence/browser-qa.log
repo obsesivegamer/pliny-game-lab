@@ -1,0 +1,64 @@
+════════════════════════════════════════════════════════
+PLINY GAME LAB — BROWSER VISUAL QA (50 ENGINES)
+════════════════════════════════════════════════════════
+
+Loading Pliny Game Lab...
+App loaded. Starting engine walkthrough...
+
+[1/50] ✓ vesuvius — Vesuvius (Volcanology Sim) | FPS: 60 | Entities: 14749 | Canvas: 100.0% filled
+[2/50] ✓ geyser — Geyser (Hydrothermal Vent) | FPS: 60 | Entities: 307 | Canvas: 100.0% filled
+[3/50] ✓ caverna — Caverna (Karst & Speleothems) | FPS: 60 | Entities: 326 | Canvas: 100.0% filled
+[4/50] ✓ terrae_motus — Terrae Motus (Seismic Dynamics) | FPS: 60 | Entities: 4285 | Canvas: 100.0% filled
+[5/50] ✓ aurum — Aurum (Alluvial Gold Sluice) | FPS: 60 | Entities: 388 | Canvas: 100.0% filled
+[6/50] ✓ bestiarium — Bestiarium (ALife Ecosystem) | FPS: 60 | Entities: 192 | Canvas: 100.0% filled
+[7/50] ✓ myrmex — Myrmex (Ant Colony Optimization) | FPS: 60 | Entities: 291 | Canvas: 100.0% filled
+[8/50] ✓ apis — Apis (Beehive & Waggle Dance) | FPS: 60 | Entities: 421 | Canvas: 100.0% filled
+[9/50] ✓ hydra — Hydra (Soft-Body Bioluminescence) | FPS: 60 | Entities: 360 | Canvas: 100.0% filled
+[10/50] ✓ silva — Silva (Space-Colonization Botany) | FPS: 60 | Entities: 1205 | Canvas: 100.0% filled
+[11/50] ✓ mechanica — Mechanica (Verlet Automata) | FPS: 60 | Entities: 23 | Canvas: 100.0% filled
+[12/50] ✓ aqueduct — Aqueduct (Hydraulic Incline) | FPS: 60 | Entities: 315 | Canvas: 100.0% filled
+[13/50] ✓ ballista — Ballista (Torsion Siege Weapon) | FPS: 60 | Entities: 85 | Canvas: 100.0% filled
+[14/50] ✓ horologium — Horologium (Vitruvian Water Clock) | FPS: 60 | Entities: 740 | Canvas: 100.0% filled
+[15/50] ✓ antikythera — Antikythera (Cosmic Gear Calculator) | FPS: 60 | Entities: 38 | Canvas: 100.0% filled
+[16/50] ✓ cosmographia — Cosmographia (Celestial Spheres) | FPS: 60 | Entities: 1027 | Canvas: 100.0% filled
+[17/50] ✓ solstitium — Solstitium (Solar Analemma & Sundial) | FPS: 60 | Entities: 497 | Canvas: 100.0% filled
+[18/50] ✓ aurora — Aurora (Geomagnetic Plasma Field) | FPS: 43 | Entities: 1274 | Canvas: 100.0% filled
+[19/50] ✓ cometa — Cometa (Cometary Tail & Grav-Slingshot) | FPS: 60 | Entities: 524 | Canvas: 100.0% filled
+[20/50] ✓ armilla — Armilla (3D Armillary Sphere) | FPS: 60 | Entities: 2914 | Canvas: 100.0% filled
+[21/50] ✓ labyrinthus — Labyrinthus (3D Catacomb Crawler) | FPS: 60 | Entities: 49 | Canvas: 100.0% filled
+[22/50] ✓ colosseum — Colosseum (Gladiator Combat Sim) | FPS: 60 | Entities: 27 | Canvas: 100.0% filled
+[23/50] ✓ trireme — Trireme (Naval Ramming Fleet) | FPS: 60 | Entities: 4 | Canvas: 100.0% filled
+[24/50] ✓ chariot — Chariot (Circus Maximus Grand Prix) | FPS: 60 | Entities: 593 | Canvas: 100.0% filled
+[25/50] ✓ oraculum — Oraculum (Delphic Pythia Smoke Oracle) | FPS: 60 | Entities: 311 | Canvas: 100.0% filled
+[26/50] ✓ euclid — Euclid (Compass & Straightedge) | FPS: 60 | Entities: 3 | Canvas: 100.0% filled
+[27/50] ✓ archimedes_spiral — Archimedes Spiral (Golden Harmonics) | FPS: 40 | Entities: 2700 | Canvas: 100.0% filled
+[28/50] ✓ eratosthenes — Eratosthenes (Planetary Circumference & Sieve) | FPS: 60 | Entities: 120 | Canvas: 100.0% filled
+[29/50] ✓ pythagoras — Pythagoras (Monochord Harmonics) | FPS: 60 | Entities: 144 | Canvas: 100.0% filled
+[30/50] ✓ fractal_roman — Fractal Roman (Mosaic & Voronoi Tessellation) | FPS: 60 | Entities: 6220 | Canvas: 100.0% filled
+[31/50] ✓ scylla_charybdis — Scylla & Charybdis (Vortex Hydrodynamics) | FPS: 60 | Entities: 502 | Canvas: 100.0% filled
+[32/50] ✓ mare_nostrum — Mare Nostrum (Wind Rose Navigation) | FPS: 60 | Entities: 280 | Canvas: 100.0% filled
+[33/50] ✓ pharos — Pharos (Lighthouse Optics & Fog) | FPS: 60 | Entities: 1107 | Canvas: 100.0% filled
+[34/50] ✓ coral_reef — Coral Reef (DLA Biomineralization) | FPS: 60 | Entities: 451 | Canvas: 100.0% filled
+[35/50] ✓ nautilus — Nautilus (Buoyancy Chambers) | FPS: 60 | Entities: 308 | Canvas: 100.0% filled
+[36/50] ✓ forum_builder — Forum Builder (Roman Town Planner) | FPS: 60 | Entities: 139 | Canvas: 100.0% filled
+[37/50] ✓ arch_vault — Arch & Vault (Thrust Line & Voussoirs) | FPS: 60 | Entities: 41 | Canvas: 100.0% filled
+[38/50] ✓ opus_caementicium — Opus Caementicium (Roman Concrete) | FPS: 60 | Entities: 160 | Canvas: 99.1% filled
+[39/50] ✓ thermae — Thermae (Hypocaust Thermal Diffusion) | FPS: 60 | Entities: 4025 | Canvas: 100.0% filled
+[40/50] ✓ pantheon — Pantheon (Rotunda Dome & Oculus) | FPS: 60 | Entities: 2020 | Canvas: 100.0% filled
+[41/50] ✓ vitrum — Vitrum (Viscoelastic Glassblowing) | FPS: 60 | Entities: 2208 | Canvas: 100.0% filled
+[42/50] ✓ metallum — Metallum (Bloomery Iron Smelter) | FPS: 60 | Entities: 177 | Canvas: 100.0% filled
+[43/50] ✓ pigmentum — Pigmentum (Ancient Fresco Pigments) | FPS: 50 | Entities: 2189 | Canvas: 100.0% filled
+[44/50] ✓ hermetica — Hermetica (Alembic Distillation) | FPS: 60 | Entities: 803 | Canvas: 100.0% filled
+[45/50] ✓ electrum — Electrum (Amber Triboelectricity) | FPS: 60 | Entities: 466 | Canvas: 100.0% filled
+[46/50] ✓ testudo — Testudo (Legionary Shield Wall) | FPS: 60 | Entities: 205 | Canvas: 100.0% filled
+[47/50] ✓ siege_tower — Siege Tower (Helepolis Assault) | FPS: 60 | Entities: 56 | Canvas: 100.0% filled
+[48/50] ✓ hoplite_phalanx — Hoplite Phalanx (Othismos Push Dynamics) | FPS: 60 | Entities: 1090 | Canvas: 100.0% filled
+[49/50] ✓ scorpio — Scorpio (Sniper Torsion Dart) | FPS: 60 | Entities: 50 | Canvas: 100.0% filled
+[50/50] ✓ signal_fire — Signal Fire (Polybius Optical Telegraph) | FPS: 60 | Entities: 93 | Canvas: 100.0% filled
+
+════════════════════════════════════════════════════════
+BROWSER QA: 50 CLEAN | 0 WITH ISSUES (TOTAL 50)
+Screenshots saved to: /private/tmp/pliny-vesuvius-fixed-step/.audit/screenshots
+════════════════════════════════════════════════════════
+
+Full report: /private/tmp/pliny-vesuvius-fixed-step/.audit/browser-qa-report.json
