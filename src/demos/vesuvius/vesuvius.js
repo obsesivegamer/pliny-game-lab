@@ -114,6 +114,33 @@ import {
 
 export { MODE, STATUS, TOOL, LOSE_REASON };
 
+// ---------------------------------------------------------------------------
+// Fixed-step simulation timing constants
+// ---------------------------------------------------------------------------
+const SIM_FIXED_DT = 1 / 60;            // 16.667 ms fixed step
+const SIM_MAX_ADMITTED_DT = 0.1;         // cap outer dt from hub
+const SIM_MAX_STEPS_PER_UPDATE = 6;      // bounded catch-up (6 × 1/60 = 0.1 s)
+const SIM_STEP_EPSILON = 1e-9;           // floating-point tolerance at step boundary
+
+// Export for tests only — not part of the public gameplay API
+export { SIM_FIXED_DT, SIM_MAX_STEPS_PER_UPDATE };
+
+// ---------------------------------------------------------------------------
+// Deterministic simulation PRNG (mulberry32)
+// Isolates simulation randomness from render-time Math.random() calls so that
+// different render counts between updates cannot shift the simulated result.
+// Normal play seeds from Math.random(); tests can override via _setSeed().
+// ---------------------------------------------------------------------------
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 export const ELEMENT = {
   EMPTY: 0,
   STONE: 1,
@@ -687,7 +714,7 @@ export class VesuviusAudioSynthesizer {
  * Secondary fragment debris spawned during volcanic bomb impact shattering
  */
 export class BombFragment {
-  constructor(x, y, vx, vy, radius = 1.5, temp = 900) {
+  constructor(x, y, vx, vy, radius = 1.5, temp = 900, rng = Math.random) {
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -695,7 +722,7 @@ export class BombFragment {
     this.radius = Math.max(0.8, radius);
     this.temp = temp;
     this.life = 0;
-    this.maxLife = 1.2 + Math.random() * 1.5;
+    this.maxLife = 1.2 + rng() * 1.5;
     this.alive = true;
   }
 
@@ -746,19 +773,20 @@ export class BombFragment {
  * rotation, and explosive impact cratering.
  */
 export class VolcanicBomb {
-  constructor(x, y, vx, vy, radius = 3, temp = 1050) {
+  constructor(x, y, vx, vy, radius = 3, temp = 1050, rng = Math.random) {
+    this.rng = rng;
     this.x = x;
     this.y = y;
     this.vx = vx;
     this.vy = vy;
     this.radius = Math.max(1, radius);
     this.temp = temp;
-    this.rotation = Math.random() * Math.PI * 2;
-    this.rotSpeed = (Math.random() - 0.5) * 8;
+    this.rotation = rng() * Math.PI * 2;
+    this.rotSpeed = (rng() - 0.5) * 8;
     this.trail = [];
     this.alive = true;
     this.impacted = false;
-    this.isPumice = Math.random() < 0.38;
+    this.isPumice = rng() < 0.38;
     this.mass = this.isPumice ? 0.9 : 4.8;
   }
 
@@ -808,13 +836,13 @@ export class VolcanicBomb {
 
   createFragments() {
     const frags = [];
-    const count = 4 + Math.floor(Math.random() * 5);
+    const count = 4 + Math.floor(this.rng() * 5);
     for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const spd = 3 + Math.random() * 8;
+      const angle = this.rng() * Math.PI * 2;
+      const spd = 3 + this.rng() * 8;
       const fvx = Math.cos(angle) * spd + this.vx * 0.2;
       const fvy = Math.sin(angle) * spd - 3;
-      frags.push(new BombFragment(this.x, this.y, fvx, fvy, this.radius * 0.45, this.temp));
+      frags.push(new BombFragment(this.x, this.y, fvx, fvy, this.radius * 0.45, this.temp, this.rng));
     }
     return frags;
   }
@@ -881,7 +909,7 @@ export class VolcanicBomb {
  * sweeping down toward Herculaneum and Pompeii at hurricane velocities.
  */
 export class PyroclasticCurrent {
-  constructor(x, y, vx, vy, side = 'west') {
+  constructor(x, y, vx, vy, side = 'west', rng = Math.random) {
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -892,10 +920,10 @@ export class PyroclasticCurrent {
     this.radius = 4;
     this.maxRadius = 20;
     this.life = 0;
-    this.maxLife = 5.8 + Math.random() * 2.8; // seconds
+    this.maxLife = 5.8 + rng() * 2.8; // seconds
     this.alive = true;
-    this.billowOffset = (Math.random() - 0.5) * 4;
-    this.turbulence = Math.random() * Math.PI * 2;
+    this.billowOffset = (rng() - 0.5) * 4;
+    this.turbulence = rng() * Math.PI * 2;
     this.subBillows = [];
   }
 
@@ -971,21 +999,22 @@ export class PyroclasticCurrent {
  * then expands radially with stratospheric wind shear into the Umbrella Pine.
  */
 export class PlumeParticle {
-  constructor(x, y, vx, vy, isUmbrella = false) {
+  constructor(x, y, vx, vy, isUmbrella = false, rng = Math.random) {
+    this.rng = rng;
     this.x = x;
     this.y = y;
     this.vx = vx;
     this.vy = vy;
     this.isUmbrella = isUmbrella;
-    this.radius = 2.5 + Math.random() * 3.5;
-    this.maxRadius = 15 + Math.random() * 18;
+    this.radius = 2.5 + rng() * 3.5;
+    this.maxRadius = 15 + rng() * 18;
     this.life = 0;
-    this.maxLife = 6.5 + Math.random() * 5.5;
+    this.maxLife = 6.5 + rng() * 5.5;
     this.alive = true;
     this.temp = 920;
-    this.charge = (Math.random() - 0.5) * 2; // Triboelectric charge
-    this.wobblePhase = Math.random() * Math.PI * 2;
-    this.ashDensity = 0.8 + Math.random() * 0.4;
+    this.charge = (rng() - 0.5) * 2; // Triboelectric charge
+    this.wobblePhase = rng() * Math.PI * 2;
+    this.ashDensity = 0.8 + rng() * 0.4;
   }
 
   update(dt, windSpeed, neutralBuoyancyY) {
@@ -1011,7 +1040,7 @@ export class PlumeParticle {
       this.vy *= Math.pow(0.86, dt * 60); // Vertical motion stalls
       // Radial umbrella mushrooming
       const spreadDir = this.vx >= 0 ? 1 : -1;
-      this.vx += spreadDir * (1.3 + Math.random() * 2.2) * dt;
+      this.vx += spreadDir * (1.3 + this.rng() * 2.2) * dt;
       // Stratospheric wind shear drift
       this.vx += windSpeed * 2.0 * dt;
     }
@@ -1060,12 +1089,13 @@ export class PlumeParticle {
  * Procedural branching fractal electrostatic discharge within plume ash clouds.
  */
 export class VolcanicLightning {
-  constructor(startX, startY, endX, endY) {
+  constructor(startX, startY, endX, endY, rng = Math.random) {
+    this.rng = rng;
     this.segments = [];
     this.life = 0;
-    this.maxLife = 0.24 + Math.random() * 0.14; // Short flash
+    this.maxLife = 0.24 + rng() * 0.14; // Short flash
     this.alive = true;
-    this.intensity = 0.85 + Math.random() * 0.15;
+    this.intensity = 0.85 + rng() * 0.15;
     this.generateBranches(startX, startY, endX, endY, 5);
   }
 
@@ -1075,16 +1105,16 @@ export class VolcanicLightning {
       return;
     }
 
-    const midX = (x1 + x2) * 0.5 + (Math.random() - 0.5) * 15;
-    const midY = (y1 + y2) * 0.5 + (Math.random() - 0.5) * 15;
+    const midX = (x1 + x2) * 0.5 + (this.rng() - 0.5) * 15;
+    const midY = (y1 + y2) * 0.5 + (this.rng() - 0.5) * 15;
 
     this.generateBranches(x1, y1, midX, midY, depth - 1);
     this.generateBranches(midX, midY, x2, y2, depth - 1);
 
     // Stochastic lateral fork
-    if (Math.random() < 0.42) {
-      const forkX = midX + (midX - x1) * 0.72 + (Math.random() - 0.5) * 20;
-      const forkY = midY + (midY - y1) * 0.72 + (Math.random() - 0.5) * 20;
+    if (this.rng() < 0.42) {
+      const forkX = midX + (midX - x1) * 0.72 + (this.rng() - 0.5) * 20;
+      const forkY = midY + (midY - y1) * 0.72 + (this.rng() - 0.5) * 20;
       this.generateBranches(midX, midY, forkX, forkY, depth - 2);
     }
   }
@@ -1559,6 +1589,9 @@ export class VesuviusEngine {
     this.windSpeed = -1.2; // m/s (drift towards Pompeii/Stabiae to the south-east)
     this.magmaViscosity = 12;
     this.time = 0;
+    this.simAccumulator = 0;          // fractional time below one fixed step
+    this.simStepCount = 0;            // integer completed-step counter
+    this.simRng = mulberry32((Math.random() * 0xFFFFFFFF) >>> 0);
     this.screenShake = 0;
     this.shakeOffsetX = 0;
     this.shakeOffsetY = 0;
@@ -2044,7 +2077,7 @@ export class VesuviusEngine {
     }, dt);
     resolveMission(this.mission, { ships: this.fleet, phase: this.currentPhase });
     if (this.mission.status !== STATUS.PLAYING) this.screenShake = 0;
-    this.syncMissionHud();
+    // HUD sync is batched to once per outer update() call
   }
 
   updateGameplayFleet(dt) {
@@ -2383,7 +2416,7 @@ export class VesuviusEngine {
             const idx = by * w + bx;
             const elem = this.grid[idx];
             if (elem === ELEMENT.SMOKE || elem === ELEMENT.STEAM || elem === ELEMENT.ASH) {
-              this.grid[idx] = Math.random() < 0.3 ? ELEMENT.FIRE : ELEMENT.EMPTY;
+              this.grid[idx] = this.simRng() < 0.3 ? ELEMENT.FIRE : ELEMENT.EMPTY;
             }
           }
         }
@@ -2395,13 +2428,13 @@ export class VesuviusEngine {
     this.triggerShockwave(this.ventX, this.ventY, 80);
     // Spawn massive pyroclastic density currents down both flanks
     for (let i = 0; i < 18; i++) {
-      const vxWest = -2.8 - Math.random() * 3.5;
-      const vyWest = 1.2 + Math.random() * 1.8;
-      this.pdcs.push(new PyroclasticCurrent(this.ventX - 6, this.ventY + 2, vxWest, vyWest, 'west'));
+      const vxWest = -2.8 - this.simRng() * 3.5;
+      const vyWest = 1.2 + this.simRng() * 1.8;
+      this.pdcs.push(new PyroclasticCurrent(this.ventX - 6, this.ventY + 2, vxWest, vyWest, 'west', this.simRng));
 
-      const vxEast = 2.8 + Math.random() * 3.5;
-      const vyEast = 1.2 + Math.random() * 1.8;
-      this.pdcs.push(new PyroclasticCurrent(this.ventX + 6, this.ventY + 2, vxEast, vyEast, 'east'));
+      const vxEast = 2.8 + this.simRng() * 3.5;
+      const vyEast = 1.2 + this.simRng() * 1.8;
+      this.pdcs.push(new PyroclasticCurrent(this.ventX + 6, this.ventY + 2, vxEast, vyEast, 'east', this.simRng));
     }
   }
 
@@ -2419,7 +2452,7 @@ export class VesuviusEngine {
         for (let y = this.ventY - 5; y < this.ventY + 20; y++) {
           const idx = y * w + cx;
           if (this.grid[idx] === ELEMENT.STONE || this.grid[idx] === ELEMENT.ASH) {
-            this.grid[idx] = Math.random() < 0.6 ? ELEMENT.SAND : ELEMENT.FIRE;
+            this.grid[idx] = this.simRng() < 0.6 ? ELEMENT.SAND : ELEMENT.FIRE;
             this.heat[idx] = 850;
           }
         }
@@ -2431,14 +2464,33 @@ export class VesuviusEngine {
   // SECTION 9: CELLULAR AUTOMATA STEP & THERMAL HEAT DIFFUSION
   // ==========================================================================
 
-  update(dt) {
-    if (this.isPaused) return;
-    this.time += dt;
+  /**
+   * Replace the simulation PRNG with a deterministic seed for test replays.
+   * Normal play uses a random seed set in the constructor / reset.
+   */
+  _setSeed(seed) {
+    this.simRng = mulberry32(seed >>> 0);
+  }
 
-    // Decay screen shake
+  /**
+   * Execute exactly one fixed simulation step at SIM_FIXED_DT (1/60 s).
+   * All coupled subsystems advance on the same clock: heat, CA, magma,
+   * kinematics, fleet, mission time, eruption schedule.
+   *
+   * Scan-direction alternation uses the integer step counter instead of
+   * Math.floor(this.time * 60), correcting historical floating-point
+   * boundary artifacts where the old formula could skip or repeat a
+   * parity at certain accumulated time values.
+   */
+  _simStep() {
+    const dt = SIM_FIXED_DT;
+    this.time += dt;
+    this.simStepCount++;
+
+    // Decay screen shake (uses simulation PRNG for determinism)
     if (this.screenShake > 0) {
-      this.shakeOffsetX = (Math.random() - 0.5) * this.screenShake;
-      this.shakeOffsetY = (Math.random() - 0.5) * this.screenShake;
+      this.shakeOffsetX = (this.simRng() - 0.5) * this.screenShake;
+      this.shakeOffsetY = (this.simRng() - 0.5) * this.screenShake;
       this.screenShake = Math.max(0, this.screenShake - dt * 9);
     } else {
       this.shakeOffsetX = 0;
@@ -2450,7 +2502,7 @@ export class VesuviusEngine {
 
     // 1. Thermodynamic Cellular Automata Pass
     this.updateHeatDiffusion(dt);
-    this.updateCellularAutomata(dt);
+    this.updateCellularAutomata();
     this.updateMagmaChamber(dt);
 
     // 2. High-Precision Kinematic & Particle Layer Pass
@@ -2460,8 +2512,54 @@ export class VesuviusEngine {
     const tremorVal = PHASE_CONFIG[this.currentPhase] ? PHASE_CONFIG[this.currentPhase].seismicTremor : 0.05;
     this.seismograph.record(tremorVal + (this.screenShake > 0 ? 0.45 : 0), dt);
 
+    // 4. Gameplay tick (mission time, fleet, hazards — all on same fixed clock)
     if (this.mission && this.mission.mode === MODE.GAMEPLAY) {
       this.tickGameplay(dt);
+    }
+  }
+
+  /**
+   * Outer update called by the hub once per animation frame.
+   *
+   * Admits at most SIM_MAX_ADMITTED_DT (0.1 s) of elapsed time and executes
+   * up to SIM_MAX_STEPS_PER_UPDATE (6) fixed steps. Excess elapsed time from
+   * a stall is deliberately dropped — the simulation and mission clock both
+   * slow together; neither silently jumps forward.
+   *
+   * At 30 Hz: ordinarily 2 steps/call. At 60 Hz: 1. At 120 Hz: alternates 0/1.
+   * A direct update(5) executes at most 6, not 300.
+   */
+  update(dt) {
+    if (this.isPaused) return;
+
+    // Guard: ignore zero, negative, and non-finite dt
+    if (!(dt > 0) || !Number.isFinite(dt)) return;
+
+    // Admit at most 0.1 s per outer update
+    const admitted = Math.min(dt, SIM_MAX_ADMITTED_DT);
+    this.simAccumulator += admitted;
+
+    // Execute fixed steps
+    let steps = 0;
+    while (this.simAccumulator >= SIM_FIXED_DT - SIM_STEP_EPSILON && steps < SIM_MAX_STEPS_PER_UPDATE) {
+      this._simStep();
+      this.simAccumulator -= SIM_FIXED_DT;
+      steps++;
+    }
+
+    // Discard whole-step backlog from a stall while keeping valid fractional remainder
+    if (this.simAccumulator >= SIM_FIXED_DT) {
+      this.simAccumulator = this.simAccumulator % SIM_FIXED_DT;
+    }
+
+    // Normalize tiny negative residuals to zero
+    if (this.simAccumulator < 0) {
+      this.simAccumulator = 0;
+    }
+
+    // Batch HUD synchronization: at most once per outer update
+    if (steps > 0 && this.mission && this.mission.mode === MODE.GAMEPLAY) {
+      this.syncMissionHud();
     }
   }
 
@@ -2512,19 +2610,19 @@ export class VesuviusEngine {
     // Chamber pressure forces lava bubbles up the central feeder conduit
     if (this.chamberPressure > 5) {
       const bubbleProb = this.chamberPressure * 0.008;
-      if (Math.random() < (1 - Math.pow(1 - Math.min(1, bubbleProb), dt * 60))) {
-        const bx = cX + Math.floor((Math.random() - 0.5) * 10);
+      if (this.simRng() < (1 - Math.pow(1 - Math.min(1, bubbleProb), dt * 60))) {
+        const bx = cX + Math.floor((this.simRng() - 0.5) * 10);
         const by = cY - 14;
         const idx = by * w + bx;
         if (by >= 0 && (this.grid[idx] === ELEMENT.EMPTY || this.grid[idx] === ELEMENT.LAVA)) {
-          this.grid[idx] = Math.random() < 0.25 ? ELEMENT.FIRE : ELEMENT.LAVA;
+          this.grid[idx] = this.simRng() < 0.25 ? ELEMENT.FIRE : ELEMENT.LAVA;
           this.heat[idx] = 1150;
         }
       }
     }
   }
 
-  updateCellularAutomata(dt) {
+  updateCellularAutomata() {
     this.visited.fill(0);
     const w = this.simWidth;
     const h = this.simHeight;
@@ -2532,8 +2630,10 @@ export class VesuviusEngine {
 
     // Bottom-to-top traversal for gravity falling elements
     for (let y = h - 1; y >= 0; y--) {
-      // Alternate X scan direction to prevent directional bias
-      const ltr = (y + Math.floor(this.time * 60)) % 2 === 0;
+      // Alternate X scan direction using integer step counter to prevent
+      // directional bias. Replaces Math.floor(this.time * 60) which had
+      // floating-point boundary artifacts at certain accumulated time values.
+      const ltr = (y + this.simStepCount) % 2 === 0;
       const startX = ltr ? 0 : w - 1;
       const endX = ltr ? w : -1;
       const stepX = ltr ? 1 : -1;
@@ -2604,7 +2704,7 @@ export class VesuviusEngine {
     }
 
     // Down-diagonal slide along angle of repose
-    const dir = Math.random() < 0.5 ? 1 : -1;
+    const dir = this.simRng() < 0.5 ? 1 : -1;
     const d1x = x + dir;
     const d2x = x - dir;
 
@@ -2669,7 +2769,7 @@ export class VesuviusEngine {
     }
 
     // Down-diagonal flow
-    const dir = Math.random() < 0.5 ? 1 : -1;
+    const dir = this.simRng() < 0.5 ? 1 : -1;
     const d1 = x + dir;
     const d2 = x - dir;
 
@@ -2725,7 +2825,7 @@ export class VesuviusEngine {
 
     // Viscous fluid motion governed by magma viscosity
     const moveProb = 1.0 / (1.0 + this.magmaViscosity * 0.18);
-    if (Math.random() < moveProb) {
+    if (this.simRng() < moveProb) {
       this.updateLiquid(x, y, idx, ELEMENT.LAVA, 1);
     }
   }
@@ -2735,14 +2835,14 @@ export class VesuviusEngine {
     const h = this.simHeight;
 
     // Rapid thermal dissipation into smoke
-    if (Math.random() < 0.28) {
-      this.grid[idx] = Math.random() < 0.45 ? ELEMENT.SMOKE : ELEMENT.EMPTY;
+    if (this.simRng() < 0.28) {
+      this.grid[idx] = this.simRng() < 0.45 ? ELEMENT.SMOKE : ELEMENT.EMPTY;
       return;
     }
 
     // Rise upward
     if (y > 0) {
-      const upX = x + Math.floor((Math.random() - 0.5) * 3 + this.windSpeed * 0.3);
+      const upX = x + Math.floor((this.simRng() - 0.5) * 3 + this.windSpeed * 0.3);
       if (upX >= 0 && upX < w) {
         const upIdx = (y - 1) * w + upX;
         if (this.grid[upIdx] === ELEMENT.EMPTY) {
@@ -2758,13 +2858,13 @@ export class VesuviusEngine {
     const h = this.simHeight;
 
     // Dissipate at ceiling or with age
-    if (y <= 1 || Math.random() < (elem === ELEMENT.STEAM ? 0.012 : 0.006)) {
+    if (y <= 1 || this.simRng() < (elem === ELEMENT.STEAM ? 0.012 : 0.006)) {
       this.grid[idx] = ELEMENT.EMPTY;
       return;
     }
 
     // Convective ascent with atmospheric wind drift
-    const upX = x + Math.floor((Math.random() - 0.5) * 2.5 + this.windSpeed * 0.6);
+    const upX = x + Math.floor((this.simRng() - 0.5) * 2.5 + this.windSpeed * 0.6);
     const upY = y - 1;
 
     if (upX >= 0 && upX < w && upY >= 0) {
@@ -2781,7 +2881,7 @@ export class VesuviusEngine {
     const h = this.simHeight;
 
     // Sulfur gas (SO2/H2S) is heavy (density 1.88 kg/m3) -> sinks into ravines!
-    if (y < h - 1 && Math.random() < 0.35) {
+    if (y < h - 1 && this.simRng() < 0.35) {
       const belowIdx = (y + 1) * w + x;
       if (this.grid[belowIdx] === ELEMENT.EMPTY) {
         this.swap(idx, belowIdx);
@@ -2792,7 +2892,7 @@ export class VesuviusEngine {
 
     // Lateral drift with wind
     const driftX = x + (this.windSpeed >= 0 ? 1 : -1);
-    if (driftX >= 0 && driftX < w && Math.random() < 0.4) {
+    if (driftX >= 0 && driftX < w && this.simRng() < 0.4) {
       const sideIdx = y * w + driftX;
       if (this.grid[sideIdx] === ELEMENT.EMPTY) {
         this.swap(idx, sideIdx);
@@ -2821,13 +2921,13 @@ export class VesuviusEngine {
 
     // 1. Spawn Volcanic Bombs based on phase bomb rate
     if (config && config.bombRate > 0) {
-      if (Math.random() < config.bombRate * dt * 2.5) {
-        const ejectionSpeed = 12 + Math.random() * 22;
-        const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * 0.95;
+      if (this.simRng() < config.bombRate * dt * 2.5) {
+        const ejectionSpeed = 12 + this.simRng() * 22;
+        const angle = -Math.PI * 0.5 + (this.simRng() - 0.5) * 0.95;
         const vx = Math.cos(angle) * ejectionSpeed;
         const vy = Math.sin(angle) * ejectionSpeed;
-        const radius = 2.0 + Math.random() * 3.5;
-        this.bombs.push(new VolcanicBomb(ventX + (Math.random() - 0.5) * 6, ventY - 4, vx, vy, radius));
+        const radius = 2.0 + this.simRng() * 3.5;
+        this.bombs.push(new VolcanicBomb(ventX + (this.simRng() - 0.5) * 6, ventY - 4, vx, vy, radius, 1050, this.simRng));
       }
     }
 
@@ -2841,19 +2941,19 @@ export class VesuviusEngine {
     }
     plumeSpawnRate = Math.min(plumeSpawnRate, Math.max(0, plumeCap - this.plumeParticles.length));
     for (let p = 0; p < plumeSpawnRate; p++) {
-      const vx = (Math.random() - 0.5) * 3.0 + this.windSpeed * 0.4;
-      const vy = -(6.0 + this.plumeHeightKm * 0.85 + Math.random() * 4.0);
-      this.plumeParticles.push(new PlumeParticle(ventX + (Math.random() - 0.5) * 8, ventY - 2, vx, vy));
+      const vx = (this.simRng() - 0.5) * 3.0 + this.windSpeed * 0.4;
+      const vy = -(6.0 + this.plumeHeightKm * 0.85 + this.simRng() * 4.0);
+      this.plumeParticles.push(new PlumeParticle(ventX + (this.simRng() - 0.5) * 8, ventY - 2, vx, vy, false, this.simRng));
     }
 
     // 3. Volcanic Lightning Generation within Plume
     if (config && config.lightningRate > 0) {
-      if (Math.random() < config.lightningRate * dt * 3.5) {
-        const lx1 = ventX + (Math.random() - 0.5) * 45 + this.windSpeed * 8;
-        const ly1 = Math.max(10, ventY - 25 - Math.random() * (this.plumeHeightKm * 2.5));
-        const lx2 = lx1 + (Math.random() - 0.5) * 35;
-        const ly2 = ly1 + 18 + Math.random() * 35;
-        this.lightningBolts.push(new VolcanicLightning(lx1, ly1, lx2, ly2));
+      if (this.simRng() < config.lightningRate * dt * 3.5) {
+        const lx1 = ventX + (this.simRng() - 0.5) * 45 + this.windSpeed * 8;
+        const ly1 = Math.max(10, ventY - 25 - this.simRng() * (this.plumeHeightKm * 2.5));
+        const lx2 = lx1 + (this.simRng() - 0.5) * 35;
+        const ly2 = ly1 + 18 + this.simRng() * 35;
+        this.lightningBolts.push(new VolcanicLightning(lx1, ly1, lx2, ly2, this.simRng));
         this.audio.playLightningCrack();
       }
     }
@@ -2896,7 +2996,7 @@ export class VesuviusEngine {
       pdc.update(dt, this.elevationMap, this.simWidth);
 
       // Scorch terrain & deposit thick ignimbrite ash in CA grid
-      if (Math.random() < 0.25) {
+      if (this.simRng() < 0.25) {
         const px = Math.floor(pdc.x);
         const py = Math.floor(pdc.y);
         if (px >= 0 && px < this.simWidth && py >= 0 && py < this.simHeight) {
@@ -3918,6 +4018,9 @@ export class VesuviusEngine {
     this.lightningBolts = [];
     this.shockwaves = [];
     this.time = 0;
+    this.simAccumulator = 0;
+    this.simStepCount = 0;
+    this.simRng = mulberry32((Math.random() * 0xFFFFFFFF) >>> 0);
     this.isPaused = false;
     this.setEruptionPhase(PHASE.DORMANT);
     this.syncMissionHud();

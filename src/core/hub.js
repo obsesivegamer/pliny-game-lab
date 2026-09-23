@@ -1250,7 +1250,7 @@ class PlinyHub {
         // playfield for every frame of a window drag, rotation, or iOS URL-bar
         // animation. Here the clear and the redraw land in the same turn.
         this.syncCanvasSize();
-        if (!this.isPaused && this.currentEngine.update) {
+        if (!this.isPaused && !this.codexDrawer?.classList.contains("open") && this.currentEngine.update) {
           this.currentEngine.update(dt);
         }
         if (this.currentEngine.render) {

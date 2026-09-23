@@ -147,7 +147,7 @@ console.log('4. Win overlay with Restart');
 await page.evaluate(() => {
   const e = window.__hub.currentEngine;
   e.mission.rescued = e.mission.quota;
-  e.update(0.016);
+  e.update(1 / 60);
   e.render(e.ctx);
 });
 const overlay = await page.evaluate(() => {
@@ -169,7 +169,7 @@ const climax = await page.evaluate(() => {
   e.setEruptionPhase(4);
   e.plumeHeightKm = 32;
   e.targetPlumeKm = 32;
-  for (let i = 0; i < 180; i++) e.update(0.016);
+  for (let i = 0; i < 180; i++) e.update(1 / 60);
   e.render(e.ctx);
   const bayY = e.simHeight * 0.62;
   const overBay = e.plumeParticles.filter((p) => p.x > e.waterlineX - 4 && p.y > bayY).length;

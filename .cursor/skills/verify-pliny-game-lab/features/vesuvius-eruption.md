@@ -19,23 +19,29 @@ Thermodynamic cellular automata falling-sand, lava flows, pyroclastic density cu
 2. Find the "Vesuvius" card in the grid (Pavilion I: Ignis & Terra) or use the search bar.
 3. Click the card to launch it in Simulator view.
 4. Alternatively: select "I. Ignis & Terra" from the Pavilion dropdown, then "1. Vesuvius" from the Game dropdown.
-5. Use the right-hand panel to pick eruption phases (0: Dormant through 6: Caldera) and elemental brush materials.
-6. Left-click and drag on the canvas to deposit material.
-7. Right-click to trigger a localized phreatomagmatic blast.
-8. Click "🌋 TRIGGER ULTRA-PLINIAN CLIMAX" for the climactic eruption.
+5. The simulator opens in the Stabiae rescue mission. Select a galley, then order it to the east Stabiae ring; a full ship returns to the west OFFLOAD ring automatically.
+6. Select Sandbox in the controls panel to paint materials and choose eruption phases (0: Dormant through 6: Caldera).
+7. In Sandbox, left-click and drag to deposit material. Right-click triggers a localized phreatomagmatic blast.
 
 ## Driving it with headless harness
 Execute via test suite:
 ```bash
 node tests/verify-engines.js
 # Vesuvius is engine #1; look for "[1/50] ✓ vesuvius (VesuviusEngine) OK"
+node tests/vesuvius-timing.js
+node tests/vesuvius-gameplay.js
+# With the static server running on port 8000:
+node tests/vesuvius-browser-smoke.js
+node tests/vesuvius-timing-browser.js
 ```
 
 The engine exports `VesuviusEngine` from `src/demos/vesuvius/vesuvius.js`.
 Key method: `setEruptionPhase(phaseIndex)` — triggers eruption phases 0–6.
 Entity count after 60 ticks: ~14,000+ particles.
+`update(dt)` accepts seconds and completes 1/60-second simulation steps. A call below one step carries a fractional remainder; a single update executes at most six steps. Advance a full `1 / 60` in tests that expect mission resolution.
 
 ## Gotchas
 - High particle counts can tax CPU; the engine uses a 280×180 grid with pixelated scaling for 60 FPS.
 - Right-clicking triggers a localized phreatomagmatic blast with shockwave at cursor coordinates.
 - The `triggerEruption()` method does NOT exist; use `setEruptionPhase(PHASE.ULTRA_PLINIAN)` instead.
+- The Codex help drawer, hub pause button, and Showcase view suspend engine updates. Closing help preserves an explicit Pause setting.

@@ -52,6 +52,7 @@
 - 2026-09-22T20:10:00-04:00 [CODE] Showcase is catalog-driven so the concurrent effort adding games needs no showcase edits: counts, plan rooms, chips and room numbers all derive from `DEMOS`/`PAVILIONS`. Verified by injecting 9 extra games and 2 extra pavilions (12 rooms, 59 cards, placeholder plates for missing thumbs).
 
 ## [OUTCOMES]
+- 2026-09-23T05:32:40Z [TOOL] Vesuvius fixed-step timing completed on `codex/vesuvius-fixed-step` from `095a972e`. Exact 5×180 baseline sand rows 40/70/130 at 30/60/120 Hz become 70/70/70; 32 timing and 44 gameplay checks pass, as do real Chrome cargo/rotation/hidden-tab checks. The Codex help drawer pause defect was later reproduced and fixed in hub scheduling; opening help now holds simulation steps and closing it preserves explicit Pause. Full acceptance matrix and performance evidence: `.swarm/2026-09-21-gameplay-plan/ANTIGRAVITY-01-RESULTS.md`.
 - 50/50 engines completed and verified green across headless Node simulation, deep visual QA, mobile layout QA, and Puppeteer headless Chrome suites.
 - All 50 engines implement `uiScale()`, touch bridge attachment/detachment, and responsive mobile HUDs (with camera `worldView()` in Vesuvius).
 - 50/50 screenshots captured in .audit/screenshots/ at 1280x800.

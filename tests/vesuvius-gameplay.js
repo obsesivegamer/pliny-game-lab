@@ -385,6 +385,8 @@ test('player can win and lose without painting the CA grid', () => {
   const { engine } = makeEngine();
   engine.mission.rescued = MISSION_NUMBERS.rescueQuota;
   engine.update(0.016);
+  assert.equal(engine.mission.status, STATUS.PLAYING, 'sub-step cannot resolve the mission');
+  engine.update(1 / 60 - 0.016);
   assert.equal(engine.mission.status, STATUS.WON);
 
   engine.reset();
@@ -395,7 +397,7 @@ test('player can win and lose without painting the CA grid', () => {
     g.health = 0;
     g.alive = false;
   }
-  engine.update(0.016);
+  engine.update(1 / 60);
   assert.equal(engine.mission.status, STATUS.LOST);
   assert.equal(engine.mission.loseReason, LOSE_REASON.FLEET);
   engine.destroy();
@@ -525,7 +527,7 @@ test('sandbox catastrophe buttons cannot skip the mission clock', () => {
 test('any canvas click after victory restarts the mission', () => {
   const { engine } = makeEngine();
   engine.mission.rescued = MISSION_NUMBERS.rescueQuota;
-  engine.update(0.016);
+  engine.update(1 / 60);
   assert.equal(engine.mission.status, STATUS.WON);
   engine.onMouseDown({ x: 12, y: 12 });
   assert.equal(engine.mission.status, STATUS.PLAYING);
@@ -605,7 +607,7 @@ test('HUD chrome is drawn in CSS pixels, so a 3x screen keeps it legible', () =>
   // The overlay is laid out in CSS px but hit-tested against backing-px mouse
   // coordinates, so the stored rect has to come back scaled.
   engine.mission.rescued = engine.mission.quota;
-  engine.update(0.016);
+  engine.update(1 / 60);
   engine.render(ctx);
   const btn = engine.overlayButton;
   assert.ok(btn, 'victory overlay must expose its restart button');
@@ -615,7 +617,7 @@ test('HUD chrome is drawn in CSS pixels, so a 3x screen keeps it legible', () =>
 
   // A click where the unscaled rect would have been must not restart.
   engine.mission.rescued = engine.mission.quota;
-  engine.update(0.016);
+  engine.update(1 / 60);
   engine.render(ctx);
   const stale = engine.overlayButton;
   engine.onMouseDown({ x: stale.x / 3, y: stale.y / 3 });
@@ -645,7 +647,7 @@ test('mission camera frames Stabiae and OFFLOAD as distinct bay targets', () => 
 test('reaching quota resolves WON on engine and renders victory overlay', () => {
   const { engine, ctx } = makeEngine();
   engine.mission.rescued = engine.mission.quota;
-  engine.update(0.016);
+  engine.update(1 / 60);
   assert.equal(engine.mission.status, STATUS.WON);
   assert.equal(engine.mission.quota, missionQuota());
   ctx.texts = [];
@@ -658,14 +660,14 @@ test('reaching quota resolves WON on engine and renders victory overlay', () => 
 test('venting does not rewind eruption phase or re-trigger entry effects', () => {
   const { engine } = makeEngine();
   engine.mission.time = 26;
-  engine.update(0.016);
+  engine.update(1 / 60);
   assert.equal(engine.currentPhase, PHASE.ULTRA_PLINIAN);
 
   const initialShockwaves = engine.shockwaves.length;
   const vented = engine.ventChamber();
   assert.equal(vented, true);
   assert.equal(engine.mission.ventDelay, MISSION_NUMBERS.ventDelaySec);
-  engine.update(0.016);
+  engine.update(1 / 60);
 
   assert.ok(engine.currentPhase >= PHASE.ULTRA_PLINIAN, `phase should not rewind, got ${engine.currentPhase}`);
   assert.equal(engine.shockwaves.length, initialShockwaves + 1, 'vent shockwave fired, but phase entry effects did not re-fire');
@@ -753,7 +755,7 @@ test('mission-mode plume budget stays under the ash-soup baseline', () => {
   engine.setEruptionPhase(PHASE.ULTRA_PLINIAN);
   engine.plumeHeightKm = 32;
   engine.targetPlumeKm = 32;
-  for (let i = 0; i < 180; i++) engine.update(0.016);
+  for (let i = 0; i < 180; i++) engine.update(1 / 60);
   const plume = engine.plumeParticles.length;
   const overBay = engine.plumeParticles.filter((p) => p.x > engine.waterlineX - 4 && p.y > engine.simHeight * READABILITY.bayCullYFrac).length;
   const entities = engine.getEntityCount();
@@ -773,7 +775,7 @@ test('sandbox plume is allowed to run richer than the mission budget', () => {
   engine.setEruptionPhase(PHASE.ULTRA_PLINIAN);
   engine.plumeHeightKm = 32;
   engine.targetPlumeKm = 32;
-  for (let i = 0; i < 90; i++) engine.update(0.016);
+  for (let i = 0; i < 90; i++) engine.update(1 / 60);
   const plume = engine.plumeParticles.length;
   const entities = engine.getEntityCount();
   console.log(`  ↳ ultra-plinian sandbox: entities=${entities} ca=${engine.activeParticles} plume=${plume}`);
